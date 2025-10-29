@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/bindings/app_bindings.dart';
 
 import 'package:harry_service_app/app/routes/app_pages.dart';
 
@@ -33,7 +34,7 @@ void main(){
         // Use builder only if you need to use library outside ScreenUtilInit context
         builder: (_ , child) {
           return GetMaterialApp(
-
+           initialBinding: AppBindings(),
             debugShowCheckedModeBanner: false,
             title: 'First Method',
             initialRoute: AppPages.initialRoutes,

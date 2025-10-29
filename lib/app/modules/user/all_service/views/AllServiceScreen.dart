@@ -7,11 +7,13 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:harry_service_app/app/core/widgets/make_clickable.dart';
 import 'package:harry_service_app/app/routes/app_routes.dart';
 
-import '../../../../gen/assets.gen.dart';
-import '../../../core/widgets/blury_container.dart';
+import '../../../../../gen/assets.gen.dart';
+import '../../../../core/widgets/blury_container.dart';
+
 
 class AllServiceScreen extends StatefulWidget {
   const AllServiceScreen({super.key});
@@ -28,6 +30,9 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
     "Restaurant Booking",
     "Message",
   ];
+
+
+  final navController=Get.find<NavController>();
 
   final image = Assets.images;
 
@@ -55,21 +60,35 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
                     child: MakeClickable(
                       onTap:(){
 
+                        ///tips :  one controller used add service type of recognize use mode is on
                         switch(index){
                           case 0:
-                           Get.toNamed(Routes.pass_nav_screen);
+                            navController.resetIndex(); /// reset the indes
+                            navController.addType("pass");
+                           Get.toNamed(Routes.bottomNav);
                             break;
                           case 1:
-                            print("Ski Hire"); // Second container action
+
+                            navController.resetIndex();
+                            navController.addType("hire");
+                             Get.toNamed(Routes.bottomNav);
                             break;
                           case 2:
-                            print("Transport"); // Third container action
+                            navController.resetIndex();
+                            navController.addType("transport");
+                            Get.toNamed(Routes.bottomNav);
                             break;
                           case 3:
-                            print("Restaurant Booking"); // Fourth container action
+                            navController.resetIndex();
+                            navController.addType("restaurant");
+                            Get.toNamed(Routes.bottomNav);
                             break;
+                          case 4 :
+                            navController.resetIndex();
+                            navController.addType("massage");
+                            Get.toNamed(Routes.bottomNav);
                           default:
-                            print("Message"); // Fifth container or any other
+                            print("execute default conditions");
                             break;
                         }
 

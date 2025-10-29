@@ -55,7 +55,8 @@ class ItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Container(
-                height: 244.h,
+                height: 247.h,
+                width: 345.w,
                 decoration: BoxDecoration(
                   gradient: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(12),
@@ -64,7 +65,7 @@ class ItemCard extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 6,
+                    spacing: 2,
                     children: [
                       /// Rounded Image
                       ClipRRect(
@@ -79,30 +80,34 @@ class ItemCard extends StatelessWidget {
                       SizedBox(height: 5.h),
 
                       /// Title + Price
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(title, style: AppTextStyle.h3_medium_20()),
-                          Text(price,
-                              style: AppTextStyle.sub_h2_medium_16(
-                                color: AppColors.primary_1,
-                              )),
-                        ],
+                      Expanded(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(title, style: AppTextStyle.h3_medium_20(),overflow: TextOverflow.ellipsis,),
+                            Text(price,
+                                style: AppTextStyle.sub_h2_medium_16(
+                                  color: AppColors.primary_1,
+                                )),
+                          ],
+                        ),
                       ),
 
                       /// Rating + Location
-                      Row(
-                        children: [
-                          Assets.icons.star.svg(height: 12.h, width: 12.h),
-                          SizedBox(width: 4.w),
-                          Text(rating.toString(), style: AppTextStyle.sub_h3_regular_14()),
-                          SizedBox(width: 4.w),
-                          Text("($reviewCount)", style: AppTextStyle.c_light_12()),
-                          const Spacer(),
-                          Assets.icons.mapPinSimpleArea.svg(height: 14.h, width: 14.w),
-                          SizedBox(width: 5.w),
-                          Text(location, style: AppTextStyle.sub_h3_regular_14()),
-                        ],
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Assets.icons.star.svg(height: 12.h, width: 12.h),
+                            SizedBox(width: 4.w),
+                            Text(rating.toString(), style: AppTextStyle.sub_h3_regular_14()),
+                            SizedBox(width: 4.w),
+                            Text("($reviewCount)", style: AppTextStyle.c_light_12()),
+                            const Spacer(),
+                            Assets.icons.mapPinSimpleArea.svg(height: 14.h, width: 14.w),
+                            SizedBox(width: 5.w),
+                            Text(location, style: AppTextStyle.sub_h3_regular_14()),
+                          ],
+                        ),
                       ),
                     ],
                   ),

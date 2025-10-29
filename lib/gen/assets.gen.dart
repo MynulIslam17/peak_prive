@@ -79,6 +79,10 @@ class $AssetsIconsGen {
   SvgGenImage get arrowBottom =>
       const SvgGenImage('assets/icons/arrowBottom.svg');
 
+  /// File path: assets/icons/call_circle.svg
+  SvgGenImage get callCircle =>
+      const SvgGenImage('assets/icons/call_circle.svg');
+
   /// File path: assets/icons/cancel.svg
   SvgGenImage get cancel => const SvgGenImage('assets/icons/cancel.svg');
 
@@ -90,6 +94,12 @@ class $AssetsIconsGen {
 
   /// File path: assets/icons/dots.svg
   SvgGenImage get dots => const SvgGenImage('assets/icons/dots.svg');
+
+  /// File path: assets/icons/dots3.svg
+  SvgGenImage get dots3 => const SvgGenImage('assets/icons/dots3.svg');
+
+  /// File path: assets/icons/food_cat.svg
+  SvgGenImage get foodCat => const SvgGenImage('assets/icons/food_cat.svg');
 
   /// File path: assets/icons/icon.svg
   SvgGenImage get icon => const SvgGenImage('assets/icons/icon.svg');
@@ -146,10 +156,13 @@ class $AssetsIconsGen {
     suzuki,
     user,
     arrowBottom,
+    callCircle,
     cancel,
     chats,
     check,
     dots,
+    dots3,
+    foodCat,
     icon,
     jug,
     loacation,
@@ -171,6 +184,19 @@ class $AssetsImagesGen {
   AssetGenImage get accories =>
       const AssetGenImage('assets/images/accories.png');
 
+  /// File path: assets/images/bookingImg.jpg
+  AssetGenImage get bookingImg =>
+      const AssetGenImage('assets/images/bookingImg.jpg');
+
+  /// File path: assets/images/carImg1.jpg
+  AssetGenImage get carImg1 => const AssetGenImage('assets/images/carImg1.jpg');
+
+  /// File path: assets/images/carImg2.jpg
+  AssetGenImage get carImg2 => const AssetGenImage('assets/images/carImg2.jpg');
+
+  /// File path: assets/images/carImg3.jpg
+  AssetGenImage get carImg3 => const AssetGenImage('assets/images/carImg3.jpg');
+
   /// File path: assets/images/dish.png
   AssetGenImage get dish => const AssetGenImage('assets/images/dish.png');
 
@@ -180,11 +206,23 @@ class $AssetsImagesGen {
   /// File path: assets/images/img1.png
   AssetGenImage get img1 => const AssetGenImage('assets/images/img1.png');
 
+  /// File path: assets/images/line.png
+  AssetGenImage get line => const AssetGenImage('assets/images/line.png');
+
+  /// File path: assets/images/message.jpg
+  AssetGenImage get message => const AssetGenImage('assets/images/message.jpg');
+
   /// File path: assets/images/opening.jpg
   AssetGenImage get opening => const AssetGenImage('assets/images/opening.jpg');
 
   /// File path: assets/images/profile.png
   AssetGenImage get profile => const AssetGenImage('assets/images/profile.png');
+
+  /// File path: assets/images/restu1.jpg
+  AssetGenImage get restu1 => const AssetGenImage('assets/images/restu1.jpg');
+
+  /// File path: assets/images/restu2.jpg
+  AssetGenImage get restu2 => const AssetGenImage('assets/images/restu2.jpg');
 
   /// File path: assets/images/ski_accories_3.png
   AssetGenImage get skiAccories3 =>
@@ -198,20 +236,32 @@ class $AssetsImagesGen {
   AssetGenImage get skiPass9 =>
       const AssetGenImage('assets/images/ski_pass_9.png');
 
+  /// File path: assets/images/spa.png
+  AssetGenImage get spa => const AssetGenImage('assets/images/spa.png');
+
   /// File path: assets/images/user2.png
   AssetGenImage get user2 => const AssetGenImage('assets/images/user2.png');
 
   /// List of all assets
   List<AssetGenImage> get values => [
     accories,
+    bookingImg,
+    carImg1,
+    carImg2,
+    carImg3,
     dish,
     food,
     img1,
+    line,
+    message,
     opening,
     profile,
+    restu1,
+    restu2,
     skiAccories3,
     skiDetails,
     skiPass9,
+    spa,
     user2,
   ];
 }

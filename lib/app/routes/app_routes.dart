@@ -1,9 +1,27 @@
 
 abstract class Routes {
 
+
+  /// SkiPass
   static const service="/service";
-  static const pass_nav_screen="/pass";
-  static const  ski_pass_details="/skiDetails";
+  /// bottomNav
+  static const bottomNav="/transportNav";
+  /// pass
+  static const passInformation="/passInfo";
+  static const passCardDetails="/passDetails";
+
+  /// transport
+  static const transportDetails="/transportDetails";
+
+
+ /// message
+  static const massageDetails="/massageDetails";
+  static const bookingRequest="/bookingRequest";
+
+  /// hire
+  static const hireDetails="/hireDetails";
+
+
 
 
 
