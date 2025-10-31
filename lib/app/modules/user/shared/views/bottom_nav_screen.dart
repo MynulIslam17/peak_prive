@@ -95,6 +95,30 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     },
 
 
+    /// hire data
+
+    {
+      "type":"hire",
+      'product': 'Ski Apearal',
+      'price': '\$200',
+      'status': 'Active',
+      'image': Assets.images.skiAccories3,
+    },
+    {
+      "type":"hire",
+      'product': 'Ski Gear',
+      'price': '\$200',
+      'status': 'Completed',
+      'image': Assets.images.skiDetails,
+    },
+    {
+      "type":"hire",
+      'product': 'ski jacket',
+      'price': '\$300',
+      'status': 'Cancelled',
+      'image': Assets.images.skiPass9,
+    },
+
 
 
 

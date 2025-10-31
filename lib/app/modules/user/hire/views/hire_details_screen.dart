@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/appText.dart';
@@ -11,6 +12,7 @@ import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/available_service.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
+import '../../../../core/widgets/hire_card_item.dart';
 import '../../../../core/widgets/provider_info.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -27,6 +29,40 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   final icon = Assets.icons;
   final image = Assets.images;
+
+  bool _isClickedBookButton = false;
+
+  DateTime? selectedDate;
+
+  /// Pick date and time
+  Future<void> _datePicker() async {
+    // Pick date first
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return;
+
+    // Pick time
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime == null) return;
+
+    // Combine date and time
+    setState(() {
+      selectedDate = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -55,16 +91,15 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
             /// overlap card part==================
             Positioned(
-              top: size.height * 0.4,
+              top: size.height * 0.3,
               left: 0,
               right: 0,
+              bottom: 0,
               child: Container(
                 width: size.width,
-                height:
-                    size.height *
-                    0.6, // Adjusted height to make space for bottom row if needed
+
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xffFDFAF6),
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
@@ -88,75 +123,373 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
                       SizedBox(height: 20.h),
 
-                      /// provider info section ===================
-                      ProviderInfo(onTapCall: () {}, onTapMessage: () {}),
+                      if (_isClickedBookButton == false) ...[
+                        /// provider info section ===================
+                        ProviderInfo(onTapCall: () {}, onTapMessage: () {}),
 
-                      ///tab
-                      TabBar(
-                        controller: tabController,
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        labelColor: Colors.white,
-                        unselectedLabelColor: Colors.black,
-                        labelStyle: AppTextStyle.sub_h3_medium_14(),
-                        indicator: BoxDecoration(color: Color(0xffd6c24d)),
+                        SizedBox(height: 10.h),
 
-                        tabs: [
-                          Tab(text: "About"),
-                          Tab(text: "Review"),
-                        ],
-                      ),
+                        ///tab
+                        TabBar(
+                          controller: tabController,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelColor: Colors.white,
+                          unselectedLabelColor: Colors.black,
+                          labelStyle: AppTextStyle.sub_h3_medium_14(),
+                          indicator: BoxDecoration(color: Color(0xffd6c24d)),
 
-
-
-                      TabBarView(
-                        controller: tabController,
-                          children: [
-
-                           Center(child: Text("af"),),
-                           Center(child: Text("af"),),
-
-
-                      ]),
-
-
-
-
-
-
-
-
-
-
-                      Spacer(),
-
-                      /// Fixed bottom row (Price and Button)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: 10.h,
-                          bottom: 20.h,
-                        ), // Add vertical padding for the bottom row
-                        child: Row(
-                          children: [
-                            Text(
-                              "\$9.99",
-                              style: AppTextStyle.sub_h1_medium_18(
-                                color: AppColors.primary_1,
-                              ),
-                            ),
-                            SizedBox(width: 30.w),
-                            Expanded(
-                              child: CustomButton(
-                                height: 44,
-                                onTap: () {
-                                  Get.toNamed(Routes.passInformation);
-                                },
-                                text: "Book Ski Pass",
-                                backgroundColor: AppColors.primary_1,
-                              ),
-                            ),
+                          tabs: [
+                            Tab(text: "About"),
+                            Tab(text: "Review"),
                           ],
                         ),
-                      ),
+
+                        Expanded(
+                          child: TabBarView(
+                            controller: tabController,
+
+                            children: [
+                              _aboutSection(),
+
+                              /// review screen
+                              ListView(children: [ReviewScreen()]),
+                            ],
+                          ),
+                        ),
+
+                        /// Fixed bottom row (Price and Button)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: 10.h,
+                            bottom: 20.h,
+                          ), // Add vertical padding for the bottom row
+                          child: Row(
+                            children: [
+                              Text(
+                                "\$9.99",
+                                style: AppTextStyle.sub_h1_medium_18(
+                                  color: AppColors.primary_1,
+                                ),
+                              ),
+                              SizedBox(width: 30.w),
+                              Expanded(
+                                child: CustomButton(
+                                  height: 44,
+                                  onTap: () {
+                                    setState(() {
+                                      _isClickedBookButton = true;
+                                    });
+                                  },
+                                  text: "Book Now",
+                                  backgroundColor: AppColors.primary_1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        /// when click on book button
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Align(
+                                alignment: Alignment.topLeft,
+                                child: Text(
+                                  "Ski Item",
+                                  style: AppTextStyle.sub_h1_medium_18(),
+                                ),
+                              ),
+
+                              SizedBox(height: 10.h,),
+
+                              SizedBox(
+                                width: 200,
+                                child: HireCardItem(
+                                  icon: icon.skiApparel,
+                                  itemName: "Apparel",
+                                  addOnTap: (){},
+                                  removeOnTap: (){},
+                                ),
+                              ),
+
+                              SizedBox(height: 20.h),
+
+                              /// total selected item price show
+                              Container(
+                                height: 160,
+
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.4),
+                                  ),
+                                ),
+
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 20,
+                                          right: 20,
+                                          top: 15,
+                                          bottom: 10,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "Product Name",
+                                              style:
+                                                  AppTextStyle.sub_h3_medium_14(),
+                                            ),
+                                            Text(
+                                              "Unit",
+                                              style:
+                                                  AppTextStyle.sub_h3_medium_14(),
+                                            ),
+                                            Text(
+                                              "Price",
+                                              style:
+                                                  AppTextStyle.sub_h3_medium_14(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 2,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "Ski jacket",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                            Text(
+                                              "1",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                            Text(
+                                              "\$02",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 2,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "Ski jacket",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                            Text(
+                                              "1",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                            Text(
+                                              "\$02",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              "Total",
+                                              style:
+                                                  AppTextStyle.sub_h3_medium_14(),
+                                            ),
+
+                                            Text(
+                                              "\$200",
+                                              style:
+                                                  AppTextStyle.sub_h3_regular_14(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 10.h),
+                              Card(
+                                color: Colors.white,
+                                child: SizedBox(
+                                  height: 100.h,
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          // Start Date
+                                          Expanded(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "Select Start Date & Time",
+                                                  style:
+                                                      AppTextStyle.sub_h3_medium_14()
+                                                          .copyWith(
+                                                            fontSize: 12,
+                                                          ),
+                                                ),
+                                                SizedBox(height: 6.h),
+                                                InkWell(
+                                                  onTap: _datePicker,
+                                                  child: Container(
+                                                    width: 155.w,
+                                                    height: 38,
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(
+                                                        color: Colors.grey,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                        ),
+                                                    child: Row(
+                                                      children: [
+                                                        icon.calendarDots.svg(
+                                                          width: 20,
+                                                          height: 20,
+                                                        ),
+                                                        SizedBox(width: 5.w),
+                                                        Text(
+                                                          selectedDate == null
+                                                              ? "Select Date & Time"
+                                                              : "${selectedDate!.day.toString().padLeft(2, '0')}/"
+                                                                    "${selectedDate!.month.toString().padLeft(2, '0')}/"
+                                                                    "${selectedDate!.year} "
+                                                                    "${selectedDate!.hour.toString().padLeft(2, '0')}:"
+                                                                    "${selectedDate!.minute.toString().padLeft(2, '0')}",
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          SizedBox(width: 20.w),
+                                          // End Date
+                                          Expanded(
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "Select End Date & Time",
+                                                  style:
+                                                      AppTextStyle.sub_h3_medium_14()
+                                                          .copyWith(
+                                                            fontSize: 12,
+                                                          ),
+                                                ),
+                                                SizedBox(height: 6.h),
+                                                InkWell(
+                                                  onTap: _datePicker,
+                                                  child: Container(
+                                                    width: 155.w,
+                                                    height: 38,
+                                                    decoration: BoxDecoration(
+                                                      border: Border.all(
+                                                        color: Colors.grey,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                        ),
+                                                    child: Row(
+                                                      children: [
+                                                        icon.calendarDots.svg(
+                                                          width: 20,
+                                                          height: 20,
+                                                        ),
+                                                        SizedBox(width: 5.w),
+                                                        Text(
+                                                          selectedDate == null
+                                                              ? "Select Date & Time"
+                                                              : "${selectedDate!.day.toString().padLeft(2, '0')}/"
+                                                                    "${selectedDate!.month.toString().padLeft(2, '0')}/"
+                                                                    "${selectedDate!.year} "
+                                                                    "${selectedDate!.hour.toString().padLeft(2, '0')}:"
+                                                                    "${selectedDate!.minute.toString().padLeft(2, '0')}",
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 10,
+                          ),
+                          child: CustomButton(
+                            width: double.infinity,
+                            text: "Checkout",
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -171,6 +504,51 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// about section
+
+  Widget _aboutSection() {
+    final icon = Assets.icons;
+
+    final List<Map<String, dynamic>> items = [
+      {'icon': icon.skiEssential, 'name': 'Ski Boots'},
+      {'icon': icon.skiGare, 'name': 'Helmet'},
+      {'icon': icon.skiApparel, 'name': 'Goggles'},
+      {'icon': icon.skiEssential, 'name': 'Snowboard'},
+      {'icon': icon.skiEssential, 'name': 'Gloves'},
+      {'icon': icon.skiEssential, 'name': 'Ski Pants'},
+    ];
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 2.2, // adjust if cards look stretched
+            ),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return HireCardItem(
+                icon: item['icon'],
+                itemName: item['name'],
+                addOnTap: () {},
+                removeOnTap: () {},
+              );
+            },
+          ),
+        ],
       ),
     );
   }
