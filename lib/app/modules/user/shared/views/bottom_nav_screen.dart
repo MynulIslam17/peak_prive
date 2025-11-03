@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/profile_screen.dart';
 
 
 import '../../../../../gen/assets.gen.dart';
@@ -119,6 +120,30 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
       'image': Assets.images.skiPass9,
     },
 
+/// resturant data
+
+    {
+      "type":"restaurant",
+      'product': 'thai food',
+      'price': '\$200',
+      'status': 'Active',
+      'image': Assets.images.food,
+    },
+    {
+      "type":"restaurant",
+      'product': 'italian',
+      'price': '\$200',
+      'status': 'Completed',
+      'image': Assets.images.food,
+    },
+    {
+      "type":"restaurant",
+      'product': 'turkish',
+      'price': '\$300',
+      'status': 'Cancelled',
+      'image': Assets.images.food,
+    },
+
 
 
 
@@ -134,7 +159,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     //TransportHomeScreen(),
       HomeScreen(),
       BookingScreen(productList: productList,),
-      Center(child: Text("profile"),)
+      ProfileScreen()
   ];
 
   @override

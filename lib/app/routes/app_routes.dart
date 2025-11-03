@@ -1,6 +1,13 @@
 
 abstract class Routes {
 
+  /// auth
+
+  static const login="/login";
+  static const signup="/signUp";
+
+
+
 
   /// SkiPass
   static const service="/service";
@@ -20,6 +27,22 @@ abstract class Routes {
 
   /// hire
   static const hireDetails="/hireDetails";
+
+  /// profile
+
+  static const profile="profile";
+
+
+  /// restaurant
+  static const restaurantDetails="/restaurantDetails";
+
+
+
+  /// onboard
+
+  static const onBoarding="/onboard";
+
+
 
 
 

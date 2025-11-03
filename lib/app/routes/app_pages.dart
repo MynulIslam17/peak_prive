@@ -1,10 +1,14 @@
 import 'dart:developer';
 
 import 'package:get/get_navigation/get_navigation.dart';
+import 'package:harry_service_app/app/modules/user/auth/views/login_screen.dart';
+import 'package:harry_service_app/app/modules/user/auth/views/signup_screen.dart';
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/onboard/views/on_boarding_screen.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
@@ -18,10 +22,19 @@ import 'app_routes.dart';
 
 abstract class AppPages {
   /// for initial screen
-  static const initialRoutes = Routes.service;
+  static const initialRoutes = Routes.onBoarding;
 
   /// all the screen as list
   static final routes = [
+
+    /// auth
+
+    GetPage(name: Routes.login, page: ()=>LoginScreen()),
+    GetPage(name: Routes.signup, page: ()=>SignupScreen()),
+
+
+
+
     /// all service
     GetPage(
         name: Routes.service,
@@ -63,7 +76,22 @@ abstract class AppPages {
 
     GetPage(name: Routes.hireDetails,
         page: ()=>HireDetailsScreen()
+    ),
+
+  GetPage(name: Routes.restaurantDetails,
+        page: ()=>RestaurantDetails()
+    ),
+
+
+
+    GetPage(name: Routes.onBoarding,
+        page: ()=>OnBoardingScreen()
     )
+
+
+
+
+
 
 
 

@@ -103,7 +103,8 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
                         labelStyle: AppTextStyle.sub_h3_medium_14(),
                         indicatorSize: TabBarIndicatorSize.tab,
                         indicator: BoxDecoration(
-                          color: const Color(0xffd6c24d),
+                          color: Color(0xffD4AF38),
+                          borderRadius: BorderRadius.circular(10)
                         ),
                         tabs: const [
                           Tab(text: "About"),

@@ -212,6 +212,18 @@ class $AssetsImagesGen {
   /// File path: assets/images/message.jpg
   AssetGenImage get message => const AssetGenImage('assets/images/message.jpg');
 
+  /// File path: assets/images/onboard1.png
+  AssetGenImage get onboard1 =>
+      const AssetGenImage('assets/images/onboard1.png');
+
+  /// File path: assets/images/onboard2.png
+  AssetGenImage get onboard2 =>
+      const AssetGenImage('assets/images/onboard2.png');
+
+  /// File path: assets/images/onboard3.png
+  AssetGenImage get onboard3 =>
+      const AssetGenImage('assets/images/onboard3.png');
+
   /// File path: assets/images/opening.jpg
   AssetGenImage get opening => const AssetGenImage('assets/images/opening.jpg');
 
@@ -254,6 +266,9 @@ class $AssetsImagesGen {
     img1,
     line,
     message,
+    onboard1,
+    onboard2,
+    onboard3,
     opening,
     profile,
     restu1,

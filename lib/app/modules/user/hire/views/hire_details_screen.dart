@@ -4,12 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
-
 import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/appText.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
-import '../../../../core/widgets/available_service.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/hire_card_item.dart';
@@ -32,11 +29,11 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   bool _isClickedBookButton = false;
 
-  DateTime? selectedDate;
+  DateTime? startDate;
+  DateTime? endDate;
 
-  /// Pick date and time
-  Future<void> _datePicker() async {
-    // Pick date first
+  /// Pick date and time (for start or end)
+  Future<void> _datePicker({required bool isStart}) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -45,30 +42,32 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
     if (pickedDate == null) return;
 
-    // Pick time
     final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
     if (pickedTime == null) return;
 
-    // Combine date and time
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
     setState(() {
-      selectedDate = DateTime(
-        pickedDate.year,
-        pickedDate.month,
-        pickedDate.day,
-        pickedTime.hour,
-        pickedTime.minute,
-      );
+      if (isStart) {
+        startDate = combined;
+      } else {
+        endDate = combined;
+      }
     });
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     tabController = TabController(length: 2, vsync: this);
   }
 
@@ -97,9 +96,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
               bottom: 0,
               child: Container(
                 width: size.width,
-
                 decoration: BoxDecoration(
-                  color: Color(0xffFDFAF6),
+                  color: const Color(0xffFDFAF6),
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
@@ -136,9 +134,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                           labelColor: Colors.white,
                           unselectedLabelColor: Colors.black,
                           labelStyle: AppTextStyle.sub_h3_medium_14(),
-                          indicator: BoxDecoration(color: Color(0xffd6c24d)),
-
-                          tabs: [
+                          indicator: const BoxDecoration(color: Color(0xffd6c24d)),
+                          tabs: const [
                             Tab(text: "About"),
                             Tab(text: "Review"),
                           ],
@@ -147,11 +144,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                         Expanded(
                           child: TabBarView(
                             controller: tabController,
-
                             children: [
                               _aboutSection(),
-
-                              /// review screen
                               ListView(children: [ReviewScreen()]),
                             ],
                           ),
@@ -162,7 +156,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                           padding: EdgeInsets.only(
                             top: 10.h,
                             bottom: 20.h,
-                          ), // Add vertical padding for the bottom row
+                          ),
                           child: Row(
                             children: [
                               Text(
@@ -200,32 +194,27 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                   style: AppTextStyle.sub_h1_medium_18(),
                                 ),
                               ),
-
-                              SizedBox(height: 10.h,),
-
+                              SizedBox(height: 10.h),
                               SizedBox(
                                 width: 200,
                                 child: HireCardItem(
                                   icon: icon.skiApparel,
                                   itemName: "Apparel",
-                                  addOnTap: (){},
-                                  removeOnTap: (){},
+                                  addOnTap: () {},
+                                  removeOnTap: () {},
                                 ),
                               ),
-
                               SizedBox(height: 20.h),
 
                               /// total selected item price show
                               Container(
                                 height: 160,
-
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: Colors.grey.withOpacity(0.4),
                                   ),
                                 ),
-
                                 child: SingleChildScrollView(
                                   child: Column(
                                     children: [
@@ -238,23 +227,14 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              "Product Name",
-                                              style:
-                                                  AppTextStyle.sub_h3_medium_14(),
-                                            ),
-                                            Text(
-                                              "Unit",
-                                              style:
-                                                  AppTextStyle.sub_h3_medium_14(),
-                                            ),
-                                            Text(
-                                              "Price",
-                                              style:
-                                                  AppTextStyle.sub_h3_medium_14(),
-                                            ),
+                                            Text("Product Name",
+                                                style: AppTextStyle.sub_h3_medium_14()),
+                                            Text("Unit",
+                                                style: AppTextStyle.sub_h3_medium_14()),
+                                            Text("Price",
+                                                style: AppTextStyle.sub_h3_medium_14()),
                                           ],
                                         ),
                                       ),
@@ -265,54 +245,17 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              "Ski jacket",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
-                                            Text(
-                                              "1",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
-                                            Text(
-                                              "\$02",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
+                                            Text("Ski jacket",
+                                                style: AppTextStyle.sub_h3_regular_14()),
+                                            Text("1",
+                                                style: AppTextStyle.sub_h3_regular_14()),
+                                            Text("\$02",
+                                                style: AppTextStyle.sub_h3_regular_14()),
                                           ],
                                         ),
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 2,
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              "Ski jacket",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
-                                            Text(
-                                              "1",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
-                                            Text(
-                                              "\$02",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 20,
@@ -320,19 +263,12 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                         ),
                                         child: Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              "Total",
-                                              style:
-                                                  AppTextStyle.sub_h3_medium_14(),
-                                            ),
-
-                                            Text(
-                                              "\$200",
-                                              style:
-                                                  AppTextStyle.sub_h3_regular_14(),
-                                            ),
+                                            Text("Total",
+                                                style: AppTextStyle.sub_h3_medium_14()),
+                                            Text("\$200",
+                                                style: AppTextStyle.sub_h3_regular_14()),
                                           ],
                                         ),
                                       ),
@@ -341,6 +277,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                 ),
                               ),
                               SizedBox(height: 10.h),
+
+                              /// Date Selection Section
                               Card(
                                 color: Colors.white,
                                 child: SizedBox(
@@ -352,57 +290,51 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       ),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.center,
+                                        MainAxisAlignment.center,
                                         children: [
                                           // Start Date
                                           Expanded(
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                              CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  "Select Start Date & Time",
+                                                  "Start Date & Time",
                                                   style:
-                                                      AppTextStyle.sub_h3_medium_14()
-                                                          .copyWith(
-                                                            fontSize: 12,
-                                                          ),
+                                                  AppTextStyle.sub_h3_medium_14()
+                                                      .copyWith(fontSize: 11.sp),
                                                 ),
                                                 SizedBox(height: 6.h),
                                                 InkWell(
-                                                  onTap: _datePicker,
+                                                  onTap: () => _datePicker(isStart: true),
                                                   child: Container(
                                                     width: 155.w,
                                                     height: 38,
                                                     decoration: BoxDecoration(
-                                                      border: Border.all(
-                                                        color: Colors.grey,
-                                                      ),
+                                                      border:
+                                                      Border.all(color: Colors.grey),
                                                       borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
+                                                      BorderRadius.circular(8),
                                                     ),
                                                     padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                        ),
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8),
                                                     child: Row(
                                                       children: [
-                                                        icon.calendarDots.svg(
-                                                          width: 20,
-                                                          height: 20,
-                                                        ),
+                                                        icon.calendarDots
+                                                            .svg(width: 20, height: 20),
                                                         SizedBox(width: 5.w),
                                                         Text(
-                                                          selectedDate == null
-                                                              ? "Select Date & Time"
-                                                              : "${selectedDate!.day.toString().padLeft(2, '0')}/"
-                                                                    "${selectedDate!.month.toString().padLeft(2, '0')}/"
-                                                                    "${selectedDate!.year} "
-                                                                    "${selectedDate!.hour.toString().padLeft(2, '0')}:"
-                                                                    "${selectedDate!.minute.toString().padLeft(2, '0')}",
+                                                          startDate == null
+                                                              ? "Date & Time"
+                                                              : "${startDate!.day.toString().padLeft(2, '0')}/"
+                                                              "${startDate!.month.toString().padLeft(2, '0')}/"
+                                                              "${startDate!.year} "
+                                                              "${startDate!.hour.toString().padLeft(2, '0')}:"
+                                                              "${startDate!.minute.toString().padLeft(2, '0')}",
+                                                          style:
+                                                          AppTextStyle.c_regular_10(),
                                                         ),
                                                       ],
                                                     ),
@@ -412,55 +344,50 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                             ),
                                           ),
                                           SizedBox(width: 20.w),
+
                                           // End Date
                                           Expanded(
                                             child: Column(
                                               mainAxisSize: MainAxisSize.min,
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                              CrossAxisAlignment.start,
                                               children: [
                                                 Text(
-                                                  "Select End Date & Time",
+                                                  "End Date & Time",
                                                   style:
-                                                      AppTextStyle.sub_h3_medium_14()
-                                                          .copyWith(
-                                                            fontSize: 12,
-                                                          ),
+                                                  AppTextStyle.sub_h3_medium_14()
+                                                      .copyWith(fontSize: 11.sp),
                                                 ),
                                                 SizedBox(height: 6.h),
                                                 InkWell(
-                                                  onTap: _datePicker,
+                                                  onTap: () => _datePicker(isStart: false),
                                                   child: Container(
                                                     width: 155.w,
                                                     height: 38,
                                                     decoration: BoxDecoration(
-                                                      border: Border.all(
-                                                        color: Colors.grey,
-                                                      ),
+                                                      border:
+                                                      Border.all(color: Colors.grey),
                                                       borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
+                                                      BorderRadius.circular(8),
                                                     ),
                                                     padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                        ),
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8),
                                                     child: Row(
                                                       children: [
-                                                        icon.calendarDots.svg(
-                                                          width: 20,
-                                                          height: 20,
-                                                        ),
+                                                        icon.calendarDots
+                                                            .svg(width: 20, height: 20),
                                                         SizedBox(width: 5.w),
                                                         Text(
-                                                          selectedDate == null
-                                                              ? "Select Date & Time"
-                                                              : "${selectedDate!.day.toString().padLeft(2, '0')}/"
-                                                                    "${selectedDate!.month.toString().padLeft(2, '0')}/"
-                                                                    "${selectedDate!.year} "
-                                                                    "${selectedDate!.hour.toString().padLeft(2, '0')}:"
-                                                                    "${selectedDate!.minute.toString().padLeft(2, '0')}",
+                                                          endDate == null
+                                                              ? "Date & Time"
+                                                              : "${endDate!.day.toString().padLeft(2, '0')}/"
+                                                              "${endDate!.month.toString().padLeft(2, '0')}/"
+                                                              "${endDate!.year} "
+                                                              "${endDate!.hour.toString().padLeft(2, '0')}:"
+                                                              "${endDate!.minute.toString().padLeft(2, '0')}",
+                                                          style:
+                                                          AppTextStyle.c_regular_10(),
                                                         ),
                                                       ],
                                                     ),
@@ -509,7 +436,6 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   }
 
   /// about section
-
   Widget _aboutSection() {
     final icon = Assets.icons;
 
@@ -536,7 +462,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
               crossAxisCount: 2,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: 2.2, // adjust if cards look stretched
+              childAspectRatio: 2.2,
             ),
             itemBuilder: (context, index) {
               final item = items[index];

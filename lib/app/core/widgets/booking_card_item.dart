@@ -62,13 +62,13 @@ class BookingCardItem extends StatelessWidget {
                       Expanded(
                         child: Text(
                           title,
-                          style: AppTextStyle.sub_h1_medium_18(),
+                          style: AppTextStyle.sub_h2_medium_16(),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       Text(
                         price,
-                        style: AppTextStyle.sub_h1_medium_18(
+                        style: AppTextStyle.sub_h3_medium_14(
                           color: AppColors.primary_1,
                         ),
                       ),
@@ -93,7 +93,7 @@ class BookingCardItem extends StatelessWidget {
 
                       /// due time show when send duetime
                       if(dueTime!=null)...[
-                        Text("Time Left : $dueTime",style: AppTextStyle.sub_h3_medium_14(color: AppColors.black_3,).copyWith(fontSize: 12)),
+                        FittedBox(child: Text("Time Left : $dueTime",style: AppTextStyle.sub_h3_medium_14(color: AppColors.black_3,).copyWith(fontSize: 11))),
 
                       ],
 
@@ -102,9 +102,9 @@ class BookingCardItem extends StatelessWidget {
                     SizedBox(width: 10.w,),
                     CustomButton(
                       text: buttonText,
-                      width: 93.w,
-                      height: 20.h,
-                      textSize: 11.sp,
+                      width: 110.w,
+                      height: 30.h,
+                      textSize: 10.sp,
                       onTap: onButtonTap,
                     ),
 

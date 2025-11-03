@@ -277,7 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           } else if (serviceType == "transport") {
                             Get.toNamed(Routes.transportDetails);
                           } else if (serviceType == "restaurant") {
-                            Get.toNamed(Routes.passCardDetails);
+                            Get.toNamed(Routes.restaurantDetails);
                           }else if(serviceType == "massage"){
                             Get.toNamed(Routes.massageDetails);
                           }else if(serviceType=="hire"){
