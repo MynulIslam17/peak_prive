@@ -59,6 +59,9 @@ class $AssetsIconsGen {
   SvgGenImage get mapPinSimpleArea =>
       const SvgGenImage('assets/icons/MapPinSimpleArea.svg');
 
+  /// File path: assets/icons/Notepad.svg
+  SvgGenImage get notepad => const SvgGenImage('assets/icons/Notepad.svg');
+
   /// File path: assets/icons/PhoneCall.svg
   SvgGenImage get phoneCall => const SvgGenImage('assets/icons/PhoneCall.svg');
 
@@ -101,6 +104,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/food_cat.svg
   SvgGenImage get foodCat => const SvgGenImage('assets/icons/food_cat.svg');
 
+  /// File path: assets/icons/home.svg
+  SvgGenImage get home => const SvgGenImage('assets/icons/home.svg');
+
   /// File path: assets/icons/icon.svg
   SvgGenImage get icon => const SvgGenImage('assets/icons/icon.svg');
 
@@ -113,8 +119,18 @@ class $AssetsIconsGen {
   /// File path: assets/icons/massage.svg
   SvgGenImage get massage => const SvgGenImage('assets/icons/massage.svg');
 
+  /// File path: assets/icons/notificaton.svg
+  SvgGenImage get notificaton =>
+      const SvgGenImage('assets/icons/notificaton.svg');
+
+  /// File path: assets/icons/profile.svg
+  SvgGenImage get profile => const SvgGenImage('assets/icons/profile.svg');
+
   /// File path: assets/icons/search.svg
   SvgGenImage get search => const SvgGenImage('assets/icons/search.svg');
+
+  /// File path: assets/icons/service.svg
+  SvgGenImage get service => const SvgGenImage('assets/icons/service.svg');
 
   /// File path: assets/icons/ski_Apparel.svg
   SvgGenImage get skiApparel =>
@@ -150,6 +166,7 @@ class $AssetsIconsGen {
     faders,
     honda,
     mapPinSimpleArea,
+    notepad,
     phoneCall,
     phoneTransfer,
     star,
@@ -163,11 +180,15 @@ class $AssetsIconsGen {
     dots,
     dots3,
     foodCat,
+    home,
     icon,
     jug,
     loacation,
     massage,
+    notificaton,
+    profile,
     search,
+    service,
     skiApparel,
     skiEssential,
     skiGare,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
 
 import '../../../../../gen/assets.gen.dart';
@@ -17,7 +18,7 @@ class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   void _handleLogin() {
-    Get.offAllNamed(Routes.service);
+    Get.offAllNamed(Routes.providerInfo);
   }
 
   void _handleForgotPassword() {
@@ -35,79 +36,89 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 50.h),
-              images.skiPass9.image(),
-              SizedBox(height: 100.h),
 
-              // Email Field
-              CustomTextField(hintText: "Email",
-                prefixIcon: Icons.email_outlined,
-                keyboardType: TextInputType.emailAddress,
-              ),
-              SizedBox(height: 20.h),
 
-              // Password Field
-              CustomTextField(hintText: "password",
-                prefixIcon: Icons.lock,
-                keyboardType: TextInputType.emailAddress,
-                isPassword: true,
-              ),
+       appBar: AppBarWithTitle(
+         icons: icon,
+         showBack: false,
+         title: "Login",
+         onTap: () {
 
-              SizedBox(height: 10.h),
+           Get.back();
+         },
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: _handleForgotPassword,
-                  child: Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      color: AppColors.primary_1,
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
+       ),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 40.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(height: 50.h),
+            images.skiPass9.image(),
+            SizedBox(height: 100.h),
+
+            // Email Field
+            CustomTextField(hintText: "Email",
+              prefixIcon: Icons.email_outlined,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            SizedBox(height: 20.h),
+
+            // Password Field
+            CustomTextField(hintText: "password",
+              prefixIcon: Icons.lock,
+              keyboardType: TextInputType.emailAddress,
+              isPassword: true,
+            ),
+
+            SizedBox(height: 10.h),
+
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: _handleForgotPassword,
+                child: Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: AppColors.primary_1,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-              SizedBox(height: 40.h),
+            ),
+            SizedBox(height: 40.h),
 
-              CustomAuthButton(
-                onTap: _handleLogin,
-                text: 'Lets go!!',
-              ),
-              SizedBox(height: 30.h),
+            CustomAuthButton(
+              onTap: _handleLogin,
+              text: 'Lets go!!',
+            ),
+            SizedBox(height: 30.h),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Don't have an account? ",
+                  style: TextStyle(
+                    color: AppColors.black_3,
+                    fontSize: 14.sp,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _navigateToSignUp,
+                  child: Text(
+                    'Sign up',
                     style: TextStyle(
-                      color: AppColors.black_3,
+                      color: AppColors.primary_1,
                       fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: _navigateToSignUp,
-                    child: Text(
-                      'Sign up',
-                      style: TextStyle(
-                        color: AppColors.primary_1,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

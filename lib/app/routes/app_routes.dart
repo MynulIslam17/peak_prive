@@ -1,46 +1,58 @@
-
 abstract class Routes {
-
-  /// auth
-
-  static const login="/login";
-  static const signup="/signUp";
-
-
-
+  /// user section ===============================================================
 
   /// SkiPass
-  static const service="/service";
+  static const service = "/service";
+
   /// bottomNav
-  static const bottomNav="/transportNav";
+  static const bottomNav = "/transportNav";
+
   /// pass
-  static const passInformation="/passInfo";
-  static const passCardDetails="/passDetails";
+  static const passInformation = "/passInfo";
+  static const passCardDetails = "/passDetails";
 
   /// transport
-  static const transportDetails="/transportDetails";
+  static const transportDetails = "/transportDetails";
 
-
- /// message
-  static const massageDetails="/massageDetails";
-  static const bookingRequest="/bookingRequest";
+  /// message
+  static const massageDetails = "/massageDetails";
+  static const bookingRequest = "/bookingRequest";
 
   /// hire
-  static const hireDetails="/hireDetails";
+  static const hireDetails = "/hireDetails";
 
   /// profile
 
-  static const profile="profile";
-
+  static const profile = "profile";
 
   /// restaurant
-  static const restaurantDetails="/restaurantDetails";
+  static const restaurantDetails = "/restaurantDetails";
 
-
+  /// shared by both modules ===========================
 
   /// onboard
+  static const onBoarding = "/onboard";
 
-  static const onBoarding="/onboard";
+  /// auth
+  static const login = "/login";
+  static const signup = "/signUp";
+
+
+
+  /// provider section=================================
+
+static const providerInfo="/providerInfo";
+
+
+
+/// shared
+
+static const  providerNavScreen="/pNavScreen";
+
+
+
+
+
 
 
 

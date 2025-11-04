@@ -5,6 +5,7 @@ class CustomSearchBar extends StatelessWidget {
   final String hintText;
   final VoidCallback? onClear;
   final ValueChanged<String>? onChanged;
+  final Color ? filledColor;
 
   const CustomSearchBar({
     super.key,
@@ -12,6 +13,7 @@ class CustomSearchBar extends StatelessWidget {
     this.hintText = 'Search...',
     this.onClear,
     this.onChanged,
+     this.filledColor,
   });
 
   @override
@@ -21,7 +23,7 @@ class CustomSearchBar extends StatelessWidget {
       onChanged: onChanged,
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor:filledColor ?? Colors.white,
         hintText: hintText,
         hintStyle: const TextStyle(color: Colors.grey),
 
