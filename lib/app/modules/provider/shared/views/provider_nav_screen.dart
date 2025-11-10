@@ -4,7 +4,13 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+
+import 'package:harry_service_app/app/modules/provider/shared/views/Provider_service_screen.dart';
+import 'package:harry_service_app/app/modules/provider/shared/views/provider_booking_request_screen.dart';
+import 'package:harry_service_app/app/modules/provider/shared/views/provider_chat_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_home_screen.dart';
+import 'package:harry_service_app/app/modules/provider/shared/views/provider_profile_secreen.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/profile_screen.dart';
 
 import '../../../../../gen/assets.gen.dart';
 
@@ -25,10 +31,10 @@ class _ProviderNavScreenState extends State<ProviderNavScreen> {
  final List<Widget> _screens=[
 
     ProviderHomeScreen(),
-    Center(child: Text("service"),),
-    Center(child: Text("booking"),),
-    Center(child: Text("Chats"),),
-    Center(child: Text("profile"),),
+    ProviderServiceScreen(),
+    ProviderBookingRequestScreen(),
+   ProviderChatScreen(),
+   ProviderProfileScreen()
 
   ];
 

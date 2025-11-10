@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
       {"title": "Italian", "image": Assets.icons.foodCat},
       {"title": "Fast Food", "image": Assets.icons.foodCat},
     ],
-    "hire": [
+    "massage": [
       {"title": "Ski Essential ", "image": Assets.icons.skiApparel},
       {"title": "ski gear", "image": Assets.icons.skiEssential},
       {"title": "Ski Accessories", "image": Assets.icons.skiGare},
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ],
 
-      "hire": [
+      "massage": [
       {
         "image": Assets.images.skiAccories3,
         "title": "Ski Essential",
@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? "Top Cars In Town"
         : serviceType == "restaurant"
         ? "Top Restaurant Provider"
-        : serviceType=="hire"
+        : serviceType=="massage"
         ?"Top Ski Accessories"
         : serviceType=="massage"
         ? "Top Massage’s Provider"
@@ -280,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Get.toNamed(Routes.restaurantDetails);
                           }else if(serviceType == "massage"){
                             Get.toNamed(Routes.massageDetails);
-                          }else if(serviceType=="hire"){
+                          }else if(serviceType=="massage"){
                             Get.toNamed(Routes.hireDetails);
                           }
                         },

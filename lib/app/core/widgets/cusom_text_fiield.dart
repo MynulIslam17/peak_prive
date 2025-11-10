@@ -71,7 +71,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           ),
         )
             : null,
-        contentPadding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 10.w),
+        contentPadding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
         fillColor:widget.filledColor ?? Colors.grey.shade100,
         filled: true,
         border: OutlineInputBorder(

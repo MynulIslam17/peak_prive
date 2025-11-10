@@ -70,7 +70,7 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
                           case 1:
 
                             navController.resetIndex();
-                            navController.addType("hire");
+                            navController.addType("massage");
                              Get.toNamed(Routes.bottomNav);
                             break;
                           case 2:

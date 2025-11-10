@@ -1,6 +1,8 @@
 
 
  import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/role_controller.dart';
+import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 
 
 import '../controllers/nav_controller.dart';
@@ -8,10 +10,15 @@ import '../controllers/nav_controller.dart';
 class AppBindings extends Bindings{
   @override
   void dependencies() {
-    // TODO: implement dependencies
 
 
+    /// nav controller
     Get.lazyPut<NavController>(()=>NavController());
+
+
+    /// role controller
+    Get.lazyPut<RoleController>(()=>RoleController());
+
     
   }
 

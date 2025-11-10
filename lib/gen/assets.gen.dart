@@ -14,6 +14,22 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart' as _svg;
 import 'package:vector_graphics/vector_graphics.dart' as _vg;
 
+class $AssetsAnimationsGen {
+  const $AssetsAnimationsGen();
+
+  /// File path: assets/animations/Massage.json
+  String get massage => 'assets/animations/Massage.json';
+
+  /// File path: assets/animations/Snow Beard.json
+  String get snowBeard => 'assets/animations/Snow Beard.json';
+
+  /// File path: assets/animations/carpool.json
+  String get carpool => 'assets/animations/carpool.json';
+
+  /// List of all assets
+  List<String> get values => [massage, snowBeard, carpool];
+}
+
 class $AssetsIconsGen {
   const $AssetsIconsGen();
 
@@ -89,6 +105,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/cancel.svg
   SvgGenImage get cancel => const SvgGenImage('assets/icons/cancel.svg');
 
+  /// File path: assets/icons/care_right.svg
+  SvgGenImage get careRight => const SvgGenImage('assets/icons/care_right.svg');
+
   /// File path: assets/icons/chats.svg
   SvgGenImage get chats => const SvgGenImage('assets/icons/chats.svg');
 
@@ -101,6 +120,9 @@ class $AssetsIconsGen {
   /// File path: assets/icons/dots3.svg
   SvgGenImage get dots3 => const SvgGenImage('assets/icons/dots3.svg');
 
+  /// File path: assets/icons/error.svg
+  SvgGenImage get error => const SvgGenImage('assets/icons/error.svg');
+
   /// File path: assets/icons/food_cat.svg
   SvgGenImage get foodCat => const SvgGenImage('assets/icons/food_cat.svg');
 
@@ -110,11 +132,23 @@ class $AssetsIconsGen {
   /// File path: assets/icons/icon.svg
   SvgGenImage get icon => const SvgGenImage('assets/icons/icon.svg');
 
+  /// File path: assets/icons/info.svg
+  SvgGenImage get info => const SvgGenImage('assets/icons/info.svg');
+
   /// File path: assets/icons/jug.svg
   SvgGenImage get jug => const SvgGenImage('assets/icons/jug.svg');
 
   /// File path: assets/icons/loacation.svg
   SvgGenImage get loacation => const SvgGenImage('assets/icons/loacation.svg');
+
+  /// File path: assets/icons/lock.svg
+  SvgGenImage get lock => const SvgGenImage('assets/icons/lock.svg');
+
+  /// File path: assets/icons/logout.svg
+  SvgGenImage get logout => const SvgGenImage('assets/icons/logout.svg');
+
+  /// File path: assets/icons/mail.svg
+  SvgGenImage get mail => const SvgGenImage('assets/icons/mail.svg');
 
   /// File path: assets/icons/massage.svg
   SvgGenImage get massage => const SvgGenImage('assets/icons/massage.svg');
@@ -122,6 +156,12 @@ class $AssetsIconsGen {
   /// File path: assets/icons/notificaton.svg
   SvgGenImage get notificaton =>
       const SvgGenImage('assets/icons/notificaton.svg');
+
+  /// File path: assets/icons/phone.svg
+  SvgGenImage get phone => const SvgGenImage('assets/icons/phone.svg');
+
+  /// File path: assets/icons/privacy2.svg
+  SvgGenImage get privacy2 => const SvgGenImage('assets/icons/privacy2.svg');
 
   /// File path: assets/icons/profile.svg
   SvgGenImage get profile => const SvgGenImage('assets/icons/profile.svg');
@@ -131,6 +171,12 @@ class $AssetsIconsGen {
 
   /// File path: assets/icons/service.svg
   SvgGenImage get service => const SvgGenImage('assets/icons/service.svg');
+
+  /// File path: assets/icons/service2.svg
+  SvgGenImage get service2 => const SvgGenImage('assets/icons/service2.svg');
+
+  /// File path: assets/icons/settings.svg
+  SvgGenImage get settings => const SvgGenImage('assets/icons/settings.svg');
 
   /// File path: assets/icons/ski_Apparel.svg
   SvgGenImage get skiApparel =>
@@ -151,6 +197,15 @@ class $AssetsIconsGen {
 
   /// File path: assets/icons/time.svg
   SvgGenImage get time => const SvgGenImage('assets/icons/time.svg');
+
+  /// File path: assets/icons/user3.svg
+  SvgGenImage get user3 => const SvgGenImage('assets/icons/user3.svg');
+
+  /// File path: assets/icons/vip.svg
+  SvgGenImage get vip => const SvgGenImage('assets/icons/vip.svg');
+
+  /// File path: assets/icons/wallet.svg
+  SvgGenImage get wallet => const SvgGenImage('assets/icons/wallet.svg');
 
   /// List of all assets
   List<SvgGenImage> get values => [
@@ -175,26 +230,39 @@ class $AssetsIconsGen {
     arrowBottom,
     callCircle,
     cancel,
+    careRight,
     chats,
     check,
     dots,
     dots3,
+    error,
     foodCat,
     home,
     icon,
+    info,
     jug,
     loacation,
+    lock,
+    logout,
+    mail,
     massage,
     notificaton,
+    phone,
+    privacy2,
     profile,
     search,
     service,
+    service2,
+    settings,
     skiApparel,
     skiEssential,
     skiGare,
     swap,
     ticket,
     time,
+    user3,
+    vip,
+    wallet,
   ];
 }
 
@@ -220,6 +288,10 @@ class $AssetsImagesGen {
 
   /// File path: assets/images/dish.png
   AssetGenImage get dish => const AssetGenImage('assets/images/dish.png');
+
+  /// File path: assets/images/done_icon.png
+  AssetGenImage get doneIcon =>
+      const AssetGenImage('assets/images/done_icon.png');
 
   /// File path: assets/images/food.png
   AssetGenImage get food => const AssetGenImage('assets/images/food.png');
@@ -283,6 +355,7 @@ class $AssetsImagesGen {
     carImg2,
     carImg3,
     dish,
+    doneIcon,
     food,
     img1,
     line,
@@ -305,6 +378,7 @@ class $AssetsImagesGen {
 class Assets {
   const Assets._();
 
+  static const $AssetsAnimationsGen animations = $AssetsAnimationsGen();
   static const $AssetsIconsGen icons = $AssetsIconsGen();
   static const $AssetsImagesGen images = $AssetsImagesGen();
 }

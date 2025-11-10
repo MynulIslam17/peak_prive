@@ -13,14 +13,14 @@ import '../../../../core/widgets/custome_button.dart';
 import '../../../../routes/app_routes.dart';
 
 
-class ProviderPersonalInfo extends StatefulWidget {
-  const ProviderPersonalInfo({super.key});
+class ProviderSignUp extends StatefulWidget {
+  const ProviderSignUp({super.key});
 
   @override
-  State<ProviderPersonalInfo> createState() => _ProviderPersonalInfoState();
+  State<ProviderSignUp> createState() => _ProviderSignUpState();
 }
 
-class _ProviderPersonalInfoState extends State<ProviderPersonalInfo> {
+class _ProviderSignUpState extends State<ProviderSignUp> {
 
   final icons = Assets.icons;
 
@@ -246,7 +246,7 @@ class _ProviderPersonalInfoState extends State<ProviderPersonalInfo> {
 
 
     /// go to login screen
-    Get.offAllNamed(Routes.providerNavScreen);
+    Get.offAllNamed(Routes.login);
 
 
   }

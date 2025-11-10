@@ -6,12 +6,11 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart'
-    hide CustomButton;
+   ;
 
 import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/appbar_with_title.dart';
-import '../../../../core/widgets/custome_button.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/widgets/appbar_with_title.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -122,12 +121,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
               SizedBox(height: 30.h),
 
-              CustomButton(
-                height: 30.h,
+              SizedBox(
+                height: 55,
+                child: CustomButton(
 
-                onTap: () {},
-                text: "Submit",
-                backgroundColor: AppColors.primary_1,
+
+                  onTap: () {},
+                  text: "Submit",
+                  backgroundColor: AppColors.primary_1,
+                ),
               ),
             ],
           ),

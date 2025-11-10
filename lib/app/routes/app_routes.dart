@@ -1,61 +1,104 @@
 abstract class Routes {
-  /// user section ===============================================================
+  // ===========================================================================
+  // 🧍 USER SECTION
+  // ===========================================================================
 
   /// SkiPass
   static const service = "/service";
 
-  /// bottomNav
+  /// Bottom Navigation
   static const bottomNav = "/transportNav";
 
-  /// pass
+  /// Pass
   static const passInformation = "/passInfo";
   static const passCardDetails = "/passDetails";
 
-  /// transport
+  /// Transport
   static const transportDetails = "/transportDetails";
 
-  /// message
+  /// Message
   static const massageDetails = "/massageDetails";
   static const bookingRequest = "/bookingRequest";
 
-  /// hire
+  /// Hire
   static const hireDetails = "/hireDetails";
 
-  /// profile
-
+  /// Profile
   static const profile = "profile";
 
-  /// restaurant
+  /// Restaurant
   static const restaurantDetails = "/restaurantDetails";
 
-  /// shared by both modules ===========================
 
-  /// onboard
+
+
+
+  // ===========================================================================
+  //  SHARED BY BOTH USER & PROVIDER
+  // ===========================================================================
+
+  /// Onboarding
   static const onBoarding = "/onboard";
 
-  /// auth
+  /// role selection
+  static const role = "/role";
+
+
+  /// Authentication
   static const login = "/login";
   static const signup = "/signUp";
 
 
-
-  /// provider section=================================
-
-static const providerInfo="/providerInfo";
-
+  // ===========================================================================
+  //  PROVIDER SECTION
+  // ===========================================================================
 
 
-/// shared
-
-static const  providerNavScreen="/pNavScreen";
+  static const providerSignUp = "/providerSignup"; /// Provider signup
 
 
+  static const providerNavScreen = "/pNavScreen";  /// Shared Provider Navigation
+
+
+  static const messagingScreen = "/messagingScreen";  /// Messaging Screen
+
+  static const providerBookingDetails="/providerBookingDetails";
 
 
 
 
 
+  // ---------------------------------------------------------------------------
+  //  Provider Profile / Settings
+  // ---------------------------------------------------------------------------
 
+  static const providerInfoScreen = "/providerAccountInfo";
+  static const providerSettingsScreen = "/providerSettings";
+  static const providerWallet = "/providerWallet";
+
+
+  // ---------------------------------------------------------------------------
+  //  Policy / About / Misc
+  // ---------------------------------------------------------------------------
+
+  static const privacyPolicy = "/privacyPolicy";
+  static const termsConditions = "/termsConditions";
+  static const providerAbout = "/providerAboutUs";
+  static const providerPassScreen = "/providerPassScreen";
+
+
+///add services  part
+///pass
+  static const addPassService="/addPass";
+
+  /// massage
+static const addMessageService="/addMessageService";
+
+/// transport
+  static const addTransportService="/addTransportService";
+
+  /// restaurant
+  static const addRestaurantService="/addRestaurantService";
 
 
 

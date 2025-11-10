@@ -1,24 +1,42 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/role_controller.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
 
 import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../routes/app_routes.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../routes/app_routes.dart';
 
 
 class LoginScreen extends StatelessWidget {
+
+  /// find crontroller
+  final roleController=Get.find<RoleController>();
+
+
   final icon = Assets.icons;
   final images = Assets.images;
 
-  const LoginScreen({super.key});
+   LoginScreen({super.key});
 
   void _handleLogin() {
-    Get.offAllNamed(Routes.providerInfo);
+
+       if(roleController.getRole=="Provider"){
+
+         /// provider screen
+         Get.toNamed(Routes.providerNavScreen);
+
+       }else{
+         /// user screen
+         Get.toNamed(Routes.service);
+       }
+
   }
 
   void _handleForgotPassword() {
@@ -27,7 +45,15 @@ class LoginScreen extends StatelessWidget {
 
   void _navigateToSignUp() {
 
-    Get.toNamed(Routes.signup);
+
+     if(roleController.getRole=="Provider"){
+       /// provider signup
+       Get.toNamed(Routes.providerSignUp);
+     }else{
+       /// user signup
+       Get.toNamed(Routes.signup);
+     }
+
 
 
   }
@@ -95,29 +121,31 @@ class LoginScreen extends StatelessWidget {
             ),
             SizedBox(height: 30.h),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+
+            RichText(text: TextSpan(
+
+              text: "Don't have an account ? ",
+              style: AppTextStyle.c_regular_12(),
               children: [
-                Text(
-                  "Don't have an account? ",
-                  style: TextStyle(
-                    color: AppColors.black_3,
-                    fontSize: 14.sp,
-                  ),
+                TextSpan(
+                  text: " SignUp",style: AppTextStyle.c_regular_12().copyWith(
+                  fontSize: 14,
+                  color: AppColors.primary_1
                 ),
-                GestureDetector(
-                  onTap: _navigateToSignUp,
-                  child: Text(
-                    'Sign up',
-                    style: TextStyle(
-                      color: AppColors.primary_1,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                recognizer: TapGestureRecognizer()
+              ..onTap = () {
+                ///  Navigate to sign-up screen
+               _navigateToSignUp();
+              },
+
+
+                )
+              ]
+
+            ))
+
+
+
           ],
         ),
       ),
@@ -125,7 +153,7 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-// ---------------- Custom Auth Button -----------------
+/// ---------------- Custom Auth Button -----------------
 class CustomAuthButton extends StatelessWidget {
   final VoidCallback onTap;
   final String text;
