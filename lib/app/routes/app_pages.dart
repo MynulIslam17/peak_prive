@@ -1,6 +1,14 @@
 import 'dart:developer';
 
 import 'package:get/get_navigation/get_navigation.dart';
+import 'package:harry_service_app/app/modules/auth/bindings/email_verify_bindings.dart';
+import 'package:harry_service_app/app/modules/auth/bindings/login_bindings.dart';
+import 'package:harry_service_app/app/modules/auth/bindings/otp_bindings.dart';
+import 'package:harry_service_app/app/modules/auth/bindings/pass_reset_bindings.dart';
+import 'package:harry_service_app/app/modules/auth/bindings/signup_bindings.dart';
+import 'package:harry_service_app/app/modules/auth/views/email_verify_screen.dart';
+
+import 'package:harry_service_app/app/modules/auth/views/pass_reset_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_screen.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/provider_booking_details.dart';
@@ -24,6 +32,7 @@ import 'package:harry_service_app/app/modules/user/trasnport/views/transport_det
 
 import '../core/bindings/app_bindings.dart';
 import '../modules/auth/views/login_screen.dart';
+import '../modules/auth/views/otp_verification_screen.dart';
 import '../modules/auth/views/signup_screen.dart';
 import '../modules/onboard/views/on_boarding_screen.dart';
 import '../modules/user/all_service/views/AllServiceScreen.dart';
@@ -34,16 +43,67 @@ import '../modules/user/pass/views/set_information.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
+
   /// for initial screen
   static const initialRoutes = Routes.onBoarding;
 
   /// all the screen as list
   static final routes = [
-    /// auth
-    GetPage(name: Routes.login, page: () => LoginScreen()),
-    GetPage(name: Routes.signup, page: () => SignupScreen()),
 
-    /// user section==================================================
+
+    ///====================== auth=================================================
+    GetPage(
+        name: Routes.login,
+        page: () => LoginScreen(),
+      binding: LoginBindings()
+    ),
+
+    /// user signup
+    GetPage(
+        name: Routes.signup,
+        page: () => SignupScreen(),
+        binding:signupBindings()
+
+    ),
+
+
+    /// provider signup
+    GetPage(
+        name: Routes.providerSignUp,
+        page: ()=>ProviderSignUp()
+    ),
+
+    /// email Verify
+    GetPage(
+        name: Routes.emailVerify,
+        page: ()=>EmailVerifyScreen(),
+      binding: EmailVerifyBindings()
+    ),
+
+
+
+    /// otp Verify
+    GetPage(
+        name: Routes.otpVerify,
+        page: ()=>OtpVerification(),
+      binding: OtpBindings()
+    ),
+
+
+   /// Reset Screen
+    GetPage(
+        name: Routes.passReset,
+        page: ()=>PassResetScreen(),
+      binding: PassResetBindings()
+    ),
+
+
+
+
+
+
+
+    ///======================== user section==================================================
     GetPage(
       /// all service
       name: Routes.service,
@@ -87,11 +147,6 @@ abstract class AppPages {
 
 
     /// provider section ========================================
-
-
-    GetPage(name: Routes.providerSignUp,
-        page: ()=>ProviderSignUp()
-    ),
 
 
   /// shared provided

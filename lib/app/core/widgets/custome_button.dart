@@ -56,7 +56,7 @@ class CustomButton extends StatelessWidget {
               leftIcon!.svg(width: iconWidth.w, height: iconHeight.h),
               SizedBox(width: 8.w),
             ],
-            Flexible(
+            Expanded(
               child: Text(
                 text,
                 textAlign: TextAlign.center,

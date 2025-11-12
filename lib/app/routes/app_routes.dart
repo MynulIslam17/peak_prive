@@ -47,6 +47,11 @@ abstract class Routes {
   /// Authentication
   static const login = "/login";
   static const signup = "/signUp";
+  static const providerSignUp = "/providerSignup"; /// Provider signup
+  static const otpVerify="/otpVerify";
+  static const emailVerify="/emailVerify";
+  static const passReset="/passReset";
+
 
 
   // ===========================================================================
@@ -54,7 +59,7 @@ abstract class Routes {
   // ===========================================================================
 
 
-  static const providerSignUp = "/providerSignup"; /// Provider signup
+
 
 
   static const providerNavScreen = "/pNavScreen";  /// Shared Provider Navigation
