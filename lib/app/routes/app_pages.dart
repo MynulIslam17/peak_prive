@@ -22,6 +22,7 @@ import 'package:harry_service_app/app/modules/provider/shared/views/provider_nav
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_settings_screen.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
+import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
@@ -45,7 +46,7 @@ import 'app_routes.dart';
 abstract class AppPages {
 
   /// for initial screen
-  static const initialRoutes = Routes.onBoarding;
+  static const initialRoutes = Routes.splash;
 
   /// all the screen as list
   static final routes = [
@@ -139,7 +140,14 @@ abstract class AppPages {
     /// restaurant
     GetPage(name: Routes.restaurantDetails, page: () => RestaurantDetails()),
 
+
+    /// onboarding screen
+
     GetPage(name: Routes.onBoarding, page: () => OnBoardingScreen()),
+
+
+    /// splash screen
+    GetPage(name: Routes.splash, page: ()=>SplashScreen()),
 
 
 

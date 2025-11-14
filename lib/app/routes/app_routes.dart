@@ -3,6 +3,7 @@ abstract class Routes {
   // 🧍 USER SECTION
   // ===========================================================================
 
+
   /// SkiPass
   static const service = "/service";
 
@@ -39,6 +40,9 @@ abstract class Routes {
 
   /// Onboarding
   static const onBoarding = "/onboard";
+
+  /// splash
+  static const splash="/splash";
 
   /// role selection
   static const role = "/role";

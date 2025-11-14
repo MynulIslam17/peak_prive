@@ -22,7 +22,6 @@ class AppBindings extends Bindings{
    // Get.lazyPut<RoleController>(()=>RoleController());
 
 
-
     Get.put(setUpNetworkClient());
     Get.put(RoleController());
     Get.put(AuthController());

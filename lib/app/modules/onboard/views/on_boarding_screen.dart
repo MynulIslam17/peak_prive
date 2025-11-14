@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../routes/app_routes.dart';
@@ -105,7 +106,14 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
                     height: 52,
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () {  /// move to role selection
+                      onPressed: () async {  /// move to role selection
+
+
+                        ///  check if onboard seen or not
+                        final prefs=await SharedPreferences.getInstance();
+                       await prefs.setBool("onboarding_seen",true);
+                        
+                        
                         Get.offAllNamed(Routes.role);
                       },
                       style: ElevatedButton.styleFrom(
