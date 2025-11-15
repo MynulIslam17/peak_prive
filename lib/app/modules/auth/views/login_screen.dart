@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/controllers/role_controller.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
@@ -27,13 +28,17 @@ class _LoginScreenState extends State<LoginScreen> {
   /// find crontroller
   final roleController = Get.find<RoleController>();
 
+
   /// text editing controller
   final emailTEController = TextEditingController();
   final passwordTEController = TextEditingController();
 
-  /// get loginController
+  /// getx loginController
 
   final loginController = Get.find<LoginController>();
+  /// getx auth controller
+
+    final authController=Get.find<AuthController>();
 
   final icon = Assets.icons;
 
@@ -62,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (isSuccess) {
 
-        /// show snackBar
+        /// if successfully login
         Get.snackbar(
           "success",
           "login success",
@@ -71,7 +76,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
         );
 
-        if(loginController.role=="User"){
+
+
+
+        /// saves to shared pref
+        authController.saveUserData(model: loginController.getUserModel!, token: loginController.getAccessToken!);
+
+
+
+
+
+
+
+        if(loginController.getUserModel!.role=="User"){
 
           Get.offAllNamed(Routes.service);
 

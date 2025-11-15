@@ -1,60 +1,57 @@
-
- import 'package:get/get.dart';
+import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
+import 'package:harry_service_app/app/data/models/user_model.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
 import 'package:harry_service_app/app/modules/auth/models/login_request_model.dart';
 
-class LoginController extends GetxController{
+class LoginController extends GetxController {
 
-  bool _loginProgress=false;
-  bool get loginProgress=>_loginProgress;
+  // ==========================
+  // State variables
+  // ==========================
+  bool _loginProgress = false;
+  String? _errorMessage;
+  UserModel? _userModel;
+  String? _accessToken;
 
-  String ?_errorMessage;
+  // ==========================
+  // Getters
+  // ==========================
+  bool get loginProgress => _loginProgress;
+  String? get errorMessage => _errorMessage;
+  UserModel? get getUserModel => _userModel;
+  String? get getAccessToken => _accessToken;
 
-  String ?get errorMessage=>_errorMessage;
+  // ==========================
+  // Methods
+  // ==========================
+  Future<bool> login(LoginRequestModel model) async {
+    bool success = false;
 
-  String _role="";
-
-  String get role=>_role;
-
-
-  Future<bool> login(LoginRequestModel model) async{
-
-
-    bool success=false;
-
-
-    _loginProgress=true;
+    _loginProgress = true;
     update();
 
-     NetworkResponse response=await Get.find<NetworkCaller>().postRequest(url: AppUrls.loginUrl,body:model.toJson() );
+    NetworkResponse response = await Get.find<NetworkCaller>()
+        .postRequest(url: AppUrls.loginUrl, body: model.toJson());
 
-      _loginProgress=false;
+    _loginProgress = false;
 
-      if(response.isSuccess){
+    if (response.isSuccess) {
+      // Login success
+      final userdata = response.body!["data"]["user"];
+      _userModel = UserModel.fromJson(userdata);
 
-         _role=response.body!["data"]["user"]["role"];
+      _accessToken = response.body!["tokens"]["accessToken"];
 
-         success=true;
-        _errorMessage=null;
-      }else{
-        _errorMessage=response.errorMessage;
-      }
+      success = true;
+      _errorMessage = null;
+    } else {
+      // Login failed
+      _errorMessage = response.errorMessage;
+    }
 
     update();
-
-      return success;
-
-
-
+    return success;
   }
-
-
-
-
-
-
-
-
- }
+}
