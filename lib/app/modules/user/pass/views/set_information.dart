@@ -4,6 +4,9 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/custome_button.dart';
+import 'package:harry_service_app/app/data/services/stripe/payment_result.dart';
+import 'package:harry_service_app/app/data/services/stripe/stripe_config.dart';
+import 'package:harry_service_app/app/data/services/stripe/stripe_helper.dart';
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/pass/models/pass_booking_request_model.dart';
 import 'package:intl/intl.dart';
@@ -33,41 +36,138 @@ class _SetInformationState extends State<SetInformation> {
   int selectedPerson = 1;
   final List<int> persons = [1, 2, 3, 4, 5];
 
+  // Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
+
   /// Button checkout
   void _checkoutButton() async {
+    if (_isProcessingPayment) return;
+
     if (selectedDate == null || selectedTime == null) {
       Get.snackbar("Notice", "Please select Date and Time", backgroundColor: Colors.red);
       return;
     }
 
-    // Format the time and date for booking
-    String formattedTime = selectedTime != null
-        ? selectedTime!.hour.toString().padLeft(2, '0') + ':' + selectedTime!.minute.toString().padLeft(2, '0')
-        : '';
+    setState(() {
+      _isProcessingPayment = true;
+    });
 
-    String formattedDate = selectedDate != null
-        ? DateFormat('yyyy-MM-dd').format(selectedDate!) // Format date as "YYYY-MM-DD"
-        : '';
+    try {
+      // Process Stripe payment
+      final result = await _paymentHelper.processPayment(
+        context: context,
+        amount: 100.0, // Payment amount in dollars
+        currency: 'USD',
+        description: 'Pass Booking Payment',
+        metadata: {
+          'productId': prodoductId.toString(),
+          'personCount': selectedPerson.toString(),
+          'date': selectedDate.toString(),
+          'time': selectedTime.toString(),
+        },
+      );
 
-    // Map to be sent to the backend
-    Map<String, dynamic> body = {
-      "userId": authController.userModel!.id,
-      "productId": prodoductId,
-      "personCount": selectedPerson,
-      "date": formattedDate,
-      "time": formattedTime,
-    };
+      // Wait a moment for the payment sheet to fully close
+      await Future.delayed(const Duration(milliseconds: 500));
 
-    // Call the booking API
-    bool success = await bookingController.proceedBooking(body);
+      // Check if payment was successful
+      if (result.isSuccess) {
+        // Show success dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 60.sp,
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    "Payment Successful!",
+                    style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    result.message ?? "Your payment has been processed successfully",
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                  ),
+                ],
+              ),
+            ),
+          );
 
-    if (success) {
-      selectedDate = null;
-      selectedTime = null;
-      Get.snackbar("Success", "Booking Success", backgroundColor: Colors.green);
-    } else {
-      // Handle booking failure with specific error message
-      Get.snackbar("Error", bookingController.errorMessage ?? "Booking failed. Please try again.", backgroundColor: Colors.red);
+          // Navigate back after showing success
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) {
+              Navigator.of(context).pop(); // Close dialog
+              Get.back(); // Go back to previous screen
+            }
+          });
+        }
+      } else {
+        // Show failure dialog
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error,
+                    color: Colors.red,
+                    size: 60.sp,
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    "Payment Failed",
+                    style: AppTextStyle.sub_h2_medium_16(color: Colors.red),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    result.message ?? "Payment could not be processed",
+                    textAlign: TextAlign.center,
+                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text("OK", style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1)),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+
+    } catch (e) {
+      setState(() {
+        _isProcessingPayment = false;
+      });
+      Get.snackbar(
+        "Error",
+        "An error occurred: ${e.toString()}",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
     }
   }
 
@@ -108,6 +208,38 @@ class _SetInformationState extends State<SetInformation> {
 
     var argument = Get.arguments;
     prodoductId = argument["id"]; // Get product ID
+
+    // Initialize Stripe payment helper
+    _initializeStripeHelper();
+  }
+
+  void _initializeStripeHelper() {
+    final config = StripeConfig(
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _paymentHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: _handlePaymentSuccess,
+      onPaymentFailure: _handlePaymentFailure,
+      onLog: (message) => debugPrint('StripeLog: $message'),
+    );
+  }
+
+  void _handlePaymentSuccess(PaymentResult result) {
+    // Don't show snackbar immediately - wait for sheet to close
+    setState(() {
+      _isProcessingPayment = false;
+    });
+  }
+
+  void _handlePaymentFailure(PaymentResult result) {
+    setState(() {
+      _isProcessingPayment = false;
+    });
   }
 
   @override
@@ -226,11 +358,25 @@ class _SetInformationState extends State<SetInformation> {
 
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
-                child: CustomButton(
-                  onTap: _checkoutButton,
-                  width: double.infinity,
-                  text: "Proceed to Checkout",
-                ),
+                child: _isProcessingPayment
+                    ? Container(
+                        width: double.infinity,
+                        height: 50.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary_1,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                    : CustomButton(
+                        onTap: _checkoutButton,
+                        width: double.infinity,
+                        text: "Proceed to Checkout",
+                      ),
               ),
             ],
           ),
