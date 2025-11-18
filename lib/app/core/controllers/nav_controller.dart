@@ -31,6 +31,14 @@ class NavController extends GetxController{
 
   }
 
+  void  resetType(){
+
+
+    _serviceType="";
+    update();
+
+  }
+
 
 
    void resetIndex() {

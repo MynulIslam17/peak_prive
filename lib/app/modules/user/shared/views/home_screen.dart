@@ -2,12 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/item_card.dart';
 import 'package:harry_service_app/app/core/widgets/category_list.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/userProfileSection.dart';
+import 'package:harry_service_app/app/modules/user/shared/controllers/all_pass_controller.dart';
 import 'package:harry_service_app/gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../routes/app_routes.dart';
@@ -20,13 +22,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final authController = Get.find<AuthController>();
+  final passController = Get.find<AllPassController>();
+  final navController = Get.find<NavController>();
+
   final icon = Assets.icons;
   final image = Assets.images;
-  final navController = Get.find<NavController>();
   final TextEditingController _searchController = TextEditingController();
-
-  /// Dummy pass types
-  final List<String> passTypeList = ["VIP", "Semi-VIP", "Gold", "Student"];
 
   /// Category data
   final Map<String, List<Map<String, dynamic>>> categoryData = {
@@ -46,15 +48,9 @@ class _HomeScreenState extends State<HomeScreen> {
       {"title": "Fast Food", "image": Assets.icons.foodCat},
     ],
     "massage": [
-      {"title": "Ski Essential ", "image": Assets.icons.skiApparel},
-      {"title": "ski gear", "image": Assets.icons.skiEssential},
+      {"title": "Ski Essential", "image": Assets.icons.skiApparel},
+      {"title": "Ski Gear", "image": Assets.icons.skiEssential},
       {"title": "Ski Accessories", "image": Assets.icons.skiGare},
-    ],
-
-    "massage": [
-      {"title": "Thai", "image": Assets.icons.massage},
-      {"title": "Italian", "image": Assets.icons.massage},
-      {"title": "Fast Food", "image": Assets.icons.massage},
     ],
   };
 
@@ -102,8 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
         "tag": "Premium",
       },
     ],
-
-      "massage": [
+    "massage": [
       {
         "image": Assets.images.skiAccories3,
         "title": "Ski Essential",
@@ -115,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       {
         "image": Assets.images.skiPass9,
-        "title": "ski gear",
+        "title": "Ski Gear",
         "price": "\$200/Day",
         "rating": 4.8,
         "reviewCount": "(50+)",
@@ -123,51 +118,35 @@ class _HomeScreenState extends State<HomeScreen> {
         "tag": "Premium",
       },
     ],
-
-
-      "massage": [
-      {
-        "image": Assets.images.message,
-        "title": "Relaxing Massage",
-        "price": "\$200/Day",
-        "rating": 4.8,
-        "reviewCount": "(50+)",
-        "location": "City Center",
-        "tag": "Premium",
-      },
-      {
-        "image": Assets.images.message,
-        "title": "Relaxing Massage",
-        "price": "\$200/Day",
-        "rating": 4.8,
-        "reviewCount": "(50+)",
-        "location": "City Center",
-        "tag": "Premium",
-      },
-    ],
-
-
-
-
-
-
   };
+
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  /// Fetch all ski passes
+  void fetchData() async {
+    bool success = await passController.fetchAllPass();
+    if (!success) {
+      print("Error fetching passes: ${passController.errorMessage}");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final serviceType = navController.getServiceType;
 
-    /// Corrected title logic
-    String titleOfService = serviceType == "pass"
+    /// Title logic for top section
+    String titleOfService = serviceType == "ski_pass"
         ? "Top Ski Pass"
         : serviceType == "transport"
         ? "Top Cars In Town"
         : serviceType == "restaurant"
         ? "Top Restaurant Provider"
-        : serviceType=="massage"
-        ?"Top Ski Accessories"
-        : serviceType=="massage"
-        ? "Top Massage’s Provider"
+        : serviceType == "massage"
+        ? "Top Ski Accessories"
         : "";
 
     final categories = categoryData[serviceType] ?? [];
@@ -175,6 +154,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+
+
+      /// fav button
+      floatingActionButton: FloatingActionButton(
+          child: Image.asset("assets/images/fav_home.png"),
+          backgroundColor: AppColors.primary_1,
+          onPressed: (){
+
+            /// reset service type
+            navController.resetType();
+
+            /// then goes to select service again
+            Get.offAllNamed(Routes.service);
+
+          }),
+
+
+
       body: ListView(
         children: [
           /// AppBar + Search
@@ -186,8 +183,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 children: [
                   UserProfileSection(
-                    image: image.user2,
-                    location: 'Bonani,1208',
+                    name: authController.userModel!.fullName,
+                    image: authController.userModel!.profilePic,
                     onTap: () {},
                   ),
                   SizedBox(height: 20.h),
@@ -225,68 +222,88 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+
           SizedBox(height: 20.h),
 
-          /// Category Section
+          /// Category Section (if not ski pass)
+          if (serviceType != navController.getServiceType)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                children: [
+                  CategoryTitle(
+                    title: serviceType == "transport" ? "Top Brand" : "Category",
+                    text: "See All",
+                    onClick: () {},
+                  ),
+                  SizedBox(height: 10.h),
+                  CategoryList(
+                    titles: categories.map((e) => e["title"] as String).toList(),
+                    icons: categories.map((e) => e["image"]).toList(),
+                    onTap: () {},
+                  ),
+                  SizedBox(height: 20.h),
+                ],
+              ),
+            ),
+
+          /// Top Service / Ski Pass Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CategoryTitle(
-                  title: serviceType == "transport" ? "Top Brand" : "Category",
+                  title: titleOfService,
                   text: "See All",
                   onClick: () {},
                 ),
                 SizedBox(height: 10.h),
-                CategoryList(
-                  titles: categories.map((e) => e["title"] as String).toList(),
-                  icons: categories.map((e) => e["image"]).toList(),
-                  onTap: () {},
-                ),
-                SizedBox(height: 20.h),
-              ],
-            ),
-          ),
 
-          /// Service List Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                CategoryTitle(title: titleOfService, text: "See All", onClick: () {}),
-                SizedBox(height: 10.h),
+                /// Display content based on fetch state
+                GetBuilder<AllPassController>(
+                  builder: (controller) {
+                    if (controller.fetchProgress) {
+                      return Center(
+                        child: CircularProgressIndicator(color: AppColors.primary_1),
+                      );
+                    }
 
-                /// Service cards
-                Column(
-                  children: List.generate(services.length, (index) {
-                    final item = services[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 7),
-                      child: ItemCard(
-                        image: item["image"],
-                        title: item["title"],
-                        price: item["price"],
-                        rating: item["rating"] ?? 0.0,
-                        reviewCount: item["reviewCount"] ?? "",
-                        location: item["location"] ?? "",
-                        fromSkiPasses: serviceType == "pass",
-                        skiPassType: item["tag"] ?? "",
-                        onTap: () {
-                          if (serviceType == "pass") {
-                            Get.toNamed(Routes.passCardDetails);
-                          } else if (serviceType == "transport") {
-                            Get.toNamed(Routes.transportDetails);
-                          } else if (serviceType == "restaurant") {
-                            Get.toNamed(Routes.restaurantDetails);
-                          }else if(serviceType == "massage"){
-                            Get.toNamed(Routes.massageDetails);
-                          }else if(serviceType=="massage"){
-                            Get.toNamed(Routes.hireDetails);
-                          }
-                        },
-                      ),
+                    if (controller.skiPassList.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.h),
+                          child: Text(
+                            "No pass available right now",
+                            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: List.generate(controller.skiPassList.length, (index) {
+                        final item = controller.skiPassList[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 7),
+                          child: ItemCard(
+                            image: item.thumbnail,
+                            title: item.title,
+                            price: "\$${item.amount}",
+                            rating: item.averageRating ?? 0.0,
+                            reviewCount: "(${item.reviews.length})",
+                            location: item.serviceArea ?? "",
+                            fromSkiPasses: true,
+                            skiPassType: item.skiPassType ?? "",
+                            onTap: () => Get.toNamed(
+                              Routes.passCardDetails,
+                              arguments: {"id": item.id},
+                            ),
+                          ),
+                        );
+                      }),
                     );
-                  }),
+                  },
                 ),
               ],
             ),

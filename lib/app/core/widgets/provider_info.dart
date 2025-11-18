@@ -7,22 +7,24 @@ import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
 
 class ProviderInfo extends StatelessWidget {
-
-
-  final icon=Assets.icons;
-  final image=Assets.images;
+  final String providerName;
+  final String rating;
+  final String reviewCount;
 
   final VoidCallback onTapCall;
   final VoidCallback onTapMessage;
+
+  final icon = Assets.icons;
+  final image = Assets.images;
+
   const ProviderInfo({
     super.key,
-
+    this.providerName = "Md Billu",
+    this.rating = "0.0",
+    this.reviewCount = "0",
     required this.onTapCall,
     required this.onTapMessage,
   });
-
-  // final $AssetsImagesGen image;
-  // final $AssetsIconsGen icons;
 
   @override
   Widget build(BuildContext context) {
@@ -30,84 +32,77 @@ class ProviderInfo extends StatelessWidget {
       width: 353.w,
       height: 80.h,
       decoration: BoxDecoration(
-        color: Color(0xfffdfbf6),
+        color: const Color(0xfffdfbf6),
         border: Border.all(color: Colors.grey.shade300, width: 1),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.shade100,
-            offset: Offset(1, 1),
+            offset: const Offset(1, 1),
             blurRadius: 3,
           ),
         ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: [
+          // Profile Image
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: image.user2.provider(),
+          ),
+          SizedBox(width: 10.w),
 
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Row(
-          children: [
-            /// --- Profile Image ---
-            CircleAvatar(
-              radius: 30,
-              backgroundImage: image.user2.provider(),
-            ),
-
-            SizedBox(width: 10.w),
-
-            /// --- Name & Rating Column ---
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  /// --- User Name ---
-                  Text(
-                    "Md. Billu Miya",
-                    style: AppTextStyle.p_medium_12().copyWith(fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-
-                  /// --- Rating Row ---
-                  Row(
-                    children: [
-                      /// Star Icon
-                      icon.star.svg(width: 14.w, height: 14.h),
-                      SizedBox(width: 5.w),
-
-                      /// Rating Value
-                      Text(
-                        "4.5",
-                        style: AppTextStyle.p_regular_12().copyWith(fontSize: 16),
+          // Name & Rating Column
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Provider Name
+                Text(
+                  providerName,
+                  style: AppTextStyle.p_medium_12().copyWith(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 4.h),
+                // Rating Row
+                Row(
+                  children: [
+                    icon.star.svg(width: 14.w, height: 14.h),
+                    SizedBox(width: 5.w),
+                    Text(
+                      rating,
+                      style: AppTextStyle.p_regular_12().copyWith(fontSize: 16),
+                    ),
+                    SizedBox(width: 5.w),
+                    Flexible(
+                      child: Text(
+                        "($reviewCount reviews)",
+                        style: AppTextStyle.p_regular_12()
+                            .copyWith(fontSize: 16, color: AppColors.black_3),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      SizedBox(width: 5.w),
-
-                      /// Number of Reviews
-                      Flexible(
-                        child: Text(
-                          "(150+)",
-                          style: AppTextStyle.p_regular_12()
-                              .copyWith(fontSize: 16, color: AppColors.black_3),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
+              ],
             ),
+          ),
 
-            /// --- Action Icons (Chat & Call) ---
-            IconButton(onPressed: onTapMessage,
-                icon: icon.chats.svg()),
-            SizedBox(width: 10.w),
-
-            IconButton(onPressed: onTapCall,
-                icon: icon.callCircle.svg()),
-
-          ],
-        ),
+          // Action Icons
+          IconButton(
+            onPressed: onTapMessage,
+            icon: icon.chats.svg(),
+          ),
+          SizedBox(width: 10.w),
+          IconButton(
+            onPressed: onTapCall,
+            icon: icon.callCircle.svg(),
+          ),
+        ],
       ),
     );
   }

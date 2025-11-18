@@ -7,47 +7,56 @@ import '../constants/text-style.dart';
 import 'make_clickable.dart';
 
 class UserProfileSection extends StatelessWidget {
-
-  final AssetGenImage  image;
-
-  final String location;
+  /// ------------------------- PARAMETERS -------------------------
+  final String name;
+  final String welcomeText;
+  final String image;
   final VoidCallback onTap;
 
+  /// ------------------------- CONSTRUCTOR -------------------------
   const UserProfileSection({
     super.key,
+    required this.name,
+    this.welcomeText = "Good to see you!",
     required this.image,
-
-    required this.location,
     required this.onTap,
-
   });
-
-final icons=Assets.icons;
 
   @override
   Widget build(BuildContext context) {
+    final icons = Assets.icons;
+
     return Row(
       children: [
-        /// Profile Image
-        CircleAvatar(radius: 20, backgroundImage: image.provider()),
+        /// ------------------------- PROFILE IMAGE -------------------------
+        CircleAvatar(
+          radius: 20,
+          backgroundImage: NetworkImage(image)
+        ),
 
         SizedBox(width: 10.w),
 
-        /// Location Info
+        /// ------------------------- NAME & WELCOME -------------------------
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text("Select Location", style: AppTextStyle.c_regular_12()),
-                icons.arrowBottom.svg(),
-              ],
+            /// User Name
+            Text(
+              name,
+              style: AppTextStyle.c_regular_12(),
             ),
+
+            SizedBox(height: 4.h),
+
+            /// Location Icon + Welcome Text
             Row(
               children: [
                 icons.loacation.svg(),
-                SizedBox(width: 10.w),
-                Text(location, style: AppTextStyle.c_regular_12()),
+                SizedBox(width: 6.w),
+                Text(
+                  welcomeText,
+                  style: AppTextStyle.c_regular_12(),
+                ),
               ],
             ),
           ],
@@ -55,14 +64,14 @@ final icons=Assets.icons;
 
         const Spacer(),
 
-        /// Notification
+        /// ------------------------- NOTIFICATION BUTTON -------------------------
         MakeClickable(
-          onTap:onTap,
+          onTap: onTap,
           child: Container(
             width: 40.w,
             height: 40.h,
-            decoration: const BoxDecoration(
-              color: Colors.grey,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
               shape: BoxShape.circle,
             ),
             child: Padding(

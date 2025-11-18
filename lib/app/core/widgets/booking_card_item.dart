@@ -6,7 +6,7 @@ import 'package:harry_service_app/app/core/widgets/custome_button.dart';
 import 'package:harry_service_app/gen/assets.gen.dart';
 
 class BookingCardItem extends StatelessWidget {
-  final AssetGenImage image;       //  gen image asset
+  final String image;
   final String title;              // Product name
   final double ? dueTime;              // Product name
   final String price;              // Price
@@ -44,7 +44,8 @@ class BookingCardItem extends StatelessWidget {
             //  Product Image
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: image.image(
+              child: Image.network(
+                image,
                 width: 95.w,
                 height: 93.h,
                 fit: BoxFit.cover,

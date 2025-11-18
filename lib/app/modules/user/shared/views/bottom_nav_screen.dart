@@ -25,7 +25,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     /// pass date
 
     {
-      "type":"pass",
+      "type":"ski_pass",
       'product': 'body message',
       'price': '\$300',
       'status': 'Cancelled',
@@ -33,7 +33,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     }
 
     ,{
-      "type":"pass",
+      "type":"ski_pass",
       'product': 'body message',
       'price': '\$300',
       'status': 'Active',
@@ -41,7 +41,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
     },
 
     {
-      "type":"pass",
+      "type":"ski_pass",
       'product': 'body message',
       'price': '\$300',
       'status': 'Completed',
@@ -158,7 +158,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   late final List<Widget> _screens=[
     //TransportHomeScreen(),
       HomeScreen(),
-      BookingScreen(productList: productList,),
+      BookingScreen(),
       ProfileScreen()
   ];
 

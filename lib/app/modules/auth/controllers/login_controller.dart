@@ -7,51 +7,43 @@ import 'package:harry_service_app/app/modules/auth/models/login_request_model.da
 
 class LoginController extends GetxController {
 
-  // ==========================
-  // State variables
-  // ==========================
   bool _loginProgress = false;
   String? _errorMessage;
   UserModel? _userModel;
   String? _accessToken;
 
-  // ==========================
-  // Getters
-  // ==========================
   bool get loginProgress => _loginProgress;
   String? get errorMessage => _errorMessage;
   UserModel? get getUserModel => _userModel;
   String? get getAccessToken => _accessToken;
 
-  // ==========================
-  // Methods
-  // ==========================
   Future<bool> login(LoginRequestModel model) async {
     bool success = false;
 
     _loginProgress = true;
     update();
 
-    NetworkResponse response = await Get.find<NetworkCaller>()
-        .postRequest(url: AppUrls.loginUrl, body: model.toJson());
+    try {
+      NetworkResponse response = await Get.find<NetworkCaller>()
+          .postRequest(url: AppUrls.loginUrl, body: model.toJson());
 
-    _loginProgress = false;
+      if (response.isSuccess) {
+        final data = response.body!["data"];
 
-    if (response.isSuccess) {
-      // Login success
-      final userdata = response.body!["data"]["user"];
-      _userModel = UserModel.fromJson(userdata);
+        _userModel = UserModel.fromJson(data["user"]);
 
-      _accessToken = response.body!["tokens"]["accessToken"];
+        _accessToken = data["tokens"]["accessToken"];
 
-      success = true;
-      _errorMessage = null;
-    } else {
-      // Login failed
-      _errorMessage = response.errorMessage;
+        success = true;
+        _errorMessage = null;
+      } else {
+        _errorMessage = response.errorMessage ?? "Login failed!";
+      }
+    } finally {
+      _loginProgress = false;
+      update();
     }
 
-    update();
     return success;
   }
 }

@@ -1,8 +1,11 @@
 import 'dart:convert';
+
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../data/models/user_model.dart';
 
-class AuthController {
+class AuthController  extends GetxController{
   // -------------------------
   // KEYS
   // -------------------------

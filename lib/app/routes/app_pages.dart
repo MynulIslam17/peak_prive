@@ -14,6 +14,7 @@ import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_scree
 import 'package:harry_service_app/app/modules/provider/pass/views/provider_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/register/views/provider_info_form.dart';
 import 'package:harry_service_app/app/modules/provider/restaurant/views/add_restaurant_screen.dart';
+import 'package:harry_service_app/app/modules/provider/shared/bindings/change_pass_binding.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/change_password_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/messaging_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_account_information_screen.dart';
@@ -27,8 +28,11 @@ import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/pass/bindings/booking_bindings.dart';
+import 'package:harry_service_app/app/modules/user/pass/bindings/singlePass_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
+import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
@@ -38,6 +42,7 @@ import '../modules/auth/views/signup_screen.dart';
 import '../modules/onboard/views/on_boarding_screen.dart';
 import '../modules/user/all_service/views/AllServiceScreen.dart';
 
+import '../modules/user/shared/bindings/bottom_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';
 
 import '../modules/user/pass/views/set_information.dart';
@@ -112,16 +117,23 @@ abstract class AppPages {
     ),
 
     /// pass
-    GetPage(name: Routes.passCardDetails, page: () => PassDetailsScreen()),
+    GetPage(name: Routes.passCardDetails, page: () => PassDetailsScreen(),
+
+    binding: SinglePassDetailsBindings()
+    ),
 
     GetPage(
       /// booking details
       name: Routes.passInformation,
       page: () => SetInformation(),
+      binding: BookingBindings()
     ),
 
     ///bottom nav
-    GetPage(name: Routes.bottomNav, page: () => BottomNavScreen()),
+    GetPage(name: Routes.bottomNav,
+        page: () => BottomNavScreen(),
+      binding: BottomNavBinding(),
+    ),
 
     /// transport
     GetPage(
@@ -171,7 +183,9 @@ abstract class AppPages {
 
     ///provider profile
     GetPage(name: Routes.providerInfoScreen,
-        page: ()=>ProviderAccountInformationScreen()
+        page: ()=>ProviderAccountInformationScreen(),
+      binding: GetProfileBinding()
+
      ),
 
   GetPage(name: Routes.providerSettingsScreen,
@@ -179,7 +193,8 @@ abstract class AppPages {
      ),
 
  GetPage(name: Routes.providerPassScreen,
-        page: ()=>ProviderPassScreen()
+        page: ()=>ProviderPassScreen(),
+        binding: ChangePassBinding()
      ),
 
 

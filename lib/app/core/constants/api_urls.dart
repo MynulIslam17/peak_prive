@@ -20,8 +20,36 @@ class AppUrls{
  /// resend otp url
  static const resendOtp="$baseUrl/auth/resend-otp";
 
- /// pass reset  url
+ /// password reset  url
  static const passResetUrl="$baseUrl/auth/reset-password";
+
+ /// ski pass all service
+static const passAllServiceUrl="$baseUrl/ski-pass/all";
+
+/// single pass details method
+static String singlePassDetails(String id)=>"$baseUrl/ski-pass/$id";
+
+///  create booking booking
+static String passBookingUrl="${baseUrl}/booking/create";
+
+
+///get my booking
+static String myBookingUrl(String category)=>"${baseUrl}/booking/my-booking?category=${category}";
+
+/// get my profile
+
+static String getMyProfileUrl="$baseUrl/users/profile/me";
+
+  /// update profile url
+static String updateProfileUrl="$baseUrl/users/update-profile";
+
+
+  /// update profile url
+static String changePasswordUrl="$baseUrl/auth/change-password";
+
+
+
+
 
 
 

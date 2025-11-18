@@ -7,7 +7,7 @@ import '../constants/text-style.dart';
 
 class ItemCard extends StatelessWidget {
   final bool  fromSkiPasses;
-  final AssetGenImage image;
+  final String image;
   final String title;
   final String price;
   final double rating;
@@ -55,7 +55,7 @@ class ItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Container(
-                height: 247.h,
+                height: 220.h,
                 width: 345.w,
                 decoration: BoxDecoration(
                   gradient: AppColors.cardBackground,
@@ -70,11 +70,7 @@ class ItemCard extends StatelessWidget {
                       /// Rounded Image
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: image.image(
-                          width: double.infinity,
-                          height: 160.h,
-                          fit: BoxFit.cover,
-                        ),
+                        child:Image.network(image,width: double.infinity,height: 160,fit: BoxFit.cover,)
                       ),
 
                       SizedBox(height: 5.h),
@@ -84,9 +80,9 @@ class ItemCard extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(title, style: AppTextStyle.h3_medium_20(),overflow: TextOverflow.ellipsis,),
+                            Text(title, style: AppTextStyle.sub_h3_medium_14(),overflow: TextOverflow.ellipsis,),
                             Text(price,
-                                style: AppTextStyle.sub_h2_medium_16(
+                                style: AppTextStyle.sub_h3_medium_14(
                                   color: AppColors.primary_1,
                                 )),
                           ],
@@ -105,7 +101,7 @@ class ItemCard extends StatelessWidget {
                             const Spacer(),
                             Assets.icons.mapPinSimpleArea.svg(height: 14.h, width: 14.w),
                             SizedBox(width: 5.w),
-                            Text(location, style: AppTextStyle.sub_h3_regular_14()),
+                            Text(location, style: AppTextStyle.c_regular_12().copyWith(fontSize: 11)),
                           ],
                         ),
                       ),

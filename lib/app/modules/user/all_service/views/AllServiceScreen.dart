@@ -63,14 +63,14 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
                         ///tips :  one controller used add service type of recognize use mode is on
                         switch(index){
                           case 0:
-                            navController.resetIndex(); /// reset the indes
-                            navController.addType("pass");
+                            navController.resetIndex(); /// reset the index
+                            navController.addType("ski_pass");
                            Get.toNamed(Routes.bottomNav);
                             break;
                           case 1:
 
                             navController.resetIndex();
-                            navController.addType("massage");
+                            navController.addType("ski_hire");
                              Get.toNamed(Routes.bottomNav);
                             break;
                           case 2:

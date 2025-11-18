@@ -25,27 +25,30 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void moveToNextScreen() async{
 
+   await Future.delayed(Duration(seconds: 2)); /// add delay
+
+   /// check if onboard seen or not
     final prefs=await SharedPreferences.getInstance();
     bool seen=prefs.getBool("onboarding_seen") ?? false;
 
-    if(!seen){
+    if(!seen){ /// if onboarding not seen
       Get.offAllNamed(Routes.onBoarding);
       return;
     }
 
-
+/// if onboarding seen then first load user then check if he login in or not
     await authController.loadUserData();
 
-    if(!authController.isLoggedIn){
+    if(!authController.isLoggedIn){ /// if not login then show role selection
 
       Get.offAllNamed(Routes.role);
       return;
     }
 
-    if (authController.role == "provider") {
+    if (authController.role == "provider") { /// if login then check the role then based on the role shows page
       Get.offAllNamed(Routes.providerNavScreen);
     } else {
-      Get.offAllNamed(Routes.bottomNav);
+      Get.offAllNamed(Routes.service);
     }
   }
 
@@ -58,9 +61,8 @@ class _SplashScreenState extends State<SplashScreen> {
     // TODO: implement initState
     super.initState();
 
-    Future.delayed(const Duration(seconds: 2), () {
       moveToNextScreen();
-    });
+
   }
 
 

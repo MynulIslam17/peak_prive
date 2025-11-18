@@ -1,18 +1,84 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/constants/api_urls.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/modules/user/shared/controllers/update_profile_controller.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../routes/app_routes.dart';
 
-
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final authController = Get.find<AuthController>();
+  final updateProfileController = Get.put(UpdateProfileController());
+
+  File? _imagePath;
+  final picker = ImagePicker();
+
+  /// Pick image and automatically upload
+  Future<void> _pickImage() async {
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxHeight: 600,
+      maxWidth: 600,
+      imageQuality: 80,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imagePath = File(pickedFile.path);
+      });
+
+      /// Call API only if user selected an image
+      bool success = await updateProfileController.updateProfile(
+        profileImage: _imagePath,
+        fullName: authController.userModel?.fullName ?? "",
+        phoneNumber: authController.userModel?.phone ?? "",
+        address: authController.userModel?.address ?? "",
+        method: "PATCH",
+        ApiUrl: AppUrls.updateProfileUrl,
+      );
+
+      if (success) {
+        // Clear local image path after successful upload
+        setState(() {
+          _imagePath = null;
+        });
+
+        Get.snackbar(
+          "Success",
+          "Profile image updated successfully",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else if (updateProfileController.errorMessage != null) {
+        Get.snackbar(
+          "Error",
+          updateProfileController.errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
+    } else {
+      debugPrint("No image selected, API not called");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-
         title: Text(
           'Profile',
           style: TextStyle(
@@ -23,109 +89,118 @@ class ProfileScreen extends StatelessWidget {
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
-        elevation: 0, // Remove shadow
+        surfaceTintColor: Colors.white,
+        elevation: 0,
         leading: const SizedBox.shrink(),
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-        child: Column(
-          children: [
-            SizedBox(height: 20.h),
+      body: GetBuilder<UpdateProfileController>(
+        builder: (controller) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+            child: Column(
+              children: [
+                SizedBox(height: 20.h),
 
-            // --- Profile Picture Section ---
-            _buildProfileAvatar(context),
+                /// Profile image - NOW REACTIVE
+                Container(
+                  height: 249,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Show loading indicator while uploading
+                          if (controller.isLoading)
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade300,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                              ),
+                            )
+                          else
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundImage: _imagePath != null
+                                  ? FileImage(_imagePath!) as ImageProvider
+                                  : (authController.userModel?.profilePic.isNotEmpty == true
+                                  ? NetworkImage(authController.userModel!.profilePic)
+                                  : const AssetImage("assets/images/profile_img.jpg")) as ImageProvider,
+                            ),
 
-            SizedBox(height: 10.h),
+                          // Only show camera button when not loading
+                          if (!controller.isLoading)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: CircleAvatar(
+                                backgroundColor: Colors.black54,
+                                radius: 18,
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.camera_alt_outlined,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  onPressed: _pickImage,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        authController.userModel?.fullName ?? "Your Name",
+                        style: AppTextStyle.h3_medium_20(),
+                      ),
+                    ],
+                  ),
+                ),
 
-            // --- User Name ---
-            Text(
-              'Ankon Akash',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w600,
-              ),
+                SizedBox(height: 40.h),
+
+                // --- Menu Items ---
+                _buildProfileMenuItem(
+                  icon: Icons.person_outline,
+                  title: 'Account Information',
+                  onTap: () {
+                    Get.toNamed(Routes.providerInfoScreen);
+                  },
+                ),
+                SizedBox(height: 15.h),
+                _buildProfileMenuItem(
+                  icon: Icons.wallet_outlined,
+                  title: 'Wallet',
+                  onTap: () {},
+                ),
+                SizedBox(height: 15.h),
+                _buildProfileMenuItem(
+                  icon: Icons.settings_outlined,
+                  title: 'Settings',
+                  onTap: () {
+                    Get.toNamed(Routes.providerSettingsScreen);
+                  },
+                ),
+                SizedBox(height: 100.h),
+
+                // --- Log Out Button ---
+                _buildLogoutButton(),
+                SizedBox(height: 30.h),
+              ],
             ),
-
-            SizedBox(height: 40.h),
-
-            // --- Menu Items ---
-            _buildProfileMenuItem(
-              icon: Icons.person_outline,
-              title: 'Account Information',
-              onTap: () {
-                // Handle navigation to Account Information
-              },
-            ),
-
-            SizedBox(height: 15.h),
-
-            _buildProfileMenuItem(
-              icon: Icons.wallet_outlined,
-              title: 'Wallet',
-              onTap: () {
-                // Handle navigation to Wallet
-              },
-            ),
-
-            SizedBox(height: 15.h),
-
-            _buildProfileMenuItem(
-              icon: Icons.settings_outlined,
-              title: 'Settings',
-              onTap: () {
-                // Handle navigation to Settings
-              },
-            ),
-
-            SizedBox(height: 100.h),
-
-            // --- Log Out Button ---
-            _buildLogoutButton(),
-
-            SizedBox(height: 30.h),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  // Helper widget for the Profile Avatar and Camera Icon
-  Widget _buildProfileAvatar(BuildContext context) {
-    return Center(
-      child: Stack(
-        children: [
-          // The main Circular Image (Placeholder)
-          CircleAvatar(
-            radius: 50.r,
-            backgroundColor: Colors.grey.shade300,
-            backgroundImage: const AssetImage('assets/images/placeholder_profile.png'), // Replace with actual image asset
-            // You can use a NetworkImage or a proper Asset Image here
-          ),
-          // Positioned Camera Icon Button
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade600,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2.w),
-              ),
-              child: Icon(
-                Icons.photo_camera_outlined,
-                color: Colors.white,
-                size: 18.r,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper widget for the interactive menu items
   Widget _buildProfileMenuItem({
     required IconData icon,
     required String title,
@@ -164,7 +239,11 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400, size: 18.r),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey.shade400,
+                  size: 18.r,
+                ),
               ],
             ),
           ),
@@ -173,15 +252,17 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // Helper widget for the Log Out button
   Widget _buildLogoutButton() {
     return Container(
       width: double.infinity,
       height: 50.h,
       decoration: BoxDecoration(
-        color: Colors.transparent, // Background is white/transparent
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: const Color(0xFFD32F2F), width: 1.5.w), // Red border
+        border: Border.all(
+          color: const Color(0xFFD32F2F),
+          width: 1.5.w,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -196,14 +277,14 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 Icon(
                   Icons.logout,
-                  color: const Color(0xFFD32F2F), // Red icon
+                  color: const Color(0xFFD32F2F),
                   size: 20.r,
                 ),
                 SizedBox(width: 10.w),
                 Text(
                   'Log Out',
                   style: TextStyle(
-                    color: const Color(0xFFD32F2F), // Red text
+                    color: const Color(0xFFD32F2F),
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w600,
                   ),

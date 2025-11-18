@@ -54,60 +54,47 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-
-
       String email = emailTEController.text.trim();
-      String password = passwordTEController.text;
+      String password = passwordTEController.text.trim();
 
-      /// calling the api
-
-      LoginRequestModel model=LoginRequestModel(email: email, password: password);
+      LoginRequestModel model = LoginRequestModel(email: email, password: password);
 
       bool isSuccess = await loginController.login(model);
 
       if (isSuccess) {
-
-        /// if successfully login
         Get.snackbar(
-          "success",
-          "login success",
+          "Success",
+          "Login successful",
           snackPosition: SnackPosition.TOP,
           backgroundColor: AppColors.primary_1,
-
         );
 
+        /// Save user data + token
+        authController.saveUserData(
+          model: loginController.getUserModel!,
+          token: loginController.getAccessToken!,
+        );
 
+        // Navigate based on role
+        final role = loginController.getUserModel!.role;
 
-
-        /// saves to shared pref
-        authController.saveUserData(model: loginController.getUserModel!, token: loginController.getAccessToken!);
-
-
-
-
-
-
-
-        if(loginController.getUserModel!.role=="User"){
-
+        if (role == "User") {
           Get.offAllNamed(Routes.service);
-
-        }else{
+        } else {
           Get.offAllNamed(Routes.providerNavScreen);
         }
-
-
 
       } else {
         Get.snackbar(
           "Failed",
-          "${loginController.errorMessage}",
+          loginController.errorMessage ?? "Login failed",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
         );
       }
     }
   }
+
 
   /// forget pass  text button
   void _handleForgotPassword() {

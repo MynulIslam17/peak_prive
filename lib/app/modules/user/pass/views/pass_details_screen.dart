@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/appText.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
-
+import 'package:harry_service_app/app/modules/user/pass/controllers/pass_details_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -14,8 +14,6 @@ import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/provider_info.dart';
 import '../../../../routes/app_routes.dart';
 
-
-
 class PassDetailsScreen extends StatefulWidget {
   const PassDetailsScreen({super.key});
 
@@ -24,14 +22,34 @@ class PassDetailsScreen extends StatefulWidget {
 }
 
 class _PassDetailsScreenState extends State<PassDetailsScreen> {
+  late final String id;
+
+  /// find the details controller
+  final detailsController = Get.find<PassDetailsController>();
   final image = Assets.images;
-  final icons = Assets.icons;
 
+  @override
+  void initState() {
+    super.initState();
 
-  ///dummy list for p type
+    /// Get the product ID from arguments
+    var argument = Get.arguments as Map<String, dynamic>;
+    id = argument["id"];
 
-  List<String> passTypeList=["VIP","Semi-VIP","Gold","Student"];
+    /// Fetch pass details
+    _fetchData();
+  }
 
+  /// calls api method
+  void _fetchData() async {
+    bool success = await detailsController.fetchPass(id);
+    if (!success) {
+      Get.snackbar(
+        "Error",
+        detailsController.errorMessage ?? "Failed to fetch details",
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,184 +57,174 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
+      body: GetBuilder<PassDetailsController>(
+        builder: (controller) {
+          if (controller.fetchProgress) {
+            /// Show loading indicator while fetching
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary_1),
+            );
+          }
 
-        title: Row(
-          children: [
+          if (controller.passDetails == null) {
+            /// Show error or empty state
+            return Center(
+              child: Text(controller.errorMessage ?? "No details available"),
+            );
+          }
 
-          ],
-        ),
+          final pass = controller.passDetails!;
 
-      ),
-      body: SafeArea(
-        child: SizedBox(
-          width: size.width,
-          height: size.height,
-          child: Stack(
-            children: [
-              image.skiDetails.image(
-                height: size.height * 0.48,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-        
-              /// overlap card
-              Positioned(
-                top: size.height * 0.4,
-                left: 0,
-                right: 0,
-                child: Container(
-                  width: size.width,
-                  height:
-                      size.height *
-                      0.6, // Adjusted height to make space for bottom row if needed
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(40),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-        
-                        /// line image
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Center(
-                            child: image.line.image(width: 87.w, height: 9.h),
-                          ),
+          /// accessing the full passDetails
+          final owner = pass.owner;
+
+          ///then from that gets owner model
+
+          return SizedBox(
+            width: size.width,
+            height: size.height,
+            child: Stack(
+              children: [
+                // Thumbnail
+                Image.network(
+                  pass.thumbnail,
+                  height: size.height * 0.48,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+
+                ///  Overlap card
+                Positioned(
+                  top: size.height * 0.4,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    width: size.width,
+                    height: size.height * 0.6,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(40),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, -3),
                         ),
-        
-                        SizedBox(height: 20.h),
-        
-                        /// The scrollable section
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              /// main card item content that needs to scroll
-                              crossAxisAlignment: CrossAxisAlignment
-                                  .start, // Align to left for content
-                              children: [
-                                /// profile section
-                                ProviderInfo(
-                                  onTapCall: () {},
-                                  onTapMessage: () {},
-                                ),
-        
-                                SizedBox(height: 20.h),
-        
-                                Column(
-                                  children: [
-                                    Row(
-                                      /// available service
-                                      children: [
-        
-                                        /// service 1
-                                        Expanded(
-                                          child: AvailableService(
-                                            serviceType: "Free Parking",
-                                            serviceCount: "3 Car Parking",
-                                          ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          // Drag line
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Center(
+                              child: image.line.image(width: 87.w, height: 9.h),
+                            ),
+                          ),
+
+                          SizedBox(height: 20.h),
+
+                          // Scrollable content
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Provider info
+                                  ProviderInfo(
+                                    providerName: owner.email,
+                                    rating: pass.averageRating.toString(),
+                                    onTapCall: () {},
+                                    onTapMessage: () {},
+                                  ),
+
+                                  /// Services - exactly 3 items per row
+                                  GridView.builder(
+                                    shrinkWrap:
+                                        true,
+                                    physics:
+                                        NeverScrollableScrollPhysics(),
+                                    itemCount: pass
+                                        .services
+                                        .length,
+                                    gridDelegate:
+                                        SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 3,
+                                          crossAxisSpacing:
+                                              12.w,
+                                          mainAxisSpacing:
+                                              6.h,
+                                          childAspectRatio:
+                                              1.3,
                                         ),
-        
-                                      SizedBox(width: 5.w,),
-                               /// service 2
-                                        Expanded(
-                                          child: AvailableService(
-                                            serviceType: "Free Event",
-                                            serviceCount: "2 free event",
-                                          ),
-                                        ),
-        
-                                        SizedBox(width: 5.w,),
-                                   /// service 3
-                                        Expanded(
-                                          child: AvailableService(
-                                            serviceType: "Free Ski Lession",
-                                            serviceCount: "2 Free Lession",
-                                          ),
-                                        ),
-        
-        
-                                      ],
+                                    itemBuilder: (context, index) {
+                                      final service = pass.services[index];
+                                      return AvailableService(
+                                        serviceType: service.title,
+                                        serviceCount: service.description,
+                                      );
+                                    },
+                                  ),
+
+                                  SizedBox(height: 14.h),
+
+                                  // Description
+                                  Text(
+                                    pass.description,
+                                    style: AppTextStyle.p_regular_12().copyWith(
+                                      color: AppColors.black_2,
                                     ),
-        
-                                    SizedBox(height: 14.h),
-                                    Text(AppText.serviceDetails,style: AppTextStyle.p_regular_12().copyWith(color: AppColors.black_2)),
-        
-                                    /// service details text
-                                  ],
+                                  ),
+
+                                  SizedBox(height: 20.h),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          /// Bottom price and button
+                          Padding(
+                            padding: EdgeInsets.only(top: 10.h, bottom: 20.h),
+                            child: Row(
+                              children: [
+                                Text(
+                                  "\$${pass.amount}",
+                                  style: AppTextStyle.sub_h1_medium_18(
+                                    color: AppColors.primary_1,
+                                  ),
                                 ),
-        
-                                //  content here that will also scroll
-                                SizedBox(
-                                  height: 20.h,
+                                SizedBox(width: 30.w),
+                                Expanded(
+                                  child: CustomButton(
+                                    onTap: () {
+                                      Get.toNamed(
+                                        Routes.passInformation,
+                                        /// pass the product id again
+                                        arguments: {"id": id},
+                                      );
+                                    },
+                                    text: "Book Ski Pass",
+                                    backgroundColor: AppColors.primary_1,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-        
-                        /// Fixed bottom row (Price and Button)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: 10.h,
-                            bottom: 20.h,
-                          ), // Add vertical padding for the bottom row
-                          child: Row(
-                            children: [
-                              Text(
-                                "\$9.99",
-                                style: AppTextStyle.sub_h1_medium_18(
-                                  color: AppColors.primary_1,
-                                ),
-                              ),
-                              SizedBox(width: 30.w),
-                              Expanded(
-        
-                                child: CustomButton(
-                                  onTap: (){
-                                    Get.toNamed(Routes.passInformation);
-                                  },
-                                  text: "Book Ski Pass",
-                                  backgroundColor: AppColors.primary_1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-        
-        
-              /// app bar Back button
-              CustomBackButton(onTap: (){
-                Get.back();
-              },),
-        
-        
-        
-        
-        
-        
-            ],
-          ),
-        ),
+
+                // Back button
+                CustomBackButton(onTap: () => Get.back()),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
-
-
 }
-
-

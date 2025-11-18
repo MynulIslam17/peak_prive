@@ -6,143 +6,192 @@ import '../../../gen/assets.gen.dart';
 import '../constants/text-style.dart';
 
 class BookingCard extends StatelessWidget {
-
-  final icon=Assets.icons;
   final VoidCallback onTap;
+  final int personCount;
+  final String passType;
+  final String location;
+  final String date;
+  final String time;
+  final String image;
+
+  final icon = Assets.icons;
 
   const BookingCard({
     super.key,
     required this.onTap,
-
+    this.personCount = 1,
+    this.passType = "Default",
+    required this.location,
+    required this.date,
+    required this.time,
+    required this.image,
   });
-
-
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 111.h,
-
+      height: 130.h,
       child: Card(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            /// Item image
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10), // Image corner radius
-                child: Assets.images.bookingImg.image(
-                  width: 95.w,
-                  height: 93.h,
+        margin: EdgeInsets.symmetric(vertical: 6.h),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+        elevation: 2,
+        child: Padding(
+          padding: EdgeInsets.all(10.w),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              /// ------------------ Image (Centered vertically) ------------------
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10.r),
+                child: Image.network(
+                  image,
+                  width: 70.w,
+                  height: 70.h,
                   fit: BoxFit.cover,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-        
-            /// Item info
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Top row: Person & Ski Pass Type
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Person", style: AppTextStyle.c_regular_12()),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                icon.user.svg(),
-                                SizedBox(width: 3.w),
-                                Expanded(child: Expanded(child: Text("1 person", style: AppTextStyle.p_medium_12().copyWith(fontSize: 11)))),
-                              ],
-                            ),
-                          ],
+
+              SizedBox(width: 12.w),
+
+              /// ------------------ Right Section ------------------
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    //
+                    // /// -------- Row 1: Menu Only --------
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.end,
+                    //   children: [
+                    //     IconButton(
+                    //       padding: EdgeInsets.zero,
+                    //       constraints: const BoxConstraints(),
+                    //       onPressed: onTap,
+                    //       icon: icon.dots.svg(width: 14.w, height: 14.h),
+                    //     ),
+                    //   ],
+                    // ),
+
+                    SizedBox(height: 4.h),
+
+                    /// -------- Row 2: Person + Pass Type --------
+                    Row(
+                      children: [
+                        /// Person
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Person", style: AppTextStyle.c_regular_10()),
+                              SizedBox(height: 4.h),
+                              Row(
+                                children: [
+                                  icon.user.svg(width: 14.w, height: 14.h),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    "$personCount person",
+                                    style: AppTextStyle.c_regular_10(),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Ski Pass Type", style: AppTextStyle.c_regular_12()),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                icon.calendarDots.svg(),
-                                SizedBox(width: 3.w),
-                                Expanded(child: Expanded(child: Text("1 Day", style: AppTextStyle.p_medium_12().copyWith(fontSize: 11)))),
-                              ],
-                            ),
-                          ],
+
+                        /// Pass Type
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Pass Type", style: AppTextStyle.c_regular_10()),
+                              SizedBox(height: 4.h),
+                              Row(
+                                children: [
+                                  icon.ticket.svg(width: 14.w, height: 14.h),
+                                  SizedBox(width: 4.w),
+                                  Flexible(
+                                    child: Text(
+                                      passType,
+                                      style: AppTextStyle.c_regular_10(),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-        
-                      /// option dots icon
-                      Expanded(
-                        flex: 1,
-                        child: IconButton(
-                          onPressed: onTap,
-                          icon: icon.dots.svg(width: 12, height: 12),
+                      ],
+                    ),
+
+                    SizedBox(height: 10.h),
+
+                    /// -------- Row 3: Time + Location --------
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        /// Time
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text("Time", style: AppTextStyle.c_regular_10()),
+                              SizedBox(height: 4.h),
+                              Row(
+                                children: [
+                                  icon.time.svg(width: 14.w, height: 14.h),
+                                  SizedBox(width: 4.w),
+                                  Flexible(
+                                    child: Text(
+                                      "$date | $time",
+                                      style: AppTextStyle.c_regular_10(),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-        
-                  const SizedBox(height: 6),
-        
-                  /// Bottom row: Time & Location
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Time", style: AppTextStyle.c_regular_12()),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                icon.calendarDots.svg(),
-                                SizedBox(width: 3.w),
-                                Expanded(child: Text("10 Jun | 09:45", style: AppTextStyle.p_medium_12().copyWith(fontSize: 11))),
-                              ],
-                            ),
-                          ],
+
+                        /// Location
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                            children: [
+                              Text("Location", style: AppTextStyle.c_regular_10()),
+                              SizedBox(height: 4.h),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  icon.mapPinSimpleArea
+                                      .svg(width: 14.w, height: 14.h),
+                                  SizedBox(width: 4.w),
+                                  Flexible(
+                                    child: Text(
+                                      location,
+                                      style: AppTextStyle.c_regular_10(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Location", style: AppTextStyle.c_regular_12()),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                icon.mapPinSimpleArea.svg(),
-                                SizedBox(width: 3.w),
-                                Expanded(child: Expanded(child: Text("Mountain1", style: AppTextStyle.p_medium_12().copyWith(fontSize: 11)))),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
-                  ),
-                ],
+                      ],
+                    )
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
