@@ -12,7 +12,8 @@ import 'package:harry_service_app/app/core/widgets/make_clickable.dart';
 import 'package:harry_service_app/app/routes/app_routes.dart';
 
 import '../../../../../gen/assets.gen.dart';
-import '../../../../core/widgets/blury_container.dart';
+import '../../../core/widgets/blury_container.dart';
+
 
 
 class AllServiceScreen extends StatefulWidget {

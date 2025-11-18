@@ -1,7 +1,9 @@
 
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/modules/user/shared/controllers/get_profile_controller.dart';
+
 import 'package:harry_service_app/app/modules/user/shared/controllers/update_profile_controller.dart';
+
+import '../controllers/get_profile_controller.dart';
 
 class GetProfileBinding extends Bindings{
   @override

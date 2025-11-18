@@ -49,6 +49,16 @@ static String changePasswordUrl="$baseUrl/auth/change-password";
 
 
 
+  /// ==========================hire=======================
+static String hireAllServiceUrl="$baseUrl/ski-hire/all";
+
+
+
+
+
+
+
+
 
 
 

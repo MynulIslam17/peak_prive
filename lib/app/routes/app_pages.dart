@@ -36,11 +36,12 @@ import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_b
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
+import '../modules/all_service/views/AllServiceScreen.dart';
 import '../modules/auth/views/login_screen.dart';
 import '../modules/auth/views/otp_verification_screen.dart';
 import '../modules/auth/views/signup_screen.dart';
 import '../modules/onboard/views/on_boarding_screen.dart';
-import '../modules/user/all_service/views/AllServiceScreen.dart';
+
 
 import '../modules/user/shared/bindings/bottom_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';

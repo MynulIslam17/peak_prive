@@ -5,6 +5,7 @@ import '../../../../data/services/network_caller.dart';
 import '../models/pass_details_model.dart';
 
 class PassDetailsController extends GetxController {
+
   PassDetails? passDetails;
 
   bool _fetchProgress = false;
