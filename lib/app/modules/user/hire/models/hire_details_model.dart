@@ -1,6 +1,6 @@
 class HireDetailsModel {
   final String id;
-  final Category? category; // can be null
+  final Category? category;
   final String title;
   final String thumbnail;
   final Owner owner;
@@ -9,10 +9,7 @@ class HireDetailsModel {
   final String serviceArea;
   final List<HireItem> items;
   final double averageRating;
-
-  // UPDATED: reviews now typed
   final List<Review> reviews;
-
   final List<dynamic> refunds;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -50,15 +47,12 @@ class HireDetailsModel {
           .map((e) => HireItem.fromJson(e))
           .toList(),
       averageRating: (json['averageRating']?.toDouble() ?? 0.0),
-
-      // UPDATED: map reviews list
       reviews: (json['reviews'] as List<dynamic>? ?? [])
           .map((e) => Review.fromJson(e))
           .toList(),
-
       refunds: json['refunds'] ?? [],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
     );
   }
 }
@@ -147,15 +141,15 @@ class HireItem {
   }
 }
 
-//   MODEL FOR REVIEWS
+// REVIEW MODEL
 class Review {
-  final String userId;
+  final ReviewUser user;
   final double rating;
   final String comment;
   final DateTime createdAt;
 
   Review({
-    required this.userId,
+    required this.user,
     required this.rating,
     required this.comment,
     required this.createdAt,
@@ -163,10 +157,37 @@ class Review {
 
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      userId: json['userId'] ?? '',
+      user: ReviewUser.fromJson(json['userId'] ?? {}),
       rating: (json['rating']?.toDouble() ?? 0.0),
       comment: json['comment'] ?? '',
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+    );
+  }
+}
+
+// USER INSIDE REVIEW
+class ReviewUser {
+  final String id;
+  final String fullName;
+  final String email;
+  final String phoneNumber;
+  final String profileUrl;
+
+  ReviewUser({
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.phoneNumber,
+    required this.profileUrl,
+  });
+
+  factory ReviewUser.fromJson(Map<String, dynamic> json) {
+    return ReviewUser(
+      id: json['_id'] ?? '',
+      fullName: json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      profileUrl: json['profileUrl'] ?? '',
     );
   }
 }
