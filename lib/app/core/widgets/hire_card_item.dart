@@ -7,17 +7,19 @@ import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
 
 class HireCardItem extends StatelessWidget {
-  final SvgGenImage icon;
+  final String productImg;
   final String itemName;
+  final int productPrice;
   final VoidCallback addOnTap;
   final VoidCallback removeOnTap;
 
   const HireCardItem({
     super.key,
-    required this.icon,
+    required this.productImg,
     required this.itemName,
     required this.addOnTap,
     required this.removeOnTap,
+    required this.productPrice
   });
 
   @override
@@ -33,12 +35,12 @@ class HireCardItem extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            /// Left Section (Icon + Name)
+            /// Left Section (image + Name)
             Flexible(
               flex: 2,
               child: Row(
                 children: [
-                  icon.svg(width: 22.w, height: 22.h),
+                  Image.network(productImg,width: 40,height: 40,),
                   SizedBox(width: 5.w),
                   Expanded(
                     child: Text(
@@ -59,7 +61,7 @@ class HireCardItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "\$03",
+                    "${productPrice}",
                     style: AppTextStyle.c_regular_12(
                       color: AppColors.primary_1,
                     ),

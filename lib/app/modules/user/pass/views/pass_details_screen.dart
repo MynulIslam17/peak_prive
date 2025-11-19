@@ -24,31 +24,19 @@ class PassDetailsScreen extends StatefulWidget {
 class _PassDetailsScreenState extends State<PassDetailsScreen> {
   late final String id;
 
-  /// find the details controller
   final detailsController = Get.find<PassDetailsController>();
   final image = Assets.images;
 
   @override
   void initState() {
     super.initState();
-
-    /// Get the product ID from arguments
-    var argument = Get.arguments as Map<String, dynamic>;
+    final argument = Get.arguments as Map<String, dynamic>;
     id = argument["id"];
-
-    /// Fetch pass details
     _fetchData();
   }
 
-  /// calls api method
   void _fetchData() async {
-    bool success = await detailsController.fetchPass(id);
-    if (!success) {
-      Get.snackbar(
-        "Error",
-        detailsController.errorMessage ?? "Failed to fetch details",
-      );
-    }
+    await detailsController.fetchPass(id);
   }
 
   @override
@@ -60,25 +48,19 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
       body: GetBuilder<PassDetailsController>(
         builder: (controller) {
           if (controller.fetchProgress) {
-            /// Show loading indicator while fetching
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary_1),
             );
           }
 
           if (controller.passDetails == null) {
-            /// Show error or empty state
             return Center(
               child: Text(controller.errorMessage ?? "No details available"),
             );
           }
 
           final pass = controller.passDetails!;
-
-          /// accessing the full passDetails
           final owner = pass.owner;
-
-          ///then from that gets owner model
 
           return SizedBox(
             width: size.width,
@@ -93,7 +75,7 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                   fit: BoxFit.cover,
                 ),
 
-                ///  Overlap card
+                // Overlap card
                 Positioned(
                   top: size.height * 0.4,
                   left: 0,
@@ -123,7 +105,6 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                               child: image.line.image(width: 87.w, height: 9.h),
                             ),
                           ),
-
                           SizedBox(height: 20.h),
 
                           // Scrollable content
@@ -134,31 +115,25 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                                 children: [
                                   // Provider info
                                   ProviderInfo(
+                                    image: owner.profileUrl,
                                     providerName: owner.email,
                                     rating: pass.averageRating.toString(),
                                     onTapCall: () {},
                                     onTapMessage: () {},
                                   ),
 
-                                  /// Services - exactly 3 items per row
+                                  // Services - exactly 3 items per row
                                   GridView.builder(
-                                    shrinkWrap:
-                                        true,
-                                    physics:
-                                        NeverScrollableScrollPhysics(),
-                                    itemCount: pass
-                                        .services
-                                        .length,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: pass.services.length,
                                     gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 3,
-                                          crossAxisSpacing:
-                                              12.w,
-                                          mainAxisSpacing:
-                                              6.h,
-                                          childAspectRatio:
-                                              1.3,
-                                        ),
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 3,
+                                      crossAxisSpacing: 12.w,
+                                      mainAxisSpacing: 6.h,
+                                      childAspectRatio: 1.3,
+                                    ),
                                     itemBuilder: (context, index) {
                                       final service = pass.services[index];
                                       return AvailableService(
@@ -173,9 +148,8 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                                   // Description
                                   Text(
                                     pass.description,
-                                    style: AppTextStyle.p_regular_12().copyWith(
-                                      color: AppColors.black_2,
-                                    ),
+                                    style: AppTextStyle.p_regular_12()
+                                        .copyWith(color: AppColors.black_2),
                                   ),
 
                                   SizedBox(height: 20.h),
@@ -184,7 +158,7 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                             ),
                           ),
 
-                          /// Bottom price and button
+                          // Bottom price and button
                           Padding(
                             padding: EdgeInsets.only(top: 10.h, bottom: 20.h),
                             child: Row(
@@ -201,7 +175,6 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
                                     onTap: () {
                                       Get.toNamed(
                                         Routes.passInformation,
-                                        /// pass the product id again
                                         arguments: {"id": id},
                                       );
                                     },

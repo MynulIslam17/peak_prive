@@ -1,8 +1,9 @@
 
 class AppUrls{
+  //https://qwkbmjl3-5000.inc1.devtunnels.ms/api/v1
 
 /// base url
-  static const baseUrl="https://sushil5000.syedbipul.me/api/v1";
+  static const baseUrl="https://qwkbmjl3-5000.inc1.devtunnels.ms/api/v1";
 
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
@@ -51,6 +52,8 @@ static String changePasswordUrl="$baseUrl/auth/change-password";
 
   /// ==========================hire=======================
 static String hireAllServiceUrl="$baseUrl/ski-hire/all";
+
+static String hireDetailsUrl(String id)=>"$baseUrl/ski-hire/${id}";
 
 
 

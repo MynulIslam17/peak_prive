@@ -1,6 +1,6 @@
 class HireDetailsModel {
   final String id;
-  final Category category;
+  final Category? category; // can be null
   final String title;
   final String thumbnail;
   final Owner owner;
@@ -9,14 +9,17 @@ class HireDetailsModel {
   final String serviceArea;
   final List<HireItem> items;
   final double averageRating;
-  final List<dynamic> reviews;
+
+  // UPDATED: reviews now typed
+  final List<Review> reviews;
+
   final List<dynamic> refunds;
   final DateTime createdAt;
   final DateTime updatedAt;
 
   HireDetailsModel({
     required this.id,
-    required this.category,
+    this.category,
     required this.title,
     required this.thumbnail,
     required this.owner,
@@ -33,17 +36,26 @@ class HireDetailsModel {
 
   factory HireDetailsModel.fromJson(Map<String, dynamic> json) {
     return HireDetailsModel(
-      id: json['_id'],
-      category: Category.fromJson(json['category']),
-      title: json['title'],
-      thumbnail: json['thumbnail'],
+      id: json['_id'] ?? '',
+      category: json['category'] != null
+          ? Category.fromJson(json['category'])
+          : null,
+      title: json['title'] ?? '',
+      thumbnail: json['thumbnail'] ?? '',
       owner: Owner.fromJson(json['owner']),
-      extraChargePerHour: json['extraChargePerHour'],
-      totalPrice: json['totalPrice'],
-      serviceArea: json['serviceArea'],
-      items: (json['items'] as List).map((e) => HireItem.fromJson(e)).toList(),
+      extraChargePerHour: json['extraChargePerHour'] ?? 0,
+      totalPrice: json['totalPrice'] ?? 0,
+      serviceArea: json['serviceArea'] ?? '',
+      items: (json['items'] as List<dynamic>? ?? [])
+          .map((e) => HireItem.fromJson(e))
+          .toList(),
       averageRating: (json['averageRating']?.toDouble() ?? 0.0),
-      reviews: json['reviews'] ?? [],
+
+      // UPDATED: map reviews list
+      reviews: (json['reviews'] as List<dynamic>? ?? [])
+          .map((e) => Review.fromJson(e))
+          .toList(),
+
       refunds: json['refunds'] ?? [],
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
@@ -64,25 +76,29 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: json['_id'],
-      name: json['name'],
-      categoryPhoto: json['categoryPhoto'],
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      categoryPhoto: json['categoryPhoto'] ?? '',
     );
   }
 }
 
 class Owner {
   final String id;
+  final String fullName;
   final String email;
   final String profileUrl;
+  final String address;
   final String providerType;
   final String status;
   final String role;
 
   Owner({
     required this.id,
+    required this.fullName,
     required this.email,
     required this.profileUrl,
+    required this.address,
     required this.providerType,
     required this.status,
     required this.role,
@@ -90,12 +106,14 @@ class Owner {
 
   factory Owner.fromJson(Map<String, dynamic> json) {
     return Owner(
-      id: json['_id'],
-      email: json['email'],
-      profileUrl: json['profileUrl'],
-      providerType: json['providerType'],
-      status: json['status'],
-      role: json['role'],
+      id: json['_id'] ?? '',
+      fullName: json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      profileUrl: json['profileUrl'] ?? '',
+      address: json['address'] ?? '',
+      providerType: json['providerType'] ?? '',
+      status: json['status'] ?? '',
+      role: json['role'] ?? '',
     );
   }
 }
@@ -119,12 +137,36 @@ class HireItem {
 
   factory HireItem.fromJson(Map<String, dynamic> json) {
     return HireItem(
-      id: json['_id'],
-      productName: json['productName'],
-      productPhoto: json['productPhoto'],
-      price: json['price'],
-      totalQty: json['totalQty'],
-      availableQty: json['availableQty'],
+      id: json['_id'] ?? '',
+      productName: json['productName'] ?? '',
+      productPhoto: json['productPhoto'] ?? '',
+      price: json['price'] ?? 0,
+      totalQty: json['totalQty'] ?? 0,
+      availableQty: json['availableQty'] ?? 0,
+    );
+  }
+}
+
+//   MODEL FOR REVIEWS
+class Review {
+  final String userId;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+
+  Review({
+    required this.userId,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      userId: json['userId'] ?? '',
+      rating: (json['rating']?.toDouble() ?? 0.0),
+      comment: json['comment'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 }

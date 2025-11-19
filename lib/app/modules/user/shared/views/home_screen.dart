@@ -23,9 +23,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
-  final icons=Assets.icons;
-
+  final icons = Assets.icons;
 
   final auth = Get.find<AuthController>();
   final pass = Get.find<AllPassController>();
@@ -53,37 +51,29 @@ class _HomeScreenState extends State<HomeScreen> {
     String type = nav.getServiceType;
 
     return Scaffold(
+      backgroundColor: Colors.white,
 
-
-      /// fav button
+      /// Floating Action Button
       floatingActionButton: FloatingActionButton(
-
-          backgroundColor: AppColors.primary_1,
-           child: Image.asset("assets/icons/fav.png"),
-          onPressed: (){
-
-            Get.offAllNamed(Routes.service);
-
-          }
-
-
+        backgroundColor: AppColors.primary_1,
+        child: Image.asset("assets/icons/fav.png"),
+        onPressed: () {
+          Get.offAllNamed(Routes.service);
+        },
       ),
 
-
-
-      backgroundColor: Colors.white,
       body: ListView(
         children: [
-          /// -------------------- HEADER --------------------
+          /// HEADER
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
             decoration: BoxDecoration(gradient: AppColors.appBarBackground),
             child: Column(
               children: [
                 UserProfileSection(
-                  name: auth.userModel!.fullName,
-                  image: auth.userModel!.profilePic,
-                  onTap: () {  },
+                  name: auth.userModel?.fullName ?? "User",
+                  image: auth.userModel?.profilePic ?? "",
+                  onTap: () {},
                 ),
                 SizedBox(height: 20.h),
                 CustomSearchBar(
@@ -98,72 +88,76 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          SizedBox(height: 20),
+          SizedBox(height: 20.h),
 
           /// CATEGORY ONLY FOR OTHER SERVICES
           if (type != "ski_pass")
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CategoryTitle(title: "Category", text: "See All", onClick: () {  },),
-                  SizedBox(height: 10),
+                  CategoryTitle(
+                    title: "Category",
+                    text: "See All",
+                    onClick: () {},
+                  ),
+                  SizedBox(height: 10.h),
                   CategoryList(
                     titles: ["A", "B", "C"],
-                    icons: [icons.honda,icons.bmw,icons.bmw,],
+                    icons: [icons.honda, icons.bmw, icons.bmw],
                     onTap: () {},
                   ),
                 ],
               ),
             ),
 
-          SizedBox(height: 10),
+          SizedBox(height: 10.h),
 
-          /// -------------------- LIST SECTION --------------------
+          /// LIST SECTION
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CategoryTitle(
-                  title: type == "ski_pass"
-                      ? "Top Ski Pass"
-                      : "Top Ski Hire",
-                  text: "See All", onClick: () {  },
+                  title: type == "ski_pass" ? "Top Ski Pass" : "Top Ski Hire",
+                  text: "See All",
+                  onClick: () {},
                 ),
 
-                SizedBox(height: 10),
+                SizedBox(height: 10.h),
 
-                /// ---------------- PASS LIST ----------------
+                /// PASS LIST
                 if (type == "ski_pass")
                   GetBuilder<AllPassController>(
                     builder: (controller) {
                       if (controller.fetchProgress) {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
                       }
 
                       if (controller.skiPassList.isEmpty) {
-                        return Center(child: Text("No ski pass available"));
+                        return const Center(
+                          child: Text("No ski pass available"),
+                        );
                       }
 
-                      /// DIRECT LIST — NO EXTRA METHODS
                       return Column(
-                        children: List.generate(controller.skiPassList.length, (i) {
-                          final item =controller.skiPassList[i];
+                        children: controller.skiPassList.map((item) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 7),
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
                             child: ItemCard(
-                              image: item.thumbnail,
-                              title: item.title,
-                              price: "\$${item.amount}",
+                              image: item.thumbnail ?? "",
+                              title: item.title ?? "",
+                              price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
                               rating: item.averageRating ?? 0.0,
-                              reviewCount: "(${item.reviews.length})",
+                              reviewCount: "${item.reviews.length}",
                               location: item.serviceArea ?? "",
                               fromSkiPasses: true,
                               skiPassType: item.skiPassType ?? "",
                               onTap: () {
-
                                 Get.toNamed(
                                   Routes.passCardDetails,
                                   arguments: {"id": item.id},
@@ -171,48 +165,49 @@ class _HomeScreenState extends State<HomeScreen> {
                               },
                             ),
                           );
-                        }),
+                        }).toList(),
                       );
                     },
                   ),
 
-                /// ---------------- HIRE LIST ----------------
+                /// HIRE LIST
                 if (type == "ski_hire")
                   GetBuilder<SkiHireController>(
                     builder: (controller) {
                       if (controller.isLoading) {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
                       }
 
                       if (controller.skiHireList.isEmpty) {
-                        return Center(child: Text("No ski hire available"));
+                        return const Center(
+                          child: Text("No ski hire available"),
+                        );
                       }
 
                       return Column(
-                        children: List.generate(controller.skiHireList.length, (i) {
-                          final item = controller.skiHireList[i];
+                        children: controller.skiHireList.map((item) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 7),
+                            padding: EdgeInsets.symmetric(vertical: 7.h),
                             child: ItemCard(
-                              image: item.thumbnail,
-                              title: item.title,
-                              price: "\$${item.totalPrice}",
-                              rating: item.averageRating,
-                              reviewCount: "(${item.reviews.length})",
-                              location: item.serviceArea,
+                              image: item.thumbnail ?? "",
+                              title: item.title ?? "",
+                              price: "\$${item.totalPrice?.toStringAsFixed(2) ?? "0"}",
+                              rating: item.averageRating ?? 0.0,
+                              reviewCount: "${item.reviews.length}",
+                              location: item.serviceArea ?? "",
                               fromSkiPasses: false,
                               skiPassType: "",
                               onTap: () {
-
                                 Get.toNamed(
                                   Routes.hireDetails,
-
+                                  arguments: {"id": item.id},
                                 );
-
                               },
                             ),
                           );
-                        }),
+                        }).toList(),
                       );
                     },
                   ),

@@ -25,11 +25,11 @@ import 'package:harry_service_app/app/modules/provider/transport/views/add_trans
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
+
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/pass/bindings/booking_bindings.dart';
-import 'package:harry_service_app/app/modules/user/pass/bindings/singlePass_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
@@ -43,6 +43,9 @@ import '../modules/auth/views/signup_screen.dart';
 import '../modules/onboard/views/on_boarding_screen.dart';
 
 
+
+import '../modules/user/hire/bindings/hire_details_bindings.dart';
+import '../modules/user/pass/bindings/pass_details_bindings.dart';
 import '../modules/user/shared/bindings/bottom_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';
 
@@ -148,7 +151,8 @@ abstract class AppPages {
     GetPage(name: Routes.bookingRequest, page: () => BookingRequest()),
 
     /// hire
-    GetPage(name: Routes.hireDetails, page: () => HireDetailsScreen()),
+    GetPage(name: Routes.hireDetails, page: () => HireDetailsScreen(),
+    binding: HireDetailsBinding()),
 
     /// restaurant
     GetPage(name: Routes.restaurantDetails, page: () => RestaurantDetails()),

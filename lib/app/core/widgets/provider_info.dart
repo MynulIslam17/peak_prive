@@ -9,21 +9,23 @@ import '../constants/text-style.dart';
 class ProviderInfo extends StatelessWidget {
   final String providerName;
   final String rating;
-  final String reviewCount;
+  final int reviewCount;
 
   final VoidCallback onTapCall;
   final VoidCallback onTapMessage;
 
   final icon = Assets.icons;
-  final image = Assets.images;
+ // final image = Assets.images;
+  final String ?image;
 
   const ProviderInfo({
     super.key,
     this.providerName = "Md Billu",
     this.rating = "0.0",
-    this.reviewCount = "0",
+    this.reviewCount = 0,
     required this.onTapCall,
     required this.onTapMessage,
+     this.image,
   });
 
   @override
@@ -46,11 +48,14 @@ class ProviderInfo extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
-          // Profile Image
+          ///  Profile Image
           CircleAvatar(
             radius: 30,
-            backgroundImage: image.user2.provider(),
+            backgroundImage: image != null
+                ? NetworkImage(image!)
+                : const AssetImage("assets/images/profile_img.png") as ImageProvider, // image null then show default image
           ),
+
           SizedBox(width: 10.w),
 
           // Name & Rating Column
@@ -59,7 +64,7 @@ class ProviderInfo extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Provider Name
+                /// Provider Name
                 Text(
                   providerName,
                   style: AppTextStyle.p_medium_12().copyWith(fontSize: 16),

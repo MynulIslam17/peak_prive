@@ -25,20 +25,24 @@ class SkiPass {
 
   factory SkiPass.fromJson(Map<String, dynamic> json) {
     return SkiPass(
-      id: json["_id"] ?? "",
-      title: json["title"] ?? "",
-      thumbnail: json["thumbnail"] ?? "",
-      skiPassType: json["skiPassType"] ?? "",
-      services: (json["services"] as List<dynamic>)
-          .map((e) => ServiceItem.fromJson(e))
-          .toList(),
-      serviceArea: json["serviceArea"] ?? "",
-      amount: json["amount"] ?? 0,
-      description: json["description"] ?? "",
+      id: json["_id"]?.toString() ?? "",
+      title: json["title"]?.toString() ?? "",
+      thumbnail: json["thumbnail"]?.toString() ?? "",
+      skiPassType: json["skiPassType"]?.toString() ?? "",
+      services: (json["services"] as List<dynamic>?)
+          ?.map((e) => ServiceItem.fromJson(e))
+          .toList() ??
+          [],
+      serviceArea: json["serviceArea"]?.toString() ?? "",
+      amount: (json["amount"] ?? 0) is int
+          ? json["amount"]
+          : int.tryParse(json["amount"].toString()) ?? 0,
+      description: json["description"]?.toString() ?? "",
       averageRating: (json["averageRating"] ?? 0).toDouble(),
-      reviews: (json["reviews"] as List<dynamic>)
-          .map((e) => ReviewItem.fromJson(e))
-          .toList(),
+      reviews: (json["reviews"] as List<dynamic>?)
+          ?.map((e) => ReviewItem.fromJson(e))
+          .toList() ??
+          [],
     );
   }
 }
@@ -51,31 +55,31 @@ class ServiceItem {
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     return ServiceItem(
-      title: json["title"] ?? "",
-      description: json["description"] ?? "",
+      title: json["title"]?.toString() ?? "",
+      description: json["description"]?.toString() ?? "",
     );
   }
 }
 
 class ReviewItem {
-  final String? userId;
+  final String userId;
   final double rating;
   final String comment;
-  final String? createdAt;
+  final String createdAt;
 
   ReviewItem({
-    this.userId,
+    required this.userId,
     required this.rating,
     required this.comment,
-    this.createdAt,
+    required this.createdAt,
   });
 
   factory ReviewItem.fromJson(Map<String, dynamic> json) {
     return ReviewItem(
-      userId: json["userId"],
+      userId: json["userId"]?.toString() ?? "",
       rating: (json["rating"] ?? 0).toDouble(),
-      comment: json["comment"] ?? "",
-      createdAt: json["createdAt"],
+      comment: json["comment"]?.toString() ?? "",
+      createdAt: json["createdAt"]?.toString() ?? "",
     );
   }
 }
