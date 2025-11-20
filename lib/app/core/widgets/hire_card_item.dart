@@ -1,8 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../gen/assets.gen.dart';
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
 
@@ -10,6 +8,8 @@ class HireCardItem extends StatelessWidget {
   final String productImg;
   final String itemName;
   final int productPrice;
+
+  final int quantity; // <-- NEW
   final VoidCallback addOnTap;
   final VoidCallback removeOnTap;
 
@@ -17,76 +17,94 @@ class HireCardItem extends StatelessWidget {
     super.key,
     required this.productImg,
     required this.itemName,
+    required this.productPrice,
+    required this.quantity, // <-- NEW
     required this.addOnTap,
     required this.removeOnTap,
-    required this.productPrice
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      margin: EdgeInsets.symmetric(vertical: 4.h, horizontal: 2.w),
+      elevation: 3,
+      margin: EdgeInsets.all(6.w),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 6.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      shadowColor: Colors.grey.withOpacity(0.2),
+      child: Container(
+        height: 160.h,
+        padding: EdgeInsets.all(10.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            /// Left Section (image + Name)
-            Flexible(
-              flex: 2,
-              child: Row(
-                children: [
-                  Image.network(productImg,width: 40,height: 40,),
-                  SizedBox(width: 5.w),
-                  Expanded(
-                    child: Text(
-                      itemName,
-                      style: AppTextStyle.c_regular_12().copyWith(fontSize: 10.sp),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                productImg,
+                height: 60.h,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+            SizedBox(height: 8.h),
+
+            Text(
+              itemName,
+              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
+              maxLines: 2,
+            ),
+            SizedBox(height: 4.h),
+
+            Text(
+              "\$$productPrice",
+              style: AppTextStyle.sub_h3_medium_14(
+                color: AppColors.primary_1,
               ),
             ),
 
-            /// Right Section (Price + +/-)
-            Flexible(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    "${productPrice}",
-                    style: AppTextStyle.c_regular_12(
-                      color: AppColors.primary_1,
+            const Spacer(),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Remove
+                Material(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  child: InkWell(
+                    onTap: removeOnTap,
+                    child: Padding(
+                      padding: EdgeInsets.all(4.w),
+                      child: Icon(Icons.remove, size: 16.sp, color: Colors.red),
                     ),
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      InkWell(
-                        onTap: addOnTap,
-                        child: const Icon(Icons.add, size: 14),
-                      ),
-                      SizedBox(width: 3.w),
-                      Text(
-                        "1",
-                        style: AppTextStyle.sub_h3_medium_14().copyWith(fontSize: 10.sp),
-                      ),
-                      SizedBox(width: 3.w),
-                      InkWell(
-                        onTap: removeOnTap,
-                        child: const Icon(Icons.remove, size: 14),
-                      ),
-                    ],
+                ),
+
+                SizedBox(width: 6.w),
+
+                /// SHOW REAL CONTROLLER QUANTITY
+                Text(
+                  "$quantity",
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+                ),
+
+                SizedBox(width: 6.w),
+
+                // Add
+                Material(
+                  color: AppColors.primary_1.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  child: InkWell(
+                    onTap: addOnTap,
+                    child: Padding(
+                      padding: EdgeInsets.all(4.w),
+                      child:
+                      Icon(Icons.add, size: 16.sp, color: AppColors.primary_1),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),

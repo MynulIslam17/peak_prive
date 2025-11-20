@@ -48,6 +48,33 @@ class NavController extends GetxController{
 
 
 
+   /// counter  controll
+
+ int _count=0;
+
+  int get getCount=>_count;
+
+
+  void increaseCount(){
+    _count++;
+    update();
+  }
+
+  void decreaseCount(){
+    _count--;
+    update();
+  }
+
+  void resetCount(){
+    _count=0;
+    update();
+  }
+
+
+
+
+
+
 
 
 }

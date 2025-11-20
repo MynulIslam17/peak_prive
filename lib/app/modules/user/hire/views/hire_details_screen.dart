@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+import 'package:harry_service_app/app/core/widgets/selected_hire_tem.dart';
 import 'package:harry_service_app/app/modules/user/hire/contollers/hire_details_controller.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
 import '../../../../../gen/assets.gen.dart';
@@ -21,8 +23,15 @@ class HireDetailsScreen extends StatefulWidget {
 
 class _HireDetailsScreenState extends State<HireDetailsScreen>
     with SingleTickerProviderStateMixin {
+
+
+
   late TabController tabController;
+
+  /// find controller
   final hireController = Get.find<HireDetailsController>();
+  final navController = Get.find<NavController>();
+
   late final String id;
   final icon = Assets.icons;
   final image = Assets.images;
@@ -111,7 +120,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           height: size.height,
           child: Stack(
             children: [
-              // Background image
+              ///  Background image
               Image.network(
                 hireDetails.thumbnail,
                 height: size.height * 0.48,
@@ -187,259 +196,325 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                             ),
                           ),
 
-                          // Price + Book Now
+
+                          /// selected item book now + price
                           Padding(
                             padding: EdgeInsets.only(top: 10.h, bottom: 20.h),
                             child: Row(
                               children: [
                                 Text(
-                                  "\$9.99",
+                                  "\$${controller.totalSelectedPrice}",
                                   style: AppTextStyle.sub_h1_medium_18(
                                       color: AppColors.primary_1),
                                 ),
                                 SizedBox(width: 30.w),
                                 Expanded(
-                                  child: CustomButton(
-                                    height: 44,
-                                    onTap: () {
-                                      setState(() {
-                                        _isClickedBookButton = true;
-                                      });
-                                    },
-                                    text: "Book Now",
-                                    backgroundColor: AppColors.primary_1,
+
+                                  child:SizedBox(
+                                    height: 60,
+                                    child: ElevatedButton(
+                                      onPressed: controller.totalSelectedPrice > 0
+                                          ? () {
+                                        setState(() {
+                                          _isClickedBookButton = true;
+                                          Map<String, int> selectedItems = controller.selectedItems;
+                                          print(selectedItems);
+                                        });
+                                      }
+                                          : null, /// disables button when totalSelectedPrice is 0
+                                      style: ButtonStyle(
+                                        backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                              (states) {
+                                            if (states.contains(MaterialState.disabled)) {
+                                              return Colors.grey.shade300;
+                                            }
+                                            return AppColors.primary_1; /// enabled color
+                                          },
+                                        ),
+                                        foregroundColor: MaterialStateProperty.resolveWith<Color>(
+                                              (states) {
+                                            if (states.contains(MaterialState.disabled)) {
+                                              return Colors.grey.shade600; /// disabled text color
+                                            }
+                                            return Colors.white; /// enabled text color
+                                          },
+                                        ),
+                                        textStyle: MaterialStateProperty.all(const TextStyle(fontSize: 16)),
+                                        shape: MaterialStateProperty.all(
+                                          RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                        ),
+                                        elevation: MaterialStateProperty.all(4), // subtle shadow
+                                      ),
+                                      child: const Text("Book Now"),
+                                    ),
                                   ),
+
+
                                 ),
                               ],
                             ),
                           ),
                         ] else ...[
-                          // Booking section
+                          /// when item got selected and click Booking section
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Text(
-                                    "Ski Item",
-                                    style: AppTextStyle.sub_h1_medium_18(),
-                                  ),
-                                ),
-                                SizedBox(height: 10.h),
-                                SizedBox(
-                                  width: 200,
-                                  child: HireCardItem(
-                                    productPrice: 20,
-                                    productImg: "",
-                                    itemName: "Apparel",
-                                    addOnTap: () {},
-                                    removeOnTap: () {},
-                                  ),
-                                ),
-                                SizedBox(height: 20.h),
-                                // Total price container
-                                Container(
-                                  height: 160,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.withOpacity(0.4),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+
+                                  /// header part
+                                  Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Text(
+                                      "Selected Ski Item",
+                                      style: AppTextStyle.sub_h1_medium_18(),
                                     ),
                                   ),
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            left: 20,
-                                            right: 20,
-                                            top: 15,
-                                            bottom: 10,
+
+                                  /// selected product show here
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    itemCount: controller.hireDetails!.items
+                                        .where((item) => controller.getQuantity(item.id) > 0)
+                                        .length,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2, // 2 columns
+                                      mainAxisSpacing: 10, // vertical spacing
+                                      crossAxisSpacing: 10, // horizontal spacing
+                                      childAspectRatio: 1.9, // adjust height/width ratio as needed
+                                    ),
+                                    itemBuilder: (context, index) {
+                                      final filteredItems = controller.hireDetails!.items
+                                          .where((item) => controller.getQuantity(item.id) > 0)
+                                          .toList();
+                                      final item = filteredItems[index];
+
+                                      return SelectedItem(
+                                          productName: item.productName,
+                                          productImg: item.productPhoto,
+                                          quantity:controller.getQuantity(item.id),
+                                          price: item.price
+                                      );
+
+
+                                    },
+                                  ),
+
+
+
+
+
+
+
+
+
+                                  SizedBox(height: 20.h),
+                                  /// Total price container
+                                  Container(
+                                    height: 160,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.grey.withOpacity(0.4),
+                                      ),
+                                    ),
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 20,
+                                              right: 20,
+                                              top: 15,
+                                              bottom: 10,
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text("Product Name",
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14()),
+                                                Text("Unit",
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14()),
+                                                Text("Price",
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14()),
+                                              ],
+                                            ),
                                           ),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text("Product Name",
-                                                  style: AppTextStyle
-                                                      .sub_h3_medium_14()),
-                                              Text("Unit",
-                                                  style: AppTextStyle
-                                                      .sub_h3_medium_14()),
-                                              Text("Price",
-                                                  style: AppTextStyle
-                                                      .sub_h3_medium_14()),
-                                            ],
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 20, vertical: 2),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text("Ski jacket",
+                                                    style: AppTextStyle
+                                                        .sub_h3_regular_14()),
+                                                Text("1",
+                                                    style: AppTextStyle
+                                                        .sub_h3_regular_14()),
+                                                Text("\$02",
+                                                    style: AppTextStyle
+                                                        .sub_h3_regular_14()),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 20, vertical: 2),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text("Ski jacket",
-                                                  style: AppTextStyle
-                                                      .sub_h3_regular_14()),
-                                              Text("1",
-                                                  style: AppTextStyle
-                                                      .sub_h3_regular_14()),
-                                              Text("\$02",
-                                                  style: AppTextStyle
-                                                      .sub_h3_regular_14()),
-                                            ],
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 20, vertical: 10),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text("Total",
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14()),
+                                                Text(controller.hireDetails!.totalPrice.toString(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_regular_14()),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 20, vertical: 10),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text("Total",
-                                                  style: AppTextStyle
-                                                      .sub_h3_medium_14()),
-                                              Text("\$200",
-                                                  style: AppTextStyle
-                                                      .sub_h3_regular_14()),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                SizedBox(height: 10.h),
-                                // Date selection card
-                                Card(
-                                  color: Colors.white,
-                                  child: SizedBox(
-                                    height: 100.h,
-                                    child: Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                          children: [
-                                            // Start Date
-                                            Expanded(
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    "Start Date & Time",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()
-                                                        .copyWith(fontSize: 11.sp),
-                                                  ),
-                                                  SizedBox(height: 6.h),
-                                                  InkWell(
-                                                    onTap: () =>
-                                                        _datePicker(isStart: true),
-                                                    child: Container(
-                                                      width: 155.w,
-                                                      height: 38,
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color: Colors.grey),
-                                                        borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                      ),
-                                                      padding:
-                                                      const EdgeInsets.symmetric(
-                                                          horizontal: 8),
-                                                      child: Row(
-                                                        children: [
-                                                          icon.calendarDots
-                                                              .svg(width: 20, height: 20),
-                                                          SizedBox(width: 5.w),
-                                                          Text(
-                                                            startDate == null
-                                                                ? "Date & Time"
-                                                                : "${startDate!.day.toString().padLeft(2, '0')}/"
-                                                                "${startDate!.month.toString().padLeft(2, '0')}/"
-                                                                "${startDate!.year} "
-                                                                "${startDate!.hour.toString().padLeft(2, '0')}:"
-                                                                "${startDate!.minute.toString().padLeft(2, '0')}",
-                                                            style: AppTextStyle
-                                                                .c_regular_10(),
-                                                          ),
-                                                        ],
+                                  SizedBox(height: 10.h),
+                                  /// Date selection card
+                                  Card(
+                                    color: Colors.white,
+                                    child: SizedBox(
+                                      height: 100.h,
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                            children: [
+                                              // Start Date
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "Start Date & Time",
+                                                      style: AppTextStyle
+                                                          .sub_h3_medium_14()
+                                                          .copyWith(fontSize: 11.sp),
+                                                    ),
+                                                    SizedBox(height: 6.h),
+                                                    InkWell(
+                                                      onTap: () =>
+                                                          _datePicker(isStart: true),
+                                                      child: Container(
+                                                        width: 155.w,
+                                                        height: 38,
+                                                        decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color: Colors.grey),
+                                                          borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                        ),
+                                                        padding:
+                                                        const EdgeInsets.symmetric(
+                                                            horizontal: 8),
+                                                        child: Row(
+                                                          children: [
+                                                            icon.calendarDots
+                                                                .svg(width: 20, height: 20),
+                                                            SizedBox(width: 5.w),
+                                                            Text(
+                                                              startDate == null
+                                                                  ? "Date & Time"
+                                                                  : "${startDate!.day.toString().padLeft(2, '0')}/"
+                                                                  "${startDate!.month.toString().padLeft(2, '0')}/"
+                                                                  "${startDate!.year} "
+                                                                  "${startDate!.hour.toString().padLeft(2, '0')}:"
+                                                                  "${startDate!.minute.toString().padLeft(2, '0')}",
+                                                              style: AppTextStyle
+                                                                  .c_regular_10(),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            SizedBox(width: 20.w),
-                                            // End Date
-                                            Expanded(
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    "End Date & Time",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()
-                                                        .copyWith(fontSize: 11.sp),
-                                                  ),
-                                                  SizedBox(height: 6.h),
-                                                  InkWell(
-                                                    onTap: () =>
-                                                        _datePicker(isStart: false),
-                                                    child: Container(
-                                                      width: 155.w,
-                                                      height: 38,
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                            color: Colors.grey),
-                                                        borderRadius:
-                                                        BorderRadius.circular(
-                                                            8),
-                                                      ),
-                                                      padding:
-                                                      const EdgeInsets.symmetric(
-                                                          horizontal: 8),
-                                                      child: Row(
-                                                        children: [
-                                                          icon.calendarDots
-                                                              .svg(width: 20, height: 20),
-                                                          SizedBox(width: 5.w),
-                                                          Text(
-                                                            endDate == null
-                                                                ? "Date & Time"
-                                                                : "${endDate!.day.toString().padLeft(2, '0')}/"
-                                                                "${endDate!.month.toString().padLeft(2, '0')}/"
-                                                                "${endDate!.year} "
-                                                                "${endDate!.hour.toString().padLeft(2, '0')}:"
-                                                                "${endDate!.minute.toString().padLeft(2, '0')}",
-                                                            style: AppTextStyle
-                                                                .c_regular_10(),
-                                                          ),
-                                                        ],
+                                              SizedBox(width: 20.w),
+                                              // End Date
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "End Date & Time",
+                                                      style: AppTextStyle
+                                                          .sub_h3_medium_14()
+                                                          .copyWith(fontSize: 11.sp),
+                                                    ),
+                                                    SizedBox(height: 6.h),
+                                                    InkWell(
+                                                      onTap: () =>
+                                                          _datePicker(isStart: false),
+                                                      child: Container(
+                                                        width: 155.w,
+                                                        height: 38,
+                                                        decoration: BoxDecoration(
+                                                          border: Border.all(
+                                                              color: Colors.grey),
+                                                          borderRadius:
+                                                          BorderRadius.circular(
+                                                              8),
+                                                        ),
+                                                        padding:
+                                                        const EdgeInsets.symmetric(
+                                                            horizontal: 8),
+                                                        child: Row(
+                                                          children: [
+                                                            icon.calendarDots
+                                                                .svg(width: 20, height: 20),
+                                                            SizedBox(width: 5.w),
+                                                            Text(
+                                                              endDate == null
+                                                                  ? "Date & Time"
+                                                                  : "${endDate!.day.toString().padLeft(2, '0')}/"
+                                                                  "${endDate!.month.toString().padLeft(2, '0')}/"
+                                                                  "${endDate!.year} "
+                                                                  "${endDate!.hour.toString().padLeft(2, '0')}:"
+                                                                  "${endDate!.minute.toString().padLeft(2, '0')}",
+                                                              style: AppTextStyle
+                                                                  .c_regular_10(),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                           Padding(
@@ -472,37 +547,37 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   /// About section
   Widget _aboutSection(hireDetails) {
-    final icon = Assets.icons;
-
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GridView.builder(
+      child: GetBuilder<HireDetailsController>(
+        builder: (controller) {
+          return GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: hireDetails.items.length,
+            itemCount: controller.hireDetails!.items.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
-              childAspectRatio: 2.2,
+              childAspectRatio: 0.8,
             ),
             itemBuilder: (context, index) {
-              final item = hireDetails.items[index];
+              final item = controller.hireDetails!.items[index];
+
               return HireCardItem(
                 productImg: item.productPhoto,
                 itemName: item.productName,
-                addOnTap: () {},
-                removeOnTap: () {},
                 productPrice: item.price,
+                quantity: controller.getQuantity(item.id),
+                addOnTap: () => controller.addItem(item.id),
+                removeOnTap: () => controller.removeItem(item.id),
               );
             },
-          ),
-        ],
+          );
+        },
       ),
     );
   }
+
 }
