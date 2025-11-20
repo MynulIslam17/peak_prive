@@ -45,7 +45,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
     if (pickedDate == null) return;
@@ -207,9 +207,9 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                   style: AppTextStyle.sub_h1_medium_18(
                                       color: AppColors.primary_1),
                                 ),
+
                                 SizedBox(width: 30.w),
                                 Expanded(
-
                                   child:SizedBox(
                                     height: 60,
                                     child: ElevatedButton(
@@ -287,6 +287,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       childAspectRatio: 1.9, // adjust height/width ratio as needed
                                     ),
                                     itemBuilder: (context, index) {
+
                                       final filteredItems = controller.hireDetails!.items
                                           .where((item) => controller.getQuantity(item.id) > 0)
                                           .toList();
@@ -304,17 +305,11 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                   ),
 
 
-
-
-
-
-
-
-
                                   SizedBox(height: 20.h),
+
+
                                   /// Total price container
                                   Container(
-                                    height: 160,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
@@ -324,6 +319,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                     child: SingleChildScrollView(
                                       child: Column(
                                         children: [
+                                          // Header Row
                                           Padding(
                                             padding: const EdgeInsets.only(
                                               left: 20,
@@ -332,53 +328,46 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                               bottom: 10,
                                             ),
                                             child: Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text("Product Name",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()),
-                                                Text("Unit",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()),
-                                                Text("Price",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()),
+                                                Text("Product Name", style: AppTextStyle.sub_h3_medium_14()),
+                                                Text("Unit", style: AppTextStyle.sub_h3_medium_14()),
+                                                Text("Price", style: AppTextStyle.sub_h3_medium_14()),
                                               ],
                                             ),
                                           ),
+
+                                          /// List of selected items
+                                          ...controller.hireDetails!.items
+                                              .where((item) => controller.getQuantity(item.id) > 0)
+                                              .map((item) {
+                                            final qty = controller.getQuantity(item.id);
+                                            final price = item.price * qty;
+
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                              child: Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Text(item.productName, style: AppTextStyle.sub_h3_regular_14()),
+                                                  Text(qty.toString(), style: AppTextStyle.sub_h3_regular_14()),
+                                                  Text("\$$price", style: AppTextStyle.sub_h3_regular_14()),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+
+                                          /// Total Price Row
                                           Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 20, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                             child: Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text("Ski jacket",
-                                                    style: AppTextStyle
-                                                        .sub_h3_regular_14()),
-                                                Text("1",
-                                                    style: AppTextStyle
-                                                        .sub_h3_regular_14()),
-                                                Text("\$02",
-                                                    style: AppTextStyle
-                                                        .sub_h3_regular_14()),
-                                              ],
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 20, vertical: 10),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                              children: [
-                                                Text("Total",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14()),
-                                                Text(controller.hireDetails!.totalPrice.toString(),
-                                                    style: AppTextStyle
-                                                        .sub_h3_regular_14()),
+                                                Text("Total", style: AppTextStyle.sub_h3_medium_14()),
+                                                Text(
+                                                  "\$${controller.totalSelectedPrice}",
+                                                  style: AppTextStyle.sub_h3_regular_14(),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -386,6 +375,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       ),
                                     ),
                                   ),
+
                                   SizedBox(height: 10.h),
                                   /// Date selection card
                                   Card(
@@ -454,7 +444,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                 ),
                                               ),
                                               SizedBox(width: 20.w),
-                                              // End Date
+                                              /// End Date
                                               Expanded(
                                                 child: Column(
                                                   mainAxisSize: MainAxisSize.min,
