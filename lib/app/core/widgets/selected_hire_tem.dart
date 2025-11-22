@@ -36,8 +36,8 @@ class SelectedItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
               productImg,
-              width: 80,
-              height: 80,
+              width: 40,
+              height: 50,
               fit: BoxFit.cover,
             ),
           ),
@@ -53,25 +53,25 @@ class SelectedItem extends StatelessWidget {
                 Text(
                   productName,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Text(
                   "Quantity: $quantity",
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 11,
                     color: Colors.grey,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   "\$$price",
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
                     color: Colors.green,
                   ),

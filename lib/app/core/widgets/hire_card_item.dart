@@ -42,8 +42,8 @@ class HireCardItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
                 productImg,
-                height: 60.h,
-                width: double.infinity,
+                height: 70,
+                width: 60,
                 fit: BoxFit.cover,
               ),
             ),
@@ -51,7 +51,7 @@ class HireCardItem extends StatelessWidget {
 
             Text(
               itemName,
-              style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w500),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               maxLines: 2,
             ),
             SizedBox(height: 4.h),
@@ -76,7 +76,7 @@ class HireCardItem extends StatelessWidget {
                     onTap: removeOnTap,
                     child: Padding(
                       padding: EdgeInsets.all(4.w),
-                      child: Icon(Icons.remove, size: 16.sp, color: Colors.red),
+                      child: Icon(Icons.remove, size: 16, color: Colors.red),
                     ),
                   ),
                 ),
@@ -86,7 +86,7 @@ class HireCardItem extends StatelessWidget {
                 /// SHOW REAL CONTROLLER QUANTITY
                 Text(
                   "$quantity",
-                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
 
                 SizedBox(width: 6.w),
@@ -100,7 +100,7 @@ class HireCardItem extends StatelessWidget {
                     child: Padding(
                       padding: EdgeInsets.all(4.w),
                       child:
-                      Icon(Icons.add, size: 16.sp, color: AppColors.primary_1),
+                      Icon(Icons.add, size: 16, color: AppColors.primary_1),
                     ),
                   ),
                 ),

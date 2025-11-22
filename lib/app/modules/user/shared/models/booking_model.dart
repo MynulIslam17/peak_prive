@@ -1,330 +1,230 @@
-import 'dart:convert';
-
 class BookingModel {
+  final Pagination pagination;
   final List<Booking> result;
 
-  BookingModel({required this.result});
+  BookingModel({
+    required this.pagination,
+    required this.result,
+  });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
-      result: (json['result'] as List<dynamic>?)
-          ?.map((e) => Booking.fromJson(e))
-          .toList() ??
-          [],
+      pagination: Pagination.fromJson(json['pagination'] ?? {}),
+      result: (json['result'] as List? ?? [])
+          .map((e) => Booking.fromJson(e))
+          .toList(),
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'result': result.map((e) => e.toJson()).toList(),
-  };
 }
 
 class Booking {
-  final String? id;
-  final User? user;
-  final Product? product;
-  final String? productModel;
-  final String? category;
-
-  // common booking fields
-  final int? personCount;
-  final DateTime? date;
-  final String? time;
-  final DateTime? startDateAndTime;
-  final DateTime? endDateAndTime;
-  final List<String>? slots;
-  final String? bookingStatus;
-  final double? totalPrice;
-  final bool? isPermitted;
-  final List<BookingItem>? bookingItems;
-  final String? timeLabel;
-  final Map<String, dynamic>? extra; // catch unknown fields
+  final String id;
+  final User user;
+  final Product product;
+  final String productModel;
+  final String category;
+  final DateTime startDateAndTime;
+  final DateTime endDateAndTime;
+  final List<BookingItem> bookingItems;
+  final List<dynamic> slots;
+  final String bookingStatus;
+  final double totalPrice;
+  final String phoneNumber;
+  final String address;
+  final bool isPermitted;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   Booking({
-    this.id,
-    this.user,
-    this.product,
-    this.productModel,
-    this.category,
-    this.personCount,
-    this.date,
-    this.time,
-    this.startDateAndTime,
-    this.endDateAndTime,
-    this.slots,
-    this.bookingStatus,
-    this.totalPrice,
-    this.isPermitted,
-    this.bookingItems,
-    this.timeLabel,
-    this.extra,
+    required this.id,
+    required this.user,
+    required this.product,
+    required this.productModel,
+    required this.category,
+    required this.startDateAndTime,
+    required this.endDateAndTime,
+    required this.bookingItems,
+    required this.slots,
+    required this.bookingStatus,
+    required this.totalPrice,
+    required this.phoneNumber,
+    required this.address,
+    required this.isPermitted,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(String? value) {
+      if (value == null) return DateTime.now();
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
     return Booking(
-      id: json['_id'],
-      user: json['user'] != null ? User.fromJson(json['user']) : null,
-      product: json['product'] != null ? Product.fromJson(json['product']) : null,
-      productModel: json['productModel'],
-      category: json['category'],
-      personCount: json['personCount'] != null
-          ? int.tryParse(json['personCount'].toString()) ?? json['personCount']
-          : null,
-      date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
-      time: json['time'],
-      startDateAndTime: json['startDateAndTime'] != null
-          ? DateTime.tryParse(json['startDateAndTime'])
-          : null,
-      endDateAndTime:
-      json['endDateAndTime'] != null ? DateTime.tryParse(json['endDateAndTime']) : null,
-      slots: json['slots'] != null
-          ? (json['slots'] as List<dynamic>).map((e) => e.toString()).toList()
-          : [],
-      bookingStatus: json['bookingStatus'],
-      totalPrice: json['totalPrice'] != null ? (json['totalPrice'] as num).toDouble() : null,
-      isPermitted: json['isPermitted'],
-      bookingItems: json['bookingItems'] != null
-          ? (json['bookingItems'] as List<dynamic>)
+      id: json['_id'] ?? '',
+      user: json['user'] != null ? User.fromJson(json['user']) : User.empty(),
+      product: json['product'] != null ? Product.fromJson(json['product']) : Product.empty(),
+      productModel: json['productModel'] ?? '',
+      category: json['category'] ?? '',
+      startDateAndTime: parseDate(json['startDateAndTime']),
+      endDateAndTime: parseDate(json['endDateAndTime']),
+      bookingItems: (json['bookingItems'] as List? ?? [])
           .map((e) => BookingItem.fromJson(e))
-          .toList()
-          : [],
-      timeLabel: json['timeLabel'],
-      extra: json,
+          .toList(),
+      slots: json['slots'] ?? [],
+      bookingStatus: json['bookingStatus'] ?? '',
+      totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
+      phoneNumber: json['phoneNumber'] ?? '',
+      address: json['address'] ?? '',
+      isPermitted: json['isPermitted'] ?? false,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
+}
 
-  Map<String, dynamic> toJson() => {
-    '_id': id,
-    'user': user?.toJson(),
-    'product': product?.toJson(),
-    'productModel': productModel,
-    'category': category,
-    'personCount': personCount,
-    'date': date?.toIso8601String(),
-    'time': time,
-    'startDateAndTime': startDateAndTime?.toIso8601String(),
-    'endDateAndTime': endDateAndTime?.toIso8601String(),
-    'slots': slots,
-    'bookingStatus': bookingStatus,
-    'totalPrice': totalPrice,
-    'isPermitted': isPermitted,
-    'bookingItems': bookingItems?.map((e) => e.toJson()).toList(),
-    'timeLabel': timeLabel,
-  };
+class BookingItem {
+  final String itemId;
+  final int quantity;
+
+  BookingItem({
+    required this.itemId,
+    required this.quantity,
+  });
+
+  factory BookingItem.fromJson(Map<String, dynamic> json) {
+    return BookingItem(
+      itemId: json['itemId'] ?? '',
+      quantity: json['quantity'] ?? 0,
+    );
+  }
 }
 
 class User {
-  final String? id;
-  final String? email;
-  final String? status;
-  final String? fullName;
-  final String? address;
-  final String? phoneNumber;
-  final String? profileUrl;
+  final String id;
+  final String fullName;
+  final String email;
+  final String profileUrl;
+  final String address;
+  final String status;
 
   User({
-    this.id,
-    this.email,
-    this.status,
-    this.fullName,
-    this.address,
-    this.phoneNumber,
-    this.profileUrl,
+    required this.id,
+    required this.fullName,
+    required this.email,
+    required this.profileUrl,
+    required this.address,
+    required this.status,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['_id'],
-      email: json['email'],
-      status: json['status'],
-      fullName: json['fullName'],
-      address: json['address'],
-      phoneNumber: json['phoneNumber'],
-      profileUrl: json['profileUrl'],
+      id: json['_id'] ?? '',
+      fullName: json['fullName'] ?? '',
+      email: json['email'] ?? '',
+      profileUrl: json['profileUrl'] ?? '',
+      address: json['address'] ?? '',
+      status: json['status'] ?? '',
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    '_id': id,
-    'email': email,
-    'status': status,
-    'fullName': fullName,
-    'address': address,
-    'phoneNumber': phoneNumber,
-    'profileUrl': profileUrl,
-  };
+  static User empty() {
+    return User(
+        id: '', fullName: '', email: '', profileUrl: '', address: '', status: '');
+  }
 }
 
 class Product {
-  final String? id;
-  final String? title;
-  final String? thumbnail;
-  final String? skiPassType;
-  final List<Service>? services;
-  final String? serviceArea;
-  final double? amount;
-  final String? description;
-  final int? extraChargePerHour;
-  final String? foodType;
-  final String? status;
-  final String? openTime;
-  final String? closeTime;
-  final List<Slot>? slots;
-  final List<Slot>? availableSlots;
-  final int? personCount;
-  final String? milage;
-  final String? power;
-  final String? extraChargePerHours;
-  final double? insuranceFee;
-  final double? maintainCharge;
-  final Map<String, dynamic>? extra;
+  final String id;
+  final String category;
+  final String title;
+  final String thumbnail;
+  final double extraChargePerHour;
+  final String serviceArea;
+  final List<ProductItem> items;
 
   Product({
-    this.id,
-    this.title,
-    this.thumbnail,
-    this.skiPassType,
-    this.services,
-    this.serviceArea,
-    this.amount,
-    this.description,
-    this.extraChargePerHour,
-    this.foodType,
-    this.status,
-    this.openTime,
-    this.closeTime,
-    this.slots,
-    this.availableSlots,
-    this.personCount,
-    this.milage,
-    this.power,
-    this.extraChargePerHours,
-    this.insuranceFee,
-    this.maintainCharge,
-    this.extra,
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.thumbnail,
+    required this.extraChargePerHour,
+    required this.serviceArea,
+    required this.items,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['_id'],
-      title: json['title'],
-      thumbnail: json['thumbnail'],
-      skiPassType: json['skiPassType'],
-      services: json['services'] != null
-          ? (json['services'] as List<dynamic>).map((e) => Service.fromJson(e)).toList()
-          : [],
-      serviceArea: json['serviceArea'],
-      amount: json['amount'] != null ? (json['amount'] as num).toDouble() : null,
-      description: json['description'],
-      extraChargePerHour: json['extraChargePerHour'],
-      foodType: json['foodType'],
-      status: json['status'],
-      openTime: json['openTime'],
-      closeTime: json['closeTime'],
-      slots: json['slots'] != null
-          ? (json['slots'] as List<dynamic>).map((e) => Slot.fromJson(e)).toList()
-          : [],
-      availableSlots: json['availableSlots'] != null
-          ? (json['availableSlots'] as List<dynamic>).map((e) => Slot.fromJson(e)).toList()
-          : [],
-      personCount: json['personCount'] != null
-          ? int.tryParse(json['personCount'].toString()) ?? json['personCount']
-          : null,
-      milage: json['milage'],
-      power: json['power'],
-      extraChargePerHours: json['extraChargePerHours'],
-      insuranceFee:
-      json['insuranceFee'] != null ? (json['insuranceFee'] as num).toDouble() : null,
-      maintainCharge:
-      json['maintainCharge'] != null ? (json['maintainCharge'] as num).toDouble() : null,
-      extra: json,
+      id: json['_id'] ?? '',
+      category: json['category'] ?? '',
+      title: json['title'] ?? '',
+      thumbnail: json['thumbnail'] ?? '',
+      extraChargePerHour: (json['extraChargePerHour'] as num?)?.toDouble() ?? 0.0,
+      serviceArea: json['serviceArea'] ?? '',
+      items: (json['items'] as List? ?? [])
+          .map((e) => ProductItem.fromJson(e))
+          .toList(),
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    '_id': id,
-    'title': title,
-    'thumbnail': thumbnail,
-    'skiPassType': skiPassType,
-    'services': services?.map((e) => e.toJson()).toList(),
-    'serviceArea': serviceArea,
-    'amount': amount,
-    'description': description,
-    'extraChargePerHour': extraChargePerHour,
-    'foodType': foodType,
-    'status': status,
-    'openTime': openTime,
-    'closeTime': closeTime,
-    'slots': slots?.map((e) => e.toJson()).toList(),
-    'availableSlots': availableSlots?.map((e) => e.toJson()).toList(),
-    'personCount': personCount,
-    'milage': milage,
-    'power': power,
-    'extraChargePerHours': extraChargePerHours,
-    'insuranceFee': insuranceFee,
-    'maintainCharge': maintainCharge,
-  };
+  static Product empty() {
+    return Product(
+        id: '', category: '', title: '', thumbnail: '', extraChargePerHour: 0.0, serviceArea: '', items: []);
+  }
 }
 
-class Service {
-  final String? title;
-  final String? description;
+class ProductItem {
+  final String id;
+  final String productName;
+  final String productPhoto;
+  final double price;
+  final int totalQty;
+  final int availableQty;
 
-  Service({this.title, this.description});
+  ProductItem({
+    required this.id,
+    required this.productName,
+    required this.productPhoto,
+    required this.price,
+    required this.totalQty,
+    required this.availableQty,
+  });
 
-  factory Service.fromJson(Map<String, dynamic> json) {
-    return Service(
-      title: json['title'],
-      description: json['description'],
+  factory ProductItem.fromJson(Map<String, dynamic> json) {
+    return ProductItem(
+      id: json['_id'] ?? '',
+      productName: json['productName'] ?? '',
+      productPhoto: json['productPhoto'] ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      totalQty: json['totalQty'] ?? 0,
+      availableQty: json['availableQty'] ?? 0,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'title': title,
-    'description': description,
-  };
 }
 
-class Slot {
-  final String? startTime;
-  final String? endTime;
-  final String? id;
+class Pagination {
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
 
-  Slot({this.startTime, this.endTime, this.id});
+  Pagination({
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
 
-  factory Slot.fromJson(Map<String, dynamic> json) {
-    return Slot(
-      startTime: json['startTime'],
-      endTime: json['endTime'],
-      id: json['_id'],
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 10,
+      totalPages: json['totalPages'] ?? 1,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'startTime': startTime,
-    'endTime': endTime,
-    '_id': id,
-  };
-}
-
-class BookingItem {
-  final String? itemId;
-  final int? quantity;
-  final dynamic item;
-
-  BookingItem({this.itemId, this.quantity, this.item});
-
-  factory BookingItem.fromJson(Map<String, dynamic> json) {
-    return BookingItem(
-      itemId: json['itemId'],
-      quantity: json['quantity'],
-      item: json['item'],
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    'itemId': itemId,
-    'quantity': quantity,
-    'item': item,
-  };
 }

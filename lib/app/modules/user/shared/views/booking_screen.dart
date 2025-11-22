@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/booking_card.dart';
+import 'package:harry_service_app/app/core/widgets/booking_card_item.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/get_my_booking_controller.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/text-style.dart';
@@ -19,7 +20,8 @@ class _BookingScreenState extends State<BookingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  final NavController _navController = Get.find();
+  ///finds controller
+  final  _navController = Get.find<NavController>();
   final GetMyBookingController _bookingController = Get.find();
 
   @override
@@ -30,9 +32,10 @@ class _BookingScreenState extends State<BookingScreen>
     _fetchBookings();
   }
 
+  /// call api
   Future<void> _fetchBookings() async {
     await _bookingController.getMyBooking();
-    setState(() {}); // Refresh UI after fetching
+    setState(() {}); /// Refresh UI after fetching
   }
 
   @override
@@ -41,47 +44,60 @@ class _BookingScreenState extends State<BookingScreen>
     super.dispose();
   }
 
+
+  /// booking list method
   Widget _buildBookingList(String status) {
-    if (_bookingController.bookingProgress) {
+    // Show loader
+    if (_bookingController.isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary_1),
       );
     }
 
-    final filteredProducts = _bookingController.productsByStatus(status);
+    // Filter bookings by status
+    final filteredBookings = _bookingController.bookingsByStatus(status);
 
-    if (filteredProducts.isEmpty) {
+    // If empty
+    if (filteredBookings.isEmpty) {
       return Center(child: Text("No $status bookings"));
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      itemCount: filteredProducts.length,
+      itemCount: filteredBookings.length,
       itemBuilder: (context, index) {
-        final product = filteredProducts[index];
+        final booking = filteredBookings[index];
+        final product = booking.product; // Product is part of Booking model
 
-        /// Find the corresponding booking
-        final booking = _bookingController.bookings.firstWhere(
-              (b) => b.product?.id == product.id,
-          orElse: () => _bookingController.bookings[index],
-        );
 
-        return BookingCard(
-          image: product.thumbnail ?? "",
-          personCount: booking.personCount ?? 1,
-          passType: product.skiPassType ?? "Default",
-          location: product.serviceArea ?? "-",
-          date: booking.date != null
-              ? "${booking.date!.day}-${booking.date!.month}"
+        return _navController.getServiceType=="ski_pass"
+            ? BookingCard(
+          image: product.thumbnail ,
+          personCount: booking.bookingItems.isNotEmpty
+              ? booking.bookingItems.fold<int>(
+              0, (sum, item) => sum + (item.quantity ?? 0))
+              : 1, // Sum of quantities as personCount
+          passType: product?.title ?? "Default", // Use product title
+          location: product?.serviceArea ?? "-",
+          date: booking.startDateAndTime != null
+              ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
               : "",
-          time: booking.time ?? "",
+          time: booking.startDateAndTime != null
+              ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
+              : "",
           onTap: () {
-            // Optional: show menu or navigate to details
+
+
+
+
+
           },
-        );
+        )
+            : BookingCardItem(image: product.thumbnail, title: product.title,dueTime: 10, price: booking.totalPrice.toString(), buttonText: "buttonText", onButtonTap: (){});
       },
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +111,8 @@ class _BookingScreenState extends State<BookingScreen>
           style: AppTextStyle.sub_h1_medium_18(),
         ),
         centerTitle: true,
+
+        /// go to home if click on back
         leading: IconButton(
           onPressed: () => _navController.changeIndex(0),
           icon: Assets.icons.caretLeft.svg(

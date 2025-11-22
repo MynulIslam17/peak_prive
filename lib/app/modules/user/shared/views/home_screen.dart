@@ -41,7 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (nav.getServiceType == "ski_pass") {
       pass.fetchAllPass();
     } else {
-      hire.fetchAllSkiHire();
+      /// fetch data with category
+      hire.fetchAllSkiHireAndCategory();
     }
   }
 
@@ -64,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: GetBuilder<AllPassController>(
         builder: (_) {
           return GetBuilder<SkiHireController>(
+
             builder: (_) {
 
               ///  ONE COMBINED LOADING FLAG
@@ -109,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   SizedBox(height: 20.h),
 
-                  /// CATEGORY (Only for Ski Hire)
+                  /// CATEGORY (Only for Ski Hire/transport/message)
                   if (type != "ski_pass")
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -122,14 +124,33 @@ class _HomeScreenState extends State<HomeScreen> {
                             onClick: () {},
                           ),
                           SizedBox(height: 10.h),
-                          CategoryList(
-                            titles: ["A", "B", "C"],
-                            icons: [icons.honda, icons.bmw, icons.bmw],
-                            onTap: () {},
-                          ),
+
+
+                         /// when click on category item
+
+                         CategoryList(
+                           categoryList: hire.categoryList,
+
+                           onTap: (categoryName){
+
+                         print("=>>>>>>>>>>>>>>>>>>>>>>>>${categoryName}");
+
+                         hire.fetchAllSkiHireAndCategory(categoryName);
+
+
+                         },
+
+                         )
+
+
+
+
                         ],
                       ),
                     ),
+
+
+
 
                   SizedBox(height: 10.h),
 

@@ -1,98 +1,4 @@
-//
-// import 'package:get/get.dart';
-// import 'package:harry_service_app/app/core/constants/api_urls.dart';
-// import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
-// import 'package:harry_service_app/app/data/models/network_response.dart';
-// import 'package:harry_service_app/app/data/services/network_caller.dart';
-// import '../models/booking_model.dart';
-//
-// class BookingController extends GetxController {
-//   /// Service type controller
-//   final serviceController = Get.find<NavController>();
-//
-//   bool _isLoading = false;
-//   String? _errorMessage;
-//   BookingModel? _bookingModel;
-//
-//   /// Getters
-//   bool get isLoading => _isLoading;
-//   String? get errorMessage => _errorMessage;
-//   BookingModel? get bookingModel => _bookingModel;
-//
-//   /// Get all products from bookings
-//   List<Product> get allProducts {
-//     if (_bookingModel == null) return [];
-//     return _bookingModel!.result
-//         .map((b) => b.product)
-//         .where((p) => p != null)
-//         .cast<Product>()
-//         .toList();
-//   }
-//
-//   /// Fetch My Bookings from API
-//   Future<bool> fetchBookings() async {
-//     _isLoading = true;
-//     _errorMessage = null;
-//
-//     NetworkResponse response = await Get.find<NetworkCaller>().getRequest(
-//       url: AppUrls.myBookingUrl(serviceController.getServiceType),
-//     );
-//
-//     _isLoading = false;
-//
-//     if (response.isSuccess && response.body != null) {
-//       try {
-//         final data = response.body!['data'];
-//         final result = data['result'] as List<dynamic>? ?? [];
-//
-//         _bookingModel = BookingModel(
-//           result: result.map((json) => Booking.fromJson(json)).toList(),
-//         );
-//
-//         return true;
-//       } catch (e) {
-//         _errorMessage = "Failed to parse bookings: $e";
-//         return false;
-//       }
-//     } else {
-//       _errorMessage = response.errorMessage ?? "Something went wrong";
-//       return false;
-//     }
-//   }
-//
-//   /// Count of bookings
-//   int get bookingCount => _bookingModel?.result.length ?? 0;
-//
-//   /// Count of products (non-null)
-//   int get productCount => allProducts.length;
-// }
-//
-//
-//
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-
 import '../../../../core/constants/api_urls.dart';
 import '../../../../core/controllers/nav_controller.dart';
 import '../../../../data/models/network_response.dart';
@@ -102,55 +8,68 @@ import '../models/booking_model.dart';
 class GetMyBookingController extends GetxController {
   final serviceController = Get.find<NavController>();
 
-  bool _bookingProgress = false;
+  bool _isLoading = false;
   String? _errorMessage;
+  BookingModel? _bookingModel;
 
-  // Store all bookings in a flat list
-  List<Booking> _bookings = [];
-
-  bool get bookingProgress => _bookingProgress;
+  /// ---------- GETTERS ----------
+  bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  List<Booking> get bookings => _bookings;
+  BookingModel? get bookingModel => _bookingModel;
 
-  // Extract products directly
-  List<Product> get products =>
-      _bookings.map((b) => b.product).whereType<Product>().toList();
+  /// All bookings
+  List<Booking> get bookings => _bookingModel?.result ?? [];
+  Pagination? get pagination => _bookingModel?.pagination;
 
-  /// Fetch My Booking
+  /// Product IDs
+  List<String> get productIds =>
+      bookings.map((b) => b.product?.id).whereType<String>().toList();
+
+  /// ---------- API CALL ----------
   Future<bool> getMyBooking() async {
-    _bookingProgress = true;
+    _isLoading = true;
+    update();
 
-    NetworkResponse response = await Get.find<NetworkCaller>().getRequest(
-      url: AppUrls.myBookingUrl(serviceController.getServiceType),
-    );
+    _errorMessage = null;
 
-    _bookingProgress = false;
+    try {
+      NetworkResponse res = await Get.find<NetworkCaller>().getRequest(
+        url: AppUrls.myBookingUrl(serviceController.getServiceType),
+      );
 
-    if (response.isSuccess && response.body != null) {
-      try {
-        final data = response.body!['data'];
-        final result = data['result'] as List<dynamic>? ?? [];
+      _isLoading = false;
 
-        // Flatten all bookings
-        _bookings = result.map((e) => Booking.fromJson(e)).toList();
+      if (res.isSuccess && res.body != null) {
+        final data = res.body!['data'];
 
+        _bookingModel = BookingModel.fromJson(data);
+
+        update();
         return true;
-      } catch (e) {
-        _errorMessage = 'Failed to parse bookings: $e';
+      } else {
+        _errorMessage = res.errorMessage ?? "Something went wrong";
+        update();
         return false;
       }
-    } else {
-      _errorMessage = response.errorMessage ?? "Something went wrong";
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = "Failed to load bookings: $e";
+      update();
       return false;
     }
   }
 
-  /// Filter bookings by status
-  List<Product> productsByStatus(String status) {
-    return _bookings
-        .where((b) => b.bookingStatus == status)
-        .map((b) => b.product)
-        .whereType<Product>()
+  /// Filter bookings by status (returns Booking list)
+  List<Booking> bookingsByStatus(String status) {
+    return bookings
+        .where((b) => b.bookingStatus?.toLowerCase() == status.toLowerCase())
         .toList();
   }
+
+  /// Count helpers
+  int get bookingCount => bookings.length;
+  int get completedCount =>
+      bookings.where((b) => b.bookingStatus?.toLowerCase() == "completed").length;
+  int get pendingCount =>
+      bookings.where((b) => b.bookingStatus?.toLowerCase() == "pending").length;
 }

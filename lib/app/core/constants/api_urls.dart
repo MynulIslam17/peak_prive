@@ -51,7 +51,20 @@ static String changePasswordUrl="$baseUrl/auth/change-password";
 
 
   /// ==========================hire=======================
-static String hireAllServiceUrl="$baseUrl/ski-hire/all";
+
+// static String hireAllServiceUrl="$baseUrl/ski-hire/all";
+
+static String hireAllServiceUrl([String ? category]){
+
+  if(category!=null && category.isNotEmpty){
+    return "$baseUrl/ski-hire/all?category=$category";
+  }
+
+  return"$baseUrl/ski-hire/all";
+
+}
+
+static String hireCategory="$baseUrl/common/category/ski-hire";
 
 static String hireDetailsUrl(String id)=>"$baseUrl/ski-hire/${id}";
 
