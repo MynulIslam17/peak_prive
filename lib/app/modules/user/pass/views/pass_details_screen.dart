@@ -11,6 +11,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/available_service.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
+import '../../../../core/widgets/shimmer/pass_details_skeleton.dart';
 import '../../../../core/widgets/provider_info.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -48,9 +49,7 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
       body: GetBuilder<PassDetailsController>(
         builder: (controller) {
           if (controller.fetchProgress) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary_1),
-            );
+            return const PassDetailsSkeleton();
           }
 
           if (controller.passDetails == null) {

@@ -10,9 +10,12 @@ import 'package:harry_service_app/app/core/widgets/category_list.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/userProfileSection.dart';
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../core/widgets/shimmer/home_shimmer.dart';
 import '../../../../routes/app_routes.dart';
 import '../controllers/all_pass_controller.dart';
-import '../controllers/ski_hire_controller.dart';
+import '../controllers/all_ski_hire_controller.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,14 +25,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final icons = Assets.icons;
-
   final auth = Get.find<AuthController>();
   final pass = Get.find<AllPassController>();
   final hire = Get.find<SkiHireController>();
   final nav = Get.find<NavController>();
 
   final TextEditingController searchCtrl = TextEditingController();
+
+  String selectedCategory = "All"; // Default selected category
+  bool fullScreenLoading = true;   // Full shimmer loader on first load
 
   @override
   void initState() {
@@ -39,20 +43,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void loadData() async {
     if (nav.getServiceType == "ski_pass") {
-      pass.fetchAllPass();
-    } else {
-      /// fetch data with category
-      hire.fetchAllSkiHireAndCategory();
+      await pass.fetchAllPass();
+    } else if(nav.getServiceType=="ski_hire") {
+      await hire.fetchAllSkiHireAndCategory();
+    }else if(nav.getServiceType=="transport"){
+
+    }else if(nav.getServiceType=="restaurant"){
+
+    }else{
+
     }
+
+    setState(() {
+      fullScreenLoading = false; // Hide full-screen shimmer after first load
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     String type = nav.getServiceType;
 
+    /// skeleton full screen for loading home
+    if (fullScreenLoading) {
+      /// FULL-SCREEN SHIMMER ON FIRST LOAD
+      return ListView(
+        padding: EdgeInsets.symmetric(horizontal: 12.w),
+        children: [
+          const HeaderSkeleton(),
+          SizedBox(height: 20.h),
+          if (type != "ski_pass") ...[
+            const CategoryTitleSkeleton(),
+            const CategorySkeleton(),
+            SizedBox(height: 20.h),
+          ],
+          const CategoryTitleSkeleton(),
+          Column(
+            children: List.generate(2, (_) => const ItemCardSkeleton()),
+          ),
+        ],
+      );
+    }
+
+    /// MAIN HOME UI AFTER FIRST LOAD
     return Scaffold(
       backgroundColor: Colors.white,
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary_1,
         child: Image.asset("assets/icons/fav.png"),
@@ -60,35 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
           Get.offAllNamed(Routes.service);
         },
       ),
-
-      /// MAIN BUILDER (REBUILDS on both controllers)
       body: GetBuilder<AllPassController>(
         builder: (_) {
           return GetBuilder<SkiHireController>(
-
             builder: (_) {
-
-              ///  ONE COMBINED LOADING FLAG
-              bool isLoading = type == "ski_pass"
-                  ? pass.fetchProgress
-                  : hire.isLoading;
-
-              ///  FULL-SCREEN LOADER WHEN FETCHING
-              if (isLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
-              }
-
-              ///  FULL UI AFTER DATA ARRIVES
               return ListView(
                 children: [
                   /// HEADER
                   Container(
-                    padding:
-                    EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-                    decoration:
-                    BoxDecoration(gradient: AppColors.appBarBackground),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
+                    decoration: BoxDecoration(gradient: AppColors.appBarBackground),
                     child: Column(
                       children: [
                         UserProfileSection(
@@ -111,46 +126,84 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   SizedBox(height: 20.h),
 
-                  /// CATEGORY (Only for Ski Hire/transport/message)
+                  /// CATEGORY SECTION
                   if (type != "ski_pass")
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12.w),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          CategoryTitle(
-                            title: "Category",
-                            text: "See All",
-                            onClick: () {},
+                          /// "All" Button
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                borderRadius: BorderRadius.circular(23),
+                                onTap: () {
+                                  setState(() {
+                                    selectedCategory = "All";
+                                  });
+                                  hire.fetchAllSkiHireAndCategory();
+                                },
+                                child: Container(
+                                  height: 70,
+                                  width: 70,
+                                  decoration: BoxDecoration(
+                                    color: selectedCategory == "All"
+                                        ? AppColors.primary_1
+                                        : Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: selectedCategory == "All"
+                                          ? Colors.orange
+                                          : Colors.black54,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.all(6),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      "assets/images/all_icon.png",
+                                      color: Colors.black87,
+                                      width: 30,
+                                      height: 30,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Text(
+                                "All",
+                                style: AppTextStyle.p_medium_12()?.copyWith(
+                                  color: selectedCategory == "All"
+                                      ? AppColors.primary_1
+                                      : Colors.black87,
+                                  fontWeight: selectedCategory == "All"
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 10.h),
 
+                          SizedBox(width: 15.w),
 
-                         /// when click on category item
-
-                         CategoryList(
-                           categoryList: hire.categoryList,
-
-                           onTap: (categoryName){
-
-                         print("=>>>>>>>>>>>>>>>>>>>>>>>>${categoryName}");
-
-                         hire.fetchAllSkiHireAndCategory(categoryName);
-
-
-                         },
-
-                         )
-
-
-
-
+                          /// Category List
+                          Expanded(
+                            child: CategoryList(
+                              categoryList: hire.categoryList,
+                              selectedCategoryName: selectedCategory,
+                              onTap: (categoryName) {
+                                setState(() {
+                                  selectedCategory = categoryName;
+                                });
+                                hire.fetchAllSkiHireAndCategory(categoryName);
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
-
-
-
 
                   SizedBox(height: 10.h),
 
@@ -161,22 +214,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CategoryTitle(
-                          title: type == "ski_pass"
-                              ? "Top Ski Pass"
-                              : "Top Ski Hire",
+                          title: type == "ski_pass" ? "Top Ski Pass" : "Top Ski Hire",
                           text: "See All",
                           onClick: () {},
                         ),
-
                         SizedBox(height: 10.h),
 
                         /// SKI PASS LIST
                         if (type == "ski_pass")
-                          Column(
+                          pass.fetchProgress
+                              ? Center(child: CircularProgressIndicator())
+                              : Column(
                             children: pass.skiPassList.map((item) {
                               return Padding(
-                                padding:
-                                EdgeInsets.symmetric(vertical: 7.h),
+                                padding: EdgeInsets.symmetric(vertical: 7.h),
                                 child: ItemCard(
                                   image: item.thumbnail ?? "",
                                   title: item.title ?? "",
@@ -200,11 +251,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         /// SKI HIRE LIST
                         if (type == "ski_hire")
-                          Column(
+                          hire.isLoading
+                              ? Column(children: [
+                                ItemCardSkeleton(),
+                                ItemCardSkeleton(),
+                          ],)
+                              : Column(
                             children: hire.skiHireList.map((item) {
                               return Padding(
-                                padding:
-                                EdgeInsets.symmetric(vertical: 7.h),
+                                padding: EdgeInsets.symmetric(vertical: 7.h),
                                 child: ItemCard(
                                   image: item.thumbnail ?? "",
                                   title: item.title ?? "",

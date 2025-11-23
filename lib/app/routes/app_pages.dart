@@ -29,10 +29,12 @@ import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
-import 'package:harry_service_app/app/modules/user/pass/bindings/booking_bindings.dart';
+
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
+
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
@@ -45,6 +47,7 @@ import '../modules/onboard/views/on_boarding_screen.dart';
 
 
 import '../modules/user/hire/bindings/hire_details_bindings.dart';
+import '../modules/user/pass/bindings/booking_details_binding.dart';
 import '../modules/user/pass/bindings/pass_details_bindings.dart';
 import '../modules/user/shared/bindings/bottom_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';
@@ -121,16 +124,18 @@ abstract class AppPages {
     ),
 
     /// pass
-    GetPage(name: Routes.passCardDetails, page: () => PassDetailsScreen(),
+    GetPage(
+        name: Routes.passCardDetails,
+        page: () => PassDetailsScreen(),
 
     binding: SinglePassDetailsBindings()
     ),
 
     GetPage(
-      /// booking details
+      /// pass booking details
       name: Routes.passInformation,
       page: () => SetInformation(),
-      binding: BookingBindings()
+      binding: BookingDetailsBindings()
     ),
 
     ///bottom nav
@@ -138,6 +143,7 @@ abstract class AppPages {
         page: () => BottomNavScreen(),
       binding: BottomNavBinding(),
     ),
+
 
     /// transport
     GetPage(

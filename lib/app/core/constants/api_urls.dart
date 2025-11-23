@@ -52,8 +52,7 @@ static String changePasswordUrl="$baseUrl/auth/change-password";
 
   /// ==========================hire=======================
 
-// static String hireAllServiceUrl="$baseUrl/ski-hire/all";
-
+  /// show category wise data if category missing then show all data(also work for home url)
 static String hireAllServiceUrl([String ? category]){
 
   if(category!=null && category.isNotEmpty){
@@ -64,9 +63,38 @@ static String hireAllServiceUrl([String ? category]){
 
 }
 
+/// get hire category
+
 static String hireCategory="$baseUrl/common/category/ski-hire";
 
+
+/// hire details show
+
 static String hireDetailsUrl(String id)=>"$baseUrl/ski-hire/${id}";
+
+
+/// give rating and review
+static String hireBookingReviewUrl(String productId)=>"$baseUrl/ski-hire/review/${productId}";
+
+
+
+
+///===============================transport======================================
+
+  /// show category wise data if category missing then show all data(also work for home url)
+ static   String   transportServiceUrl([String ? category]){
+   if(category!=null && category.isNotEmpty){
+     return "$baseUrl/transport/all?category=$category";
+   }
+   return "$baseUrl/transport/all";
+ }
+
+
+ /// category list
+
+static String transportCategoryUrl="$baseUrl/common/category/transport";
+
+
 
 
 

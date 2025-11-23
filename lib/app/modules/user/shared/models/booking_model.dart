@@ -7,7 +7,8 @@ class BookingModel {
     required this.result,
   });
 
-  factory BookingModel.fromJson(Map<String, dynamic> json) {
+  factory BookingModel.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return BookingModel(
       pagination: Pagination.fromJson(json['pagination'] ?? {}),
       result: (json['result'] as List? ?? [])
@@ -17,6 +18,7 @@ class BookingModel {
   }
 }
 
+// -------------------- BOOKING --------------------
 class Booking {
   final String id;
   final User user;
@@ -34,6 +36,7 @@ class Booking {
   final bool isPermitted;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String timeLabel;
 
   Booking({
     required this.id,
@@ -52,13 +55,16 @@ class Booking {
     required this.isPermitted,
     required this.createdAt,
     required this.updatedAt,
+    required this.timeLabel,
   });
 
-  factory Booking.fromJson(Map<String, dynamic> json) {
-    DateTime parseDate(String? value) {
-      if (value == null) return DateTime.now();
+  factory Booking.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
+
+    DateTime parseDate(dynamic v) {
+      if (v == null) return DateTime.now();
       try {
-        return DateTime.parse(value);
+        return DateTime.parse(v.toString());
       } catch (_) {
         return DateTime.now();
       }
@@ -66,8 +72,8 @@ class Booking {
 
     return Booking(
       id: json['_id'] ?? '',
-      user: json['user'] != null ? User.fromJson(json['user']) : User.empty(),
-      product: json['product'] != null ? Product.fromJson(json['product']) : Product.empty(),
+      user: User.fromJson(json['user'] ?? {}),
+      product: Product.fromJson(json['product'] ?? {}),
       productModel: json['productModel'] ?? '',
       category: json['category'] ?? '',
       startDateAndTime: parseDate(json['startDateAndTime']),
@@ -83,10 +89,12 @@ class Booking {
       isPermitted: json['isPermitted'] ?? false,
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
+      timeLabel: json['timeLabel'] ?? '',   // <--- SAFELY HANDLED
     );
   }
 }
 
+// -------------------- BOOKING ITEM --------------------
 class BookingItem {
   final String itemId;
   final int quantity;
@@ -96,7 +104,8 @@ class BookingItem {
     required this.quantity,
   });
 
-  factory BookingItem.fromJson(Map<String, dynamic> json) {
+  factory BookingItem.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return BookingItem(
       itemId: json['itemId'] ?? '',
       quantity: json['quantity'] ?? 0,
@@ -104,6 +113,7 @@ class BookingItem {
   }
 }
 
+// -------------------- USER --------------------
 class User {
   final String id;
   final String fullName;
@@ -121,7 +131,8 @@ class User {
     required this.status,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
+  factory User.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return User(
       id: json['_id'] ?? '',
       fullName: json['fullName'] ?? '',
@@ -132,12 +143,17 @@ class User {
     );
   }
 
-  static User empty() {
-    return User(
-        id: '', fullName: '', email: '', profileUrl: '', address: '', status: '');
-  }
+  static User empty() => User(
+    id: '',
+    fullName: '',
+    email: '',
+    profileUrl: '',
+    address: '',
+    status: '',
+  );
 }
 
+// -------------------- PRODUCT --------------------
 class Product {
   final String id;
   final String category;
@@ -157,13 +173,15 @@ class Product {
     required this.items,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) {
+  factory Product.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return Product(
       id: json['_id'] ?? '',
       category: json['category'] ?? '',
       title: json['title'] ?? '',
       thumbnail: json['thumbnail'] ?? '',
-      extraChargePerHour: (json['extraChargePerHour'] as num?)?.toDouble() ?? 0.0,
+      extraChargePerHour:
+      (json['extraChargePerHour'] as num?)?.toDouble() ?? 0.0,
       serviceArea: json['serviceArea'] ?? '',
       items: (json['items'] as List? ?? [])
           .map((e) => ProductItem.fromJson(e))
@@ -171,12 +189,18 @@ class Product {
     );
   }
 
-  static Product empty() {
-    return Product(
-        id: '', category: '', title: '', thumbnail: '', extraChargePerHour: 0.0, serviceArea: '', items: []);
-  }
+  static Product empty() => Product(
+    id: '',
+    category: '',
+    title: '',
+    thumbnail: '',
+    extraChargePerHour: 0.0,
+    serviceArea: '',
+    items: [],
+  );
 }
 
+// -------------------- PRODUCT ITEM --------------------
 class ProductItem {
   final String id;
   final String productName;
@@ -194,7 +218,8 @@ class ProductItem {
     required this.availableQty,
   });
 
-  factory ProductItem.fromJson(Map<String, dynamic> json) {
+  factory ProductItem.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return ProductItem(
       id: json['_id'] ?? '',
       productName: json['productName'] ?? '',
@@ -206,6 +231,7 @@ class ProductItem {
   }
 }
 
+// -------------------- PAGINATION --------------------
 class Pagination {
   final int total;
   final int page;
@@ -219,7 +245,8 @@ class Pagination {
     required this.totalPages,
   });
 
-  factory Pagination.fromJson(Map<String, dynamic> json) {
+  factory Pagination.fromJson(Map<String, dynamic>? json) {
+    json ??= {};
     return Pagination(
       total: json['total'] ?? 0,
       page: json['page'] ?? 1,

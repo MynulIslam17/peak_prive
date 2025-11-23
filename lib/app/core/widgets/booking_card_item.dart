@@ -7,11 +7,11 @@ import 'package:harry_service_app/app/core/widgets/custome_button.dart';
 class BookingCardItem extends StatelessWidget {
   final String image;
   final String title;              // Product name
-  final double? dueTime;
   final String price;              // Price
   final String buttonText;         // Button label
   final VoidCallback onButtonTap;  // Button action
   final Color borderColor;         // Card border color
+  final String? timeLabel;         // Optional time label
 
   const BookingCardItem({
     super.key,
@@ -21,7 +21,7 @@ class BookingCardItem extends StatelessWidget {
     required this.buttonText,
     required this.onButtonTap,
     this.borderColor = Colors.white,
-    this.dueTime,
+    this.timeLabel,
   });
 
   @override
@@ -62,7 +62,8 @@ class BookingCardItem extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: AppTextStyle.sub_h2_medium_16().copyWith(fontSize: 17),
+                            style: AppTextStyle.sub_h2_medium_16()
+                                .copyWith(fontSize: 17),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -76,24 +77,30 @@ class BookingCardItem extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 8.h),
-                    // Due Time and Button Row
+                    /// Time Label and Button Row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (dueTime != null)
-                          FittedBox(
+                        // Time Label
+                        if (timeLabel != null && timeLabel!.isNotEmpty)
+                          Expanded(
                             child: Text(
-                              "Time Left: ${dueTime!.toStringAsFixed(1)}",
+                              timeLabel!,
                               style: AppTextStyle.sub_h3_medium_14(
                                 color: Colors.red,
-                              ).copyWith(fontSize: 12),
+                              ).copyWith(fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                              softWrap: true,
                             ),
                           ),
+                        if (timeLabel != null && timeLabel!.isNotEmpty)
+                          SizedBox(width: 8.w),
+                        // Button
                         CustomButton(
                           text: buttonText,
-                          width: 110,
-                          height: 30,
-                          textSize: 10,
+                          width: 100,
+                          height: 40,
+                          textSize: 11,
                           onTap: onButtonTap,
                         ),
                       ],
@@ -102,7 +109,6 @@ class BookingCardItem extends StatelessWidget {
                 ),
               ),
             ),
-
           ],
         ),
       ),

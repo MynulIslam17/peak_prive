@@ -8,7 +8,9 @@ abstract class Routes {
   static const service = "/service";
 
   /// Bottom Navigation
-  static const bottomNav = "/transportNav";
+  static const bottomNav = "/bottomNav";
+
+
 
   /// Pass
   static const passInformation = "/passInfo";

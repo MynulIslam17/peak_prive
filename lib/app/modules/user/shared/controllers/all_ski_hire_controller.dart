@@ -10,6 +10,7 @@ class SkiHireController extends GetxController {
 
   bool _isLoading = false;
   String? _errorMessage;
+  String? selectedCategoryName; // ADD THIS: Track selected category
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -22,6 +23,9 @@ class SkiHireController extends GetxController {
     bool success = false;
 
     try {
+      // ADD THIS: Update selected category
+      selectedCategoryName = category;
+
       // Parallel requests for items and categories
       final itemFuture = Get.find<NetworkCaller>().getRequest(
         url: AppUrls.hireAllServiceUrl(category),
@@ -67,6 +71,7 @@ class SkiHireController extends GetxController {
     skiHireList.clear();
     categoryList.clear();
     _errorMessage = null;
+    selectedCategoryName = null; // ADD THIS: Clear selection
     update();
   }
 }

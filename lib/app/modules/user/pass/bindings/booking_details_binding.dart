@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 
 
-class BookingBindings extends Bindings {
+class BookingDetailsBindings extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<PassBookingController>(() => PassBookingController());

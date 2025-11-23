@@ -17,6 +17,8 @@ import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/hire_card_item.dart';
+import '../../../../core/widgets/shimmer/hire_shimmer.dart';
+import '../../../../core/widgets/shimmer/pass_details_skeleton.dart';
 import '../../../../core/widgets/provider_info.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
@@ -200,11 +202,9 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       backgroundColor: Colors.white,
       body: GetBuilder<HireDetailsController>(
         builder: (controller) {
-          // Loading state
+          // Loading state shimmer effect
           if (controller.isLoading) {
-            return Center(
-              child: CircularProgressIndicator(color: AppColors.primary_1),
-            );
+            return const HireDetailsSkeleton();
           }
 
           // Null check for hireDetails
