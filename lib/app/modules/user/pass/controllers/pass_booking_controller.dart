@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../data/services/network_caller.dart';
 
-class PassBookingController extends GetxController {
+class CreateBookingController extends GetxController {
   bool _bookingProgress = false;
   String? _errorMessage;
   String? _sessionUrl;

@@ -35,6 +35,7 @@ import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDe
 
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
+import 'package:harry_service_app/app/modules/user/trasnport/bindings/trasnport_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
@@ -108,7 +109,7 @@ abstract class AppPages {
         name: Routes.passReset,
         page: ()=>PassResetScreen(),
       binding: PassResetBindings()
-    ),
+     ),
 
 
 
@@ -149,6 +150,7 @@ abstract class AppPages {
     GetPage(
       name: Routes.transportDetails,
       page: () => TransportDetailsScreen(),
+      binding: TransportDetailsBindings()
     ),
 
     /// message

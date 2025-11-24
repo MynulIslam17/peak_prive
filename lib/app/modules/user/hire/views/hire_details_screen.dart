@@ -47,7 +47,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   final addressTEController = TextEditingController();
   final numberController = TextEditingController();
 
-  final bookingController = Get.put(PassBookingController());
+  final bookingController = Get.put(CreateBookingController());
 
   /// Find controllers
   final hireController = Get.find<HireDetailsController>();
@@ -61,6 +61,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   bool _isClickedBookButton = false;
   DateTime? startDate;
   DateTime? endDate;
+
+
 
   /// Pick date and time
   Future<void> _datePicker({required bool isStart}) async {
@@ -86,9 +88,28 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       pickedTime.minute,
     );
 
+    // ====== VALIDATION ======
+    if (!isStart && startDate != null) {
+      if (combined.isBefore(startDate!)) {
+        Get.snackbar(
+          "Invalid End Time",
+          "End time cannot be earlier than start time.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+    }
+    // ========================
+
     setState(() {
       if (isStart) {
         startDate = combined;
+
+        // Optional: If startDate > endDate, reset endDate
+        if (endDate != null && endDate!.isBefore(startDate!)) {
+          endDate = null;
+        }
+
       } else {
         endDate = combined;
       }
@@ -306,10 +327,13 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                               padding: EdgeInsets.only(top: 10.h, bottom: 20.h),
                               child: Row(
                                 children: [
-                                  Text(
-                                    "\$${controller.totalSelectedPrice}",
-                                    style: AppTextStyle.sub_h1_medium_18(
-                                      color: AppColors.primary_1,
+                                  SizedBox(
+                                    width: 100,
+                                    child: Text(
+                                      "\$${controller.totalSelectedPrice}",
+                                      style: AppTextStyle.sub_h1_medium_18(
+                                        color: AppColors.primary_1,
+                                      ),
                                     ),
                                   ),
                                   SizedBox(width: 30.w),
@@ -835,7 +859,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                 vertical: 20,
                                 horizontal: 10,
                               ),
-                              child: GetBuilder<PassBookingController>(
+                              child: GetBuilder<CreateBookingController>(
                                 builder: (controller) {
                                   return controller.bookingProgress
                                       ? const Center(

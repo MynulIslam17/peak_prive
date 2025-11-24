@@ -25,7 +25,7 @@ class _SetInformationState extends State<SetInformation> {
   late final prodoductId;
 
   /// Find booking controller
-  final bookingController = Get.find<PassBookingController>();
+  final bookingController = Get.find<CreateBookingController>();
 
   /// Find current user from authcontroller
   final authController = Get.find<AuthController>();
@@ -252,7 +252,7 @@ class _SetInformationState extends State<SetInformation> {
           Get.back();
         },
       ),
-      body: GetBuilder<PassBookingController>(builder: (controller) {
+      body: GetBuilder<CreateBookingController>(builder: (controller) {
         return bookingController.bookingProgress
             ? Center(child: CircularProgressIndicator(color: AppColors.primary_1,))
             : Padding(

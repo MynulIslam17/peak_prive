@@ -5,6 +5,6 @@ import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking
 class BookingDetailsBindings extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<PassBookingController>(() => PassBookingController());
+    Get.lazyPut<CreateBookingController>(() => CreateBookingController());
   }
 }

@@ -5,6 +5,30 @@ import 'package:shimmer/shimmer.dart';
 class HireDetailsSkeleton extends StatelessWidget {
   const HireDetailsSkeleton({super.key});
 
+  // 🔥 Reusable shimmer box builder
+  Widget _shimmerBox({
+    double? width,
+    double? height,
+    double radius = 10,
+    BoxShape shape = BoxShape.rectangle,
+  }) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.grey[300],
+          shape: shape,
+          borderRadius: shape == BoxShape.circle
+              ? null
+              : BorderRadius.circular(radius),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
@@ -14,21 +38,14 @@ class HireDetailsSkeleton extends StatelessWidget {
       height: size.height,
       child: Stack(
         children: [
-          // Thumbnail shimmer
-          Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
-            child: Container(
-              height: size.height * 0.48,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+          /// 🔹 Thumbnail shimmer
+          _shimmerBox(
+            height: size.height * 0.48,
+            width: double.infinity,
+            radius: 10,
           ),
 
-          // Overlapping card
+          /// 🔹 Overlapping card section
           Positioned(
             top: size.height * 0.3,
             left: 0,
@@ -51,63 +68,37 @@ class HireDetailsSkeleton extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    // Drag line
+                    /// Drag line
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(
-                          width: 87.w,
-                          height: 9.h,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
+                      child: _shimmerBox(
+                        width: 87.w,
+                        height: 9.h,
+                        radius: 10,
                       ),
                     ),
                     SizedBox(height: 20.h),
 
-                    // Provider info
+                    /// 🔹 Provider info shimmer
                     Row(
                       children: [
-                        Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.grey[300],
-                          ),
+                        _shimmerBox(
+                          width: 60,
+                          height: 60,
+                          shape: BoxShape.circle,
                         ),
                         SizedBox(width: 12.w),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: Container(
-                                width: 150.w,
-                                height: 16.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
+                            _shimmerBox(
+                              width: 150.w,
+                              height: 16.h,
                             ),
                             SizedBox(height: 6.h),
-                            Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: Container(
-                                width: 100.w,
-                                height: 14.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
+                            _shimmerBox(
+                              width: 100.w,
+                              height: 14.h,
                             ),
                           ],
                         ),
@@ -115,48 +106,17 @@ class HireDetailsSkeleton extends StatelessWidget {
                     ),
                     SizedBox(height: 16.h),
 
-                    // Tabs shimmer
-                    Shimmer.fromColors(
-                      baseColor: Colors.grey[300]!,
-                      highlightColor: Colors.grey[100]!,
-                      child: Container(
-                        height: 40.h,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
+                    /// 🔹 Tabs shimmer
+                    _shimmerBox(
+                      height: 40.h,
+                      radius: 10,
                     ),
                     SizedBox(height: 16.h),
 
-                    // Hire items grid shimmer
-                    Expanded(
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 6,
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 0.77,
-                        ),
-                        itemBuilder: (_, __) => Shimmer.fromColors(
-                          baseColor: Colors.grey[300]!,
-                          highlightColor: Colors.grey[100]!,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
 
                     SizedBox(height: 10.h),
 
-                    // Bottom Book Now section shimmer
+                    /// 🔹 Bottom Book Now shimmer
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         vertical: 20,
@@ -164,30 +124,14 @@ class HireDetailsSkeleton extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: Container(
-                              width: 80.w,
-                              height: 25.h,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
+                          _shimmerBox(
+                            width: 80.w,
+                            height: 25.h,
                           ),
                           SizedBox(width: 20.w),
                           Expanded(
-                            child: Shimmer.fromColors(
-                              baseColor: Colors.grey[300]!,
-                              highlightColor: Colors.grey[100]!,
-                              child: Container(
-                                height: 50.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
+                            child: _shimmerBox(
+                              height: 50.h,
                             ),
                           ),
                         ],
@@ -199,17 +143,14 @@ class HireDetailsSkeleton extends StatelessWidget {
             ),
           ),
 
-          // Back button shimmer
+          /// 🔹 Back button shimmer
           Positioned(
             top: 40.h,
             left: 20.w,
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[300],
-              ),
+            child: _shimmerBox(
+              width: 40,
+              height: 40,
+              shape: BoxShape.circle,
             ),
           ),
         ],

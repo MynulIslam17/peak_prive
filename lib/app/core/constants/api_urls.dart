@@ -99,6 +99,22 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
 
+///================================Message  ============================================
+  ///
+  /// show category wise data if category missing then show all data(also work for home url)
+  static   String   massageServiceUrl([String ? category]){
+    if(category!=null && category.isNotEmpty){
+      return "$baseUrl/massage/all?category=$category";
+    }
+    return "$baseUrl/massage/all";
+  }
+
+  /// show single massage  details
+  static String massageDetailsUrl(String id)=>"$baseUrl/massage/$id";
+
+
+
+
 
 
 
