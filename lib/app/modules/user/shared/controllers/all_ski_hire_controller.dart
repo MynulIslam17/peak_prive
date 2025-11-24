@@ -23,12 +23,13 @@ class SkiHireController extends GetxController {
     bool success = false;
 
     try {
-      // ADD THIS: Update selected category
+
       selectedCategoryName = category;
 
-      // Parallel requests for items and categories
+      /// Parallel requests for items and categories
+      ///
       final itemFuture = Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.hireAllServiceUrl(category),
+        url: AppUrls.hireAllServiceUrl(category), /// if category null hit another url if present hit another
       );
       final categoryFuture = Get.find<NetworkCaller>().getRequest(
         url: AppUrls.hireCategory,
@@ -71,7 +72,7 @@ class SkiHireController extends GetxController {
     skiHireList.clear();
     categoryList.clear();
     _errorMessage = null;
-    selectedCategoryName = null; // ADD THIS: Clear selection
+    selectedCategoryName = null;
     update();
   }
 }

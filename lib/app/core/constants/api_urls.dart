@@ -109,6 +109,9 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
     return "$baseUrl/massage/all";
   }
 
+  /// massage category list
+  static String massageCategoryUrl="$baseUrl/common/category/massage";
+
   /// show single massage  details
   static String massageDetailsUrl(String id)=>"$baseUrl/massage/$id";
 
