@@ -168,6 +168,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
     _fetchDetails();
   }
 
+  /// call api method
   Future<void> _fetchDetails() async {
     await transportController.fetchTransportDetails(productId);
   }

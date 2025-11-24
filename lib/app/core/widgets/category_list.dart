@@ -24,7 +24,7 @@ class CategoryList extends StatelessWidget {
       height: 100.h,
       child: ListView.separated(
         shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         scrollDirection: Axis.horizontal,
         itemCount: categoryList.length,
         separatorBuilder: (_, __) => SizedBox(width: 15.w),
@@ -35,13 +35,12 @@ class CategoryList extends StatelessWidget {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Circle with border only for selected
+              // Circle with border
               InkWell(
                 borderRadius: BorderRadius.circular(24),
                 onTap: () {
                   if (onTap != null) onTap!(category.name);
                 },
-
                 child: Container(
                   height: 60,
                   width: 60,
@@ -61,19 +60,25 @@ class CategoryList extends StatelessWidget {
                       width: 50.w,
                       height: 50.h,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Icon(Icons.error, size: 40.sp),
+                      errorBuilder: (_, __, ___) => Icon(Icons.error, size: 40.sp),
                     ),
                   ),
                 ),
               ),
               SizedBox(height: 6.h),
-              // Text below
-              Text(
-                category.name,
-                style: AppTextStyle.p_medium_12()?.copyWith(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.normal,
+              // Fixed width text with ellipsis
+              SizedBox(
+                width: 75, // Fixed width for all category titles
+                child: Text(
+                  category.name,
+                  style: AppTextStyle.p_medium_12()?.copyWith(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.normal,
+                    fontSize: 11
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
               ),
             ],

@@ -27,6 +27,7 @@ import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
 
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/massage/bindings/message_details_binding.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
 
@@ -154,7 +155,8 @@ abstract class AppPages {
     ),
 
     /// message
-    GetPage(name: Routes.massageDetails, page: () => MassageDetailsScreen()),
+    GetPage(name: Routes.massageDetails, page: () => MassageDetailsScreen(),
+    binding: MessageDetailsBindings()),
 
     GetPage(name: Routes.bookingRequest, page: () => BookingRequest()),
 

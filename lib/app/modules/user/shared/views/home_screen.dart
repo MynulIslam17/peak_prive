@@ -406,8 +406,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                           skiPassType: "",
                                           onTap: () {
                                             Get.toNamed(
+
+
                                               Routes.massageDetails,
                                               arguments: {"id": item.id},
+
+
                                             );
                                           },
                                         ),

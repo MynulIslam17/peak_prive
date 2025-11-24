@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/modules/user/massage/controllers/message_details_controller.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
 
 import '../../../../../gen/assets.gen.dart';
@@ -24,22 +25,60 @@ class MassageDetailsScreen extends StatefulWidget {
 
 class _MassageDetailsScreenState extends State<MassageDetailsScreen>
     with SingleTickerProviderStateMixin {
+
+  ///  product id
+   late final String productId;
   final image = Assets.images;
   final icons = Assets.icons;
 
   late TabController tabController;
 
+  /// find
+  final massageController=Get.find<MassageDetailsController>();
+
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
+
+    var argument=Get.arguments;
+
+    productId=argument["id"];
+
+
+    if(productId.isNotEmpty){
+      _fetchDetails();
+    }
+
+
   }
+
+
+
+
+
+
 
   @override
   void dispose() {
     tabController.dispose();
     super.dispose();
   }
+
+
+
+
+
+  /// fetch details api calling method
+  Future<void>_fetchDetails()async{
+    await massageController.fetchMassageDetails(productId);
+
+
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
