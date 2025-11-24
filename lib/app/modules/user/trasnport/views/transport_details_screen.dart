@@ -20,6 +20,15 @@ class TransportDetailsScreen extends StatefulWidget {
 }
 
 class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
+
+
+  /// variable for store id product id
+  late final String id;
+
+
+
+
+
   final image = Assets.images;
   final icon = Assets.icons;
 
@@ -55,6 +64,35 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
       );
     });
   }
+
+
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    /// gets the id
+    var argument=Get.arguments;
+    id=argument["id"];
+
+    /// call api method
+
+
+
+  }
+
+
+  Future<void> fetchDetails() async{
+
+
+
+
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {

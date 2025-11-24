@@ -183,7 +183,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
 
               return  BottomNavigationBar(
                 
-                backgroundColor: Color(0xffFBF7EB),
+                backgroundColor: Colors.white,
 
 
                   currentIndex: controller.getIndex,

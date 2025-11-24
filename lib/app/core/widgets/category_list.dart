@@ -23,6 +23,8 @@ class CategoryList extends StatelessWidget {
     return SizedBox(
       height: 100.h,
       child: ListView.separated(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
         scrollDirection: Axis.horizontal,
         itemCount: categoryList.length,
         separatorBuilder: (_, __) => SizedBox(width: 15.w),
@@ -41,8 +43,8 @@ class CategoryList extends StatelessWidget {
                 },
 
                 child: Container(
-                  height: 70,
-                  width: 70,
+                  height: 60,
+                  width: 60,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isSelected ? AppColors.primary_1 : Colors.white,

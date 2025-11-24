@@ -12,7 +12,7 @@ class CategorySkeleton extends StatelessWidget {
       height: 100.h,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: 3,
+        itemCount: 5,
         separatorBuilder: (_, __) => SizedBox(width: 15.w),
         itemBuilder: (context, index) {
           return Column(
@@ -22,8 +22,8 @@ class CategorySkeleton extends StatelessWidget {
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
                 child: Container(
-                  width: 80,
-                  height: 80,
+                  width: 60,
+                  height: 60,
                   decoration: const BoxDecoration(
                     color: Colors.grey,
                     shape: BoxShape.circle,
@@ -34,11 +34,7 @@ class CategorySkeleton extends StatelessWidget {
               Shimmer.fromColors(
                 baseColor: Colors.grey[300]!,
                 highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: 50,
-                  height: 12,
-                  color: Colors.grey[300],
-                ),
+                child: Container(width: 50, height: 7, color: Colors.grey[300]),
               ),
             ],
           );
@@ -48,15 +44,16 @@ class CategorySkeleton extends StatelessWidget {
   }
 }
 
-
-
 /// Detailed skeleton for item cards
-
 
 class ItemCardSkeleton extends StatelessWidget {
   const ItemCardSkeleton({super.key});
 
-  Widget _buildShimmerBlock({double? width, double? height, BorderRadius? borderRadius}) {
+  Widget _buildShimmerBlock({
+    double? width,
+    double? height,
+    BorderRadius? borderRadius,
+  }) {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
@@ -76,9 +73,7 @@ class ItemCardSkeleton extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 7.h),
       child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 2,
         child: Padding(
           padding: EdgeInsets.all(10.w),
@@ -112,10 +107,6 @@ class ItemCardSkeleton extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 8.h),
-
-
-
-
             ],
           ),
         ),
@@ -123,9 +114,6 @@ class ItemCardSkeleton extends StatelessWidget {
     );
   }
 }
-
-
-
 
 /// Header skeleton (profile + search bar)
 class HeaderSkeleton extends StatelessWidget {
@@ -138,65 +126,64 @@ class HeaderSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
 
-
-          Row(children: [
-
-
-            Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.grey[300],
+            children: [
+              Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey[300],
+                ),
               ),
-            ),
 
+              SizedBox(width: 10),
 
-            SizedBox(width: 10,),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 120,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
 
+                  SizedBox(height: 10),
 
+                  Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: Container(
+                      width: 155,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-             Column(
-               children: [
+              Spacer(),
 
-                 Shimmer.fromColors(
-                   baseColor: Colors.grey[300]!,
-                   highlightColor: Colors.grey[100]!,
-                   child: Container(
-                     width: 200,
-                     height: 20,
-                     decoration: BoxDecoration(
-                         color: Colors.grey[300],
-                         borderRadius: BorderRadius.circular(8)
-                     ),
-                   ),
-                 ),
+              Shimmer.fromColors(
 
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[300]!,
 
-                 SizedBox(height: 10,),
-
-                 Shimmer.fromColors(
-                   baseColor: Colors.grey[300]!,
-                   highlightColor: Colors.grey[100]!,
-                   child: Container(
-                     width: 200,
-                     height: 20,
-                     decoration: BoxDecoration(
-                         color: Colors.grey[300],
-                         borderRadius: BorderRadius.circular(8)
-                     ),
-                   ),
-                 ),
-
-
-               ],
-             )
-
-
-
-          ],),
-
+                child: CircleAvatar(radius: 20),
+              ),
+            ],
+          ),
 
           SizedBox(height: 16.h),
           Shimmer.fromColors(
@@ -205,11 +192,10 @@ class HeaderSkeleton extends StatelessWidget {
             child: Container(
               height: 40.h,
               decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(12)
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(12),
               ),
               width: double.infinity,
-
             ),
           ),
         ],
@@ -217,8 +203,6 @@ class HeaderSkeleton extends StatelessWidget {
     );
   }
 }
-
-
 
 /// Category title skeleton
 class CategoryTitleSkeleton extends StatelessWidget {
@@ -231,7 +215,7 @@ class CategoryTitleSkeleton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Title
+          /// Title
           Shimmer.fromColors(
             baseColor: Colors.grey[300]!,
             highlightColor: Colors.grey[100]!,
@@ -245,12 +229,12 @@ class CategoryTitleSkeleton extends StatelessWidget {
             ),
           ),
 
-          // "See All"
+          /// "See All"
           Shimmer.fromColors(
             baseColor: Colors.grey[300]!,
             highlightColor: Colors.grey[100]!,
             child: Container(
-              width: 60.w,
+              width: 40.w,
               height: 16.h,
               decoration: BoxDecoration(
                 color: Colors.grey[300],

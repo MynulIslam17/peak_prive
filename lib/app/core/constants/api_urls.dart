@@ -94,6 +94,12 @@ static String hireBookingReviewUrl(String productId)=>"$baseUrl/ski-hire/review/
 
 static String transportCategoryUrl="$baseUrl/common/category/transport";
 
+  /// show single transport details
+static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
+
+
+
+
 
 
 
