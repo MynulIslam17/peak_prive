@@ -1,3 +1,4 @@
+// -------------------- BOOKING MODEL --------------------
 class BookingModel {
   final Pagination pagination;
   final List<Booking> result;
@@ -38,6 +39,11 @@ class Booking {
   final DateTime updatedAt;
   final String timeLabel;
 
+  // ⭐ NEW FIELDS
+  final String dateString;
+  final String timeString;
+  final DateTime bookingDateTime;
+
   Booking({
     required this.id,
     required this.user,
@@ -56,6 +62,9 @@ class Booking {
     required this.createdAt,
     required this.updatedAt,
     required this.timeLabel,
+    required this.dateString,
+    required this.timeString,
+    required this.bookingDateTime,
   });
 
   factory Booking.fromJson(Map<String, dynamic>? json) {
@@ -69,6 +78,33 @@ class Booking {
         return DateTime.now();
       }
     }
+
+    // ⭐ Parse date & time as string
+    String dateString = json['date'] ?? '';
+    String timeString = json['time'] ?? '';
+
+    // ⭐ Combine into bookingDateTime - FIXED VERSION
+    DateTime bookingDateTime = (() {
+      try {
+        if (dateString.isNotEmpty && timeString.isNotEmpty) {
+          // Extract date part - handle both formats
+          String datePart;
+          if (dateString.contains('T')) {
+            // Format: "2024-01-15T00:00:00.000Z"
+            datePart = dateString.split('T')[0];
+          } else {
+            // Format: "2024-01-15"
+            datePart = dateString;
+          }
+
+          // Combine date and time
+          return DateTime.parse("${datePart}T$timeString:00.000Z");
+        }
+        return DateTime.now();
+      } catch (_) {
+        return DateTime.now();
+      }
+    })();
 
     return Booking(
       id: json['_id'] ?? '',
@@ -89,7 +125,12 @@ class Booking {
       isPermitted: json['isPermitted'] ?? false,
       createdAt: parseDate(json['createdAt']),
       updatedAt: parseDate(json['updatedAt']),
-      timeLabel: json['timeLabel'] ?? '',   // <--- SAFELY HANDLED
+      timeLabel: json['timeLabel'] ?? '',
+
+      // ⭐ NEW
+      dateString: dateString,
+      timeString: timeString,
+      bookingDateTime: bookingDateTime,
     );
   }
 }

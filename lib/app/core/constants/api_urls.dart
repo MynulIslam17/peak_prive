@@ -118,7 +118,24 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
 
+  /// ===================restaurant =========================================
 
+
+  /// show category wise data if category missing then show all data(also work for home url)
+  static   String   restaurantServiceUrl([String ? category]){
+    if(category!=null && category.isNotEmpty){
+      return "$baseUrl/restaurant/all?category=$category";
+    }
+    return "$baseUrl/restaurant/all";
+  }
+
+
+  /// show single restaurant  details
+  static String restaurantDetailsUrl(String id)=>"$baseUrl/restaurant/$id";
+
+
+  /// restaurant category list
+  static String restaurantCategoryUrl="$baseUrl/common/category/restaurant";
 
 
 

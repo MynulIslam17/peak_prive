@@ -10,19 +10,23 @@ class MassageDetailsModel {
   });
 
   factory MassageDetailsModel.fromJson(Map<String, dynamic>? json) {
-    if (json == null) {
-      return MassageDetailsModel(
-        code: 0,
-        message: '',
-        data: MassageDetails.empty(),
-      );
-    }
+    try {
+      if (json == null) {
+        return MassageDetailsModel(
+          code: 0,
+          message: '',
+          data: MassageDetails.empty(),
+        );
+      }
 
-    return MassageDetailsModel(
-      code: json['code'] ?? 0,
-      message: json['message'] ?? '',
-      data: MassageDetails.fromJson(json['data']),
-    );
+      return MassageDetailsModel(
+        code: json['code'] is int ? json['code'] : 0,
+        message: json['message']?.toString() ?? '',
+        data: MassageDetails.fromJson(json['data']),
+      );
+    } catch (_) {
+      return MassageDetailsModel(code: 0, message: '', data: MassageDetails.empty());
+    }
   }
 }
 
@@ -66,36 +70,38 @@ class MassageDetails {
   });
 
   factory MassageDetails.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return MassageDetails.empty();
+    try {
+      if (json == null) return MassageDetails.empty();
 
-    return MassageDetails(
-      id: json['_id'] ?? '',
-      category: Category.fromJson(json['category']),
-      owner: Owner.fromJson(json['owner']),
-      thumbnail: json['thumbnail'] ?? '',
-      title: json['title'] ?? '',
-      openTime: json['openTime'] ?? '',
-      closeTime: json['closeTime'] ?? '',
-      priceByDuration: (json['priceByDuration'] as List? ?? [])
-          .map((e) => PriceByDuration.fromJson(e))
-          .toList(),
-      serviceArea: json['serviceArea'] ?? '',
-      amount: json['amount'] ?? 0,
-      benefits: json['benefits'] ?? '',
-      ourRecommendations: json['ourRecommendations'] ?? '',
-      averageRating: json['averageRating'] ?? 0,
-      reviews: (json['reviews'] as List? ?? [])
-          .map((e) => Review.fromJson(e))
-          .toList(),
-      refunds: json['refunds'] ?? [],
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
+      return MassageDetails(
+        id: json['_id']?.toString() ?? '',
+        category: Category.fromJson(json['category']),
+        owner: Owner.fromJson(json['owner']),
+        thumbnail: json['thumbnail']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        openTime: json['openTime']?.toString() ?? '',
+        closeTime: json['closeTime']?.toString() ?? '',
+        priceByDuration: (json['priceByDuration'] as List? ?? [])
+            .map((e) => PriceByDuration.fromJson(e))
+            .toList(),
+        serviceArea: json['serviceArea']?.toString() ?? '',
+        amount: json['amount'] is num ? json['amount'] : 0,
+        benefits: json['benefits']?.toString() ?? '',
+        ourRecommendations: json['ourRecommendations']?.toString() ?? '',
+        averageRating: json['averageRating'] is num ? json['averageRating'] : 0,
+        reviews: (json['reviews'] as List? ?? [])
+            .map((e) => Review.fromJson(e))
+            .toList(),
+        refunds: json['refunds'] is List ? json['refunds'] : [],
+        createdAt: _safeDate(json['createdAt']),
+        updatedAt: _safeDate(json['updatedAt']),
+      );
+    } catch (_) {
+      return MassageDetails.empty();
+    }
   }
 
-  factory MassageDetails.empty() {
+  static MassageDetails empty() {
     return MassageDetails(
       id: '',
       category: Category.empty(),
@@ -118,6 +124,17 @@ class MassageDetails {
   }
 }
 
+DateTime _safeDate(dynamic value) {
+  if (value == null) return DateTime.fromMillisecondsSinceEpoch(0);
+
+  try {
+    return DateTime.tryParse(value.toString()) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  } catch (_) {
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+}
+
 class Category {
   final String id;
   final String name;
@@ -130,18 +147,20 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return Category.empty();
+    try {
+      if (json == null) return Category.empty();
 
-    return Category(
-      id: json['_id'] ?? '',
-      name: json['name'] ?? '',
-      categoryPhoto: json['categoryPhoto'] ?? '',
-    );
+      return Category(
+        id: json['_id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        categoryPhoto: json['categoryPhoto']?.toString() ?? '',
+      );
+    } catch (_) {
+      return Category.empty();
+    }
   }
 
-  factory Category.empty() {
-    return Category(id: '', name: '', categoryPhoto: '');
-  }
+  static Category empty() => Category(id: '', name: '', categoryPhoto: '');
 }
 
 class Owner {
@@ -166,21 +185,25 @@ class Owner {
   });
 
   factory Owner.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return Owner.empty();
+    try {
+      if (json == null) return Owner.empty();
 
-    return Owner(
-      id: json['_id'] ?? '',
-      fullName: json['fullName'] ?? '',
-      profileUrl: json['profileUrl'] ?? '',
-      address: json['address'] ?? '',
-      email: json['email'] ?? '',
-      providerType: json['providerType'] ?? '',
-      status: json['status'] ?? '',
-      role: json['role'] ?? '',
-    );
+      return Owner(
+        id: json['_id']?.toString() ?? '',
+        fullName: json['fullName']?.toString() ?? '',
+        profileUrl: json['profileUrl']?.toString() ?? '',
+        address: json['address']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        providerType: json['providerType']?.toString() ?? '',
+        status: json['status']?.toString() ?? '',
+        role: json['role']?.toString() ?? '',
+      );
+    } catch (_) {
+      return Owner.empty();
+    }
   }
 
-  factory Owner.empty() {
+  static Owner empty() {
     return Owner(
       id: '',
       fullName: '',
@@ -206,18 +229,21 @@ class PriceByDuration {
   });
 
   factory PriceByDuration.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return PriceByDuration.empty();
+    try {
+      if (json == null) return PriceByDuration.empty();
 
-    return PriceByDuration(
-      id: json['_id'] ?? '',
-      duration: json['duration'] ?? '',
-      amount: json['amount'] ?? 0,
-    );
+      return PriceByDuration(
+        id: json['_id']?.toString() ?? '',
+        duration: json['duration']?.toString() ?? '',
+        amount: json['amount'] is num ? json['amount'] : 0,
+      );
+    } catch (_) {
+      return PriceByDuration.empty();
+    }
   }
 
-  factory PriceByDuration.empty() {
-    return PriceByDuration(id: '', duration: '', amount: 0);
-  }
+  static PriceByDuration empty() =>
+      PriceByDuration(id: '', duration: '', amount: 0);
 }
 
 class Review {
@@ -234,18 +260,21 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic>? json) {
-    if (json == null) return Review.empty();
+    try {
+      if (json == null) return Review.empty();
 
-    return Review(
-      userId: json['userId'] ?? '',
-      rating: json['rating'] ?? 0,
-      comment: json['comment'] ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
+      return Review(
+        userId: json['userId']?.toString() ?? '',
+        rating: json['rating'] is num ? json['rating'] : 0,
+        comment: json['comment']?.toString() ?? '',
+        createdAt: _safeDate(json['createdAt']),
+      );
+    } catch (_) {
+      return Review.empty();
+    }
   }
 
-  factory Review.empty() {
+  static Review empty() {
     return Review(
       userId: '',
       rating: 0,

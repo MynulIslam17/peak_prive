@@ -83,23 +83,25 @@ class BookingCardItem extends StatelessWidget {
                         // Time Label
                         if (timeLabel != null && timeLabel!.isNotEmpty)
                           Expanded(
+                            flex:2,
                             child: Text(
                               timeLabel!,
                               style: AppTextStyle.sub_h3_medium_14(
                                 color: Colors.red,
-                              ).copyWith(fontSize: 11),
+                              ).copyWith(fontSize: 8),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 2,
                               softWrap: true,
                             ),
                           ),
-                        if (timeLabel != null && timeLabel!.isNotEmpty)
-                          SizedBox(width: 8.w),
+
+
+                        Spacer(),
                         // Button
                         CustomButton(
                           text: buttonText,
-                          width: 100,
-                          height: 40,
+                          width: 80,
+                          height: 30,
                           textSize: 11,
                           onTap: onButtonTap,
                         ),

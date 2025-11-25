@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/message_details_shimmer.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/pass_details_skeleton.dart';
 import 'package:harry_service_app/app/modules/user/massage/controllers/message_details_controller.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
 
@@ -55,10 +57,6 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
 
 
 
-
-
-
-
   @override
   void dispose() {
     tabController.dispose();
@@ -84,144 +82,187 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     return Scaffold(
-      body: SizedBox(
-        width: size.width,
-        height: size.height,
-        child: Stack(
-          children: [
-            // Background image
-            image.message.image(
-              height: size.height * 0.48,
-              fit: BoxFit.cover,
+      body: GetBuilder<MassageDetailsController>(builder: (controller){
+
+        if(controller.isLoading){
+          return MassageDetailsShimmer();
+        }
+
+        // Null check for hireDetails
+        if (controller.massage == null) {
+          return Center(
+            child: Text(
+              "Massage details not available",
+              style: AppTextStyle.sub_h3_regular_14(),
             ),
+          );
+        }
 
-            // Overlap card
-            Positioned(
-              top: size.height * 0.33,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                width: size.width,
-                decoration: BoxDecoration(
-                  color: const Color(0xffFDFAF6),
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, -3),
-                    ),
-                  ],
+        else{
+
+              final massage =controller.massage!;
+              final owner =controller.massage!.owner;
+
+          return  SizedBox(
+            width: size.width,
+            height: size.height,
+            child: Stack(
+              children: [
+                // Background image
+
+                Image.network(
+                  massage.thumbnail,
+                  height: size.height * 0.48,
+                  fit: BoxFit.cover,
+
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      // Line indicator
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Center(
-                          child: image.line.image(width: 87.w, height: 9.h),
+
+
+
+
+                // Overlap card
+                Positioned(
+                  top: size.height * 0.33,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: size.width,
+                    decoration: BoxDecoration(
+                      color: const Color(0xffFDFAF6),
+                      borderRadius: BorderRadius.circular(40),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, -3),
                         ),
-                      ),
-                      SizedBox(height: 20.h),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          // Line indicator
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Center(
+                              child: image.line.image(width: 87.w, height: 9.h),
+                            ),
+                          ),
+                          SizedBox(height: 20.h),
 
-                      // Profile info
-                      ProviderInfo(
-                        onTapCall: () {},
-                        onTapMessage: () {},
-                      ),
-                      SizedBox(height: 20.h),
+                          // Profile info
+                          ProviderInfo(
+                            providerName: owner.fullName,
+                            rating: massage.averageRating.toString(),
+                            reviewCount: massage.reviews.length,
+                            image: owner.profileUrl,
+                            onTapCall: () {},
+                            onTapMessage: () {},
+                          ),
+                          SizedBox(height: 20.h),
 
-                      // Tab bar
-                      TabBar(
-                        controller: tabController,
-                        labelColor: Colors.white,
-                        unselectedLabelColor: Colors.black,
-                        labelStyle: AppTextStyle.sub_h3_medium_14(),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicator: BoxDecoration(
-                          color: Color(0xffD4AF38),
-                          borderRadius: BorderRadius.circular(10)
-                        ),
-                        tabs: const [
-                          Tab(text: "About"),
-                          Tab(text: "Review"),
-                        ],
-                      ),
+                          // Tab bar
+                          TabBar(
+                            controller: tabController,
+                            labelColor: Colors.white,
+                            unselectedLabelColor: Colors.black,
+                            labelStyle: AppTextStyle.sub_h3_medium_14(),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicator: BoxDecoration(
+                                color: Color(0xffD4AF38),
+                                borderRadius: BorderRadius.circular(10)
+                            ),
+                            tabs: const [
+                              Tab(text: "About"),
+                              Tab(text: "Review"),
+                            ],
+                          ),
 
-                      // Tab content
-                      Expanded(
-                        child: TabBarView(
-                          controller: tabController,
-                          children: [
-                            // About Tab
-                            ListView(
-                              padding: EdgeInsets.all(0),
+                          // Tab content
+                          Expanded(
+                            child: TabBarView(
+                              controller: tabController,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: _buildAboutContent(),
+                                // About Tab
+                                ListView(
+                                  padding: EdgeInsets.all(0),
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: _buildAboutContent(),
+                                    ),
+                                  ],
+                                ),
+                                // Review Tab
+                                ListView(
+                                  padding: EdgeInsets.all(20),
+                                  children: [
+                                    ReviewScreen()
+                                  ],
                                 ),
                               ],
                             ),
-                            // Review Tab
-                            ListView(
-                              padding: EdgeInsets.all(20),
+                          ),
+
+                          // Footer (Price + Button)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: 10.h,
+                              bottom: 20.h,
+                            ),
+                            child: Row(
                               children: [
-                                ReviewScreen()
+                                SizedBox(
+                                  width: 110,
+                                  child: Text(
+                                    "\$ ${controller.massage!.amount}",
+                                    style: AppTextStyle.sub_h3_medium_14(
+                                      color: AppColors.primary_1,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 30.w),
+
+
+
+                                Expanded(
+                                  child: CustomButton(
+                                    onTap: () {
+                                      Get.toNamed(Routes.bookingRequest,
+
+                                      arguments: {
+                                       "priceByDuration" : massage.priceByDuration,
+                                        "id" : productId
+                                      }
+                                      );
+                                    },
+                                    text: "Book Now",
+                                    backgroundColor: AppColors.primary_1,
+                                  ),
+                                ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-
-                      // Footer (Price + Button)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top: 10.h,
-                          bottom: 20.h,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              "\$9.99",
-                              style: AppTextStyle.sub_h1_medium_18(
-                                color: AppColors.primary_1,
-                              ),
-                            ),
-                            SizedBox(width: 30.w),
-
-
-
-                            Expanded(
-                              child: CustomButton(
-                                onTap: () {
-                                  Get.toNamed(Routes.passInformation);
-                                },
-                                text: "Book Now",
-                                backgroundColor: AppColors.primary_1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            // Back button
-            CustomBackButton(
-              onTap: () {
-                Get.back();
-              },
+                // Back button
+                CustomBackButton(
+                  onTap: () {
+                    Get.back();
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+      })
     );
   }
 
@@ -235,21 +276,21 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text("Relaxing Massage", style: AppTextStyle.sub_h1_medium_18()),
-            Text("\$12", style: AppTextStyle.sub_h1_medium_18(color:AppColors.primary_1)),
+            Expanded(child: Text(massageController.massage!.title, style: AppTextStyle.h2_semibold_22(),softWrap: true,maxLines: 2,overflow: TextOverflow.ellipsis,)),
+            Text("\$ ${massageController.massage!.amount}", style: AppTextStyle.sub_h2_medium_16(color:AppColors.primary_1)),
           ],
         ),
-        SizedBox(height: 2.h,),
+        SizedBox(height: 10.h,),
 
         /// open and close time
         Row(
           children: [
 
-            Text("Open 10 am",style: AppTextStyle.p_regular_12(color: AppColors.black_3),),
+            Text("Open : ${massageController.massage!.openTime}",style: AppTextStyle.p_regular_12(color: AppColors.black_3),),
             SizedBox(width: 10.w,),
             CircleAvatar(radius: 5,backgroundColor: Colors.grey,),
             SizedBox(width: 10.w,),
-            Text("Closed 10 am",style: AppTextStyle.p_regular_12(color: AppColors.black_3),),
+            Text("Closed ${massageController.massage!.closeTime}",style: AppTextStyle.p_regular_12(color: AppColors.black_3),),
 
 
 
@@ -265,27 +306,23 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
 
             icons.mapPinSimpleArea.svg(width: 20,height: 20),
             SizedBox(width: 10.w,),
-            Text("34 akhicnbanns Street, Off Ihama Road",style:AppTextStyle.p_regular_12(color: AppColors.black_3) ,)
+            Text("Location : ${massageController.massage!.serviceArea}",style:AppTextStyle.p_regular_12(color: AppColors.black_3) ,)
           ],
         ),
 
 
 
         SizedBox(height: 10.h),
-        Text("Benefits", style: AppTextStyle.sub_h1_medium_18()),
+        Text("Benefits", style: AppTextStyle.sub_h2_medium_16()),
         SizedBox(height: 10.h),
         Text(
-          "Strong pressure to work out knots, tension and stiffness. "
-              "Targets specific problem areas and frees up movement. "
-              "Supports muscle recovery after exercise.",
+          "${massageController.massage!.benefits}",
         ),
         SizedBox(height: 30.h),
         Text("Our recommendation", style: AppTextStyle.sub_h1_medium_18()),
         SizedBox(height: 10.h),
         Text(
-          "The strong pressure of this treatment is great for freeing up tense muscles "
-              "while realigning muscle tissues and speeding up recovery. "
-              "Expect elbow, fist and forearm work with a gradual increase in pressure.",
+          "${massageController.massage!.ourRecommendations}",
         ),
         SizedBox(height: 15.h),
       ],

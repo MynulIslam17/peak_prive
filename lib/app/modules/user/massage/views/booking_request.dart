@@ -1,13 +1,12 @@
-import 'dart:math';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/custome_button.dart';
+import 'package:harry_service_app/app/modules/user/massage/models/massage_details_model.dart';
+import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -22,17 +21,119 @@ class BookingRequest extends StatefulWidget {
 class _BookingRequestState extends State<BookingRequest> {
   final images = Assets.images;
   final icons = Assets.icons;
+  /// finds controller
+  final authController=Get.find<AuthController>();
+  final createBookingController=Get.find<CreateBookingController>();
 
-  List<double> durations = [30, 60, 90];
 
-  double? selectedDuration;
+  late final List<PriceByDuration> priceByDurationList;
+  late final String productId;
+
+  PriceByDuration? selectedDuration;
 
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
 
-  final TextEditingController requestTEController=TextEditingController();
+  final TextEditingController requestTEController = TextEditingController();
 
-  /// show date picker method
+  @override
+  void initState() {
+    super.initState();
+
+    /// Get arguments from previous screen
+    final arguments = Get.arguments;
+
+
+
+    productId = arguments["id"] as String;
+
+    // Convert dynamic list to List<PriceByDuration>
+    priceByDurationList = (arguments["priceByDuration"] as List)
+        .map((e) => e as PriceByDuration)
+        .toList();
+
+
+
+
+
+
+  }
+
+
+  /// create Booking
+  Future<void> _createBooking() async{
+
+    /// create a request body then call  api
+
+    Map<String, dynamic> body = {
+      "userId": authController.userModel!.id,
+      "productId": productId,
+      "durationId": selectedDuration!.id,
+      "duration": selectedDuration!.duration,
+      "price": selectedDuration!.amount,
+      "bookingRequestText": requestTEController.text,
+      "date": selectedDate!.toIso8601String(),
+      "time": "${selectedTime!.hour}:${selectedTime!.minute}"
+    };
+
+
+   bool success = await createBookingController.proceedBooking(body);
+
+
+   if(success){
+     /// showing dialog
+     showDialog(
+       context: context,
+       barrierDismissible: false,
+       builder: (context) {
+         return AlertDialog(
+           backgroundColor: Colors.white,
+           shape: RoundedRectangleBorder(
+             borderRadius: BorderRadius.circular(15),
+           ),
+           content: Column(
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+               SizedBox(height: 16.h),
+               Text(
+                 "Booking Successful!",
+                 style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+               ),
+               SizedBox(height: 8.h),
+               Text(
+                 "Your Booking has been processed successfully",
+                 textAlign: TextAlign.center,
+                 style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+               ),
+             ],
+           ),
+         );
+       },
+     );
+
+
+
+
+     await Future.delayed(Duration(seconds: 1));
+
+     if(mounted){
+       Navigator.of(context).pop();/// close the dilaog
+       Get.back(); /// back to previous screen
+     }
+
+
+   }
+
+
+
+
+  }
+
+
+
+
+  /// Show date picker
   Future<void> showDatePick() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -48,7 +149,7 @@ class _BookingRequestState extends State<BookingRequest> {
     }
   }
 
-  /// show time picker method
+  /// Show time picker
   Future<void> showTimePick() async {
     TimeOfDay? pickedTime = await showTimePicker(
       context: context,
@@ -65,209 +166,174 @@ class _BookingRequestState extends State<BookingRequest> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /// appbar
       appBar: AppBar(
-        title: Text("Booking Request "),
+        title: const Text("Booking Request"),
         leading: IconButton(
-          onPressed: () {
-            Get.back();
-          },
+          onPressed: () => Get.back(),
           icon: icons.caretLeft.svg(color: Colors.black, width: 30, height: 30),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// selectable duration
-            Text(
-              "Duration",
-              style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-            ),
-
-            Row(
-              children: [
-                ...durations.map((time) {
-                  return Padding(
-                    padding: EdgeInsets.only(right: 10, top: 10, bottom: 10),
-                    child: InkWell(
-                      onTap: () {
-                        setState(() {
-                          selectedDuration = time;
-                        });
-                      },
-                      child: Container(
-                        height: 40,
-                        width: 105,
-                        decoration: BoxDecoration(
-                          color: time == selectedDuration
-                              ? AppColors.primary_1
-                              : Colors.black.withOpacity(0.2),
-
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: FittedBox(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 7,
-                              horizontal: 7,
-                            ),
-                            child: Center(
-                              child: Text(
-                                "${time} mins (\$115)",
-                                style: AppTextStyle.c_regular_12().copyWith(
-                                  fontSize: 10.sp,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+            /// Duration selection
+            Text("Duration", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+            const SizedBox(height: 5),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: priceByDurationList.map((item) {
+                bool isSelected = selectedDuration?.id == item.id;
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      selectedDuration = item;
+                    });
+                  },
+                  child: Container(
+                    height: 40,
+                    width: 120,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary_1 : Colors.black.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    alignment: Alignment.center,
+                    child: FittedBox(
+                      child: Text(
+                        "${item.duration} mins (\$${item.amount})",
+                        style: AppTextStyle.c_regular_12().copyWith(fontSize: 10),
                       ),
                     ),
-                  );
-                }).toList(),
-              ],
+                  ),
+                );
+              }).toList(),
             ),
+            const SizedBox(height: 15),
 
-            /// choose date
-            Text(
-              "Select Date",
-              style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-            ),
-
-            SizedBox(height: 10.h),
-
+            /// Date picker
+            Text("Select Date", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+            const SizedBox(height: 5),
             InkWell(
-              /// date picker
               onTap: showDatePick,
               child: Container(
-                height: 35.h,
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.black.withOpacity(0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-
                 child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: icons.calendarDots.svg(height: 25, width: 25),
-                    ),
-
+                    icons.calendarDots.svg(height: 25, width: 25),
+                    const SizedBox(width: 10),
                     Text(
                       selectedDate == null
                           ? "Select Date"
                           : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-                      style: AppTextStyle.sub_h3_regular_14().copyWith(
-                        fontSize: 13,
-                      ),
+                      style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
                     ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 15),
 
-            SizedBox(height: 10.h),
-
-            /// time picker
-            Text(
-              "Select Time",
-              style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-            ),
-            SizedBox(height: 10.h,),
+            /// Time picker
+            Text("Select Time", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+            const SizedBox(height: 5),
             InkWell(
-              /// time picker
               onTap: showTimePick,
               child: Container(
-                height: 35.h,
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.black.withOpacity(0.3)),
                   borderRadius: BorderRadius.circular(8),
                 ),
-
                 child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: icons.time.svg(height: 25, width: 25),
-                    ),
-
-
+                    icons.time.svg(height: 25, width: 25),
+                    const SizedBox(width: 10),
                     Text(
                       selectedTime == null
-                          ? "Select time"
+                          ? "Select Time"
                           : "${selectedTime!.hourOfPeriod.toString().padLeft(2,'0')}:${selectedTime!.minute.toString().padLeft(2,'0')} ${selectedTime!.hour >= 12 ? 'PM' : 'AM'}",
                       style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
-                    )
-
-
-
-
+                    ),
                   ],
                 ),
               ),
             ),
+            const SizedBox(height: 15),
 
-            SizedBox(height: 10.h,),
-            Text(
-              "Enter Your Special Request (optional)",
-              style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-            ),
-
-            SizedBox(height: 10.h,),
-
+            /// Special request
+            Text("Enter Your Special Request (optional)", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+            const SizedBox(height: 5),
             TextField(
-
               maxLines: 4,
               controller: requestTEController,
-
               decoration: InputDecoration(
-
                 hintText: "Your Request",
                 hintStyle: AppTextStyle.sub_h3_regular_14().copyWith(color: Colors.black.withOpacity(0.4)),
-
-
                 border: OutlineInputBorder(
-
-                  borderSide: BorderSide(
-                   color: Colors.black.withOpacity(0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(8)
-                )
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.black.withOpacity(0.3)),
+                ),
               ),
-
-
             ),
+            const Spacer(),
 
-
-            Spacer(),
-            
+            /// Book Now button
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(children: [
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: Text(
+                      selectedDuration != null ? "\$${selectedDuration!.amount}" : "\$0.00",
+                      style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: CustomButton(
+                      text: "Checkout",
+                      onTap: ()async {
+                        if (selectedDuration == null) {
+                          Get.snackbar("Error", "Please select a duration",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
+                          return;
+                        }
+                        if (selectedDate == null) {
+                          Get.snackbar("Error", "Please select a date",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
+                          return;
+                        }
+                        if (selectedTime == null) {
+                          Get.snackbar("Error", "Please select a time",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
+                          return;
+                        }
 
-                Text("\$9.99",style: AppTextStyle.sub_h1_medium_18(),),
-                SizedBox(width: 10.w,),
 
-                Expanded(child: CustomButton(text: "Book Now"))
+                        /// if validate then execute
 
-
-              ],),
-            )
+                        await  _createBooking();
 
 
 
 
+
+
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
-
-
-
-
 }

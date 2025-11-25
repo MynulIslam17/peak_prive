@@ -33,7 +33,6 @@ class _BookingScreenState extends State<BookingScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-
     _fetchBookings();
   }
 
@@ -41,8 +40,6 @@ class _BookingScreenState extends State<BookingScreen>
   Future<void> _fetchBookings() async {
     await _bookingController.getMyBooking();
     setState(() {});
-
-    /// Refresh UI after fetching
   }
 
   @override
@@ -51,8 +48,60 @@ class _BookingScreenState extends State<BookingScreen>
     super.dispose();
   }
 
-  /// show a dialog for rating
+  /// Format datetime for display
+  String _formatBookingTime(booking) {
+    if (_navController.getServiceType == "massage") {
+      // For massage, use the new dateString and timeString fields
+      if (booking.dateString.isNotEmpty && booking.timeString.isNotEmpty) {
+        try {
+          // Parse the date
+          String datePart = booking.dateString.contains('T')
+              ? booking.dateString.split('T')[0]
+              : booking.dateString;
+          DateTime date = DateTime.parse(datePart);
 
+          // Format: "15 Jan 2024, 10:30 AM"
+          String formattedDate = "${date.day} ${_getMonthName(date.month)} ${date.year}";
+          String formattedTime = _formatTime(booking.timeString);
+
+          return "$formattedDate, $formattedTime";
+        } catch (e) {
+          return booking.timeLabel; // Fallback
+        }
+      }
+      return booking.timeLabel;
+    } else {
+      // For other services (ski_pass, hire), use timeLabel
+      return booking.timeLabel;
+    }
+  }
+
+  /// Get month name
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  /// Format time string (HH:mm to 12-hour format)
+  String _formatTime(String timeString) {
+    try {
+      List<String> parts = timeString.split(':');
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+
+      String period = hour >= 12 ? 'PM' : 'AM';
+      hour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+
+      return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period";
+    } catch (e) {
+      return timeString;
+    }
+  }
+
+  /// show a dialog for rating
   void _showDialog(String productId) {
     double _rating = 0;
     TextEditingController feedbackTEController = TextEditingController();
@@ -69,7 +118,6 @@ class _BookingScreenState extends State<BookingScreen>
           backgroundColor: Colors.white,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              // Maximum height relative to screen
               final maxHeight = MediaQuery.of(context).size.height * 0.7;
 
               return ConstrainedBox(
@@ -190,55 +238,54 @@ class _BookingScreenState extends State<BookingScreen>
                                   ),
                                 ),
                                 SizedBox(width: 15),
+
                                 /// Submit
+                                GetBuilder<HireRatingController>(builder: (controller) {
+                                  return controller.isLoading
+                                      ? Center(
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primary_1,
+                                    ),
+                                  )
+                                      : SizedBox(
+                                    width: 110,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        double rating = _rating;
+                                        String feedback = feedbackTEController.text;
 
+                                        Map<String, dynamic> body = {
+                                          "rating": rating,
+                                          "comment": feedback
+                                        };
 
-                                GetBuilder<HireRatingController>(builder: (controller){
+                                        bool success = await ratingController.sendRating(
+                                            productId, body);
 
-                                   return controller.isLoading ? Center(child: CircularProgressIndicator(color: AppColors.primary_1,),)
-                                       : SizedBox(
-                                     width: 110,
-                                     child: ElevatedButton(
-                                       onPressed: () async{
-                                         double rating = _rating;
-                                         String feedback = feedbackTEController.text;
+                                        if (success) {
+                                          print("=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success");
+                                        }
 
-
-                                         Map<String,dynamic> body={
-                                           "rating":rating,
-                                           "comment":feedback
-                                         };
-
-                                         bool success=  await  ratingController.sendRating(productId, body);
-
-                                         if(success){
-                                           print("=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success");
-                                         }
-
-
-
-                                         Navigator.of(context).pop();
-                                       },
-                                       style: ElevatedButton.styleFrom(
-                                         backgroundColor: Colors.deepPurple,
-                                         foregroundColor: Colors.white,
-                                         shape: RoundedRectangleBorder(
-                                           borderRadius: BorderRadius.circular(12),
-                                         ),
-                                         padding: EdgeInsets.symmetric(vertical: 14),
-                                         elevation: 3,
-                                         shadowColor: Colors.deepPurpleAccent.withOpacity(0.3),
-                                       ),
-                                       child: Text(
-                                         "Submit",
-                                         style: TextStyle(fontWeight: FontWeight.bold),
-                                       ),
-                                     ),
-                                   );
-
+                                        Navigator.of(context).pop();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.deepPurple,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: EdgeInsets.symmetric(vertical: 14),
+                                        elevation: 3,
+                                        shadowColor:
+                                        Colors.deepPurpleAccent.withOpacity(0.3),
+                                      ),
+                                      child: Text(
+                                        "Submit",
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  );
                                 })
-
-
                               ],
                             ),
                           ],
@@ -254,9 +301,6 @@ class _BookingScreenState extends State<BookingScreen>
       },
     );
   }
-
-
-
 
   /// booking list method
   Widget _buildBookingList(String status) {
@@ -290,45 +334,48 @@ class _BookingScreenState extends State<BookingScreen>
       itemCount: filteredBookings.length,
       itemBuilder: (context, index) {
         final booking = filteredBookings[index];
-        final product = booking.product; // Product is part of Booking model
+        final product = booking.product;
 
         return _navController.getServiceType == "ski_pass"
             ? BookingCard(
-                image: product.thumbnail,
-                personCount: booking.bookingItems.isNotEmpty
-                    ? booking.bookingItems.fold<int>(
-                        0,
-                        (sum, item) => sum + (item.quantity ?? 0),
-                      )
-                    : 1, // Sum of quantities as personCount
-                passType: product?.title ?? "Default", // Use product title
-                location: product?.serviceArea ?? "-",
-                date: booking.startDateAndTime != null
-                    ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
-                    : "",
-                time: booking.startDateAndTime != null
-                    ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
-                    : "",
-                onTap: () {},
-              )
+          image: product.thumbnail,
+          personCount: booking.bookingItems.isNotEmpty
+              ? booking.bookingItems.fold<int>(
+            0,
+                (sum, item) => sum + (item.quantity ?? 0),
+          )
+              : 1,
+          passType: product?.title ?? "Default",
+          location: product?.serviceArea ?? "-",
+          date: booking.startDateAndTime != null
+              ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
+              : "",
+          time: booking.startDateAndTime != null
+              ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
+              : "",
+          onTap: () {},
+        )
             : BookingCardItem(
-                image: product.thumbnail,
-                title: product.title,
-                timeLabel: booking.timeLabel,
-                price: booking.totalPrice.toString(),
-                buttonText: status == "Active"
-                    ? "Details"
-                    : status == "Completed"
-                    ? "Give Review"
-                    : "Book Again",
-                onButtonTap: () {
-                  if (status == "Completed") {
-
-                    /// show the rating dialog
-                    _showDialog(product.id);
-                  }
-                },
-              );
+          image: product.thumbnail,
+          borderColor: status == "Active"
+              ? Colors.yellow
+              : status == "Complete"
+              ? Colors.green
+              : Colors.red,
+          title: product.title,
+          timeLabel: _formatBookingTime(booking),
+          price: booking.totalPrice.toString(),
+          buttonText: status == "Active"
+              ? "Details"
+              : status == "Completed"
+              ? "Give Review"
+              : "Book Again",
+          onButtonTap: () {
+            if (status == "Completed") {
+              _showDialog(product.id);
+            }
+          },
+        );
       },
     );
   }
@@ -342,8 +389,6 @@ class _BookingScreenState extends State<BookingScreen>
         elevation: 0,
         title: Text("Bookings", style: AppTextStyle.sub_h1_medium_18()),
         centerTitle: true,
-
-        /// go to home if click on back
         leading: IconButton(
           onPressed: () => _navController.changeIndex(0),
           icon: Assets.icons.caretLeft.svg(
