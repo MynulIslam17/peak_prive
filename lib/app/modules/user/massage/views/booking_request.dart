@@ -285,52 +285,93 @@ class _BookingRequestState extends State<BookingRequest> {
             ),
             const Spacer(),
 
-            /// Book Now button
+            /// Checkout  button
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Row(
                 children: [
+                  // Price
                   SizedBox(
                     width: 110,
                     child: Text(
-                      selectedDuration != null ? "\$${selectedDuration!.amount}" : "\$0.00",
-                      style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1),
+                      selectedDuration != null
+                          ? "\$${selectedDuration!.amount}"
+                          : "\$0.00",
+                      style: AppTextStyle.sub_h1_medium_18(
+                        color: AppColors.primary_1,
+                      ),
                     ),
                   ),
+
                   const SizedBox(width: 10),
+
+                  // Checkout Button
                   Expanded(
-                    child: CustomButton(
-                      text: "Checkout",
-                      onTap: ()async {
-                        if (selectedDuration == null) {
-                          Get.snackbar("Error", "Please select a duration",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
-                          return;
+                    child: GetBuilder<CreateBookingController>(
+                      builder: (controller) {
+                        // Show loader if booking is in progress
+                        if (controller.bookingProgress) {
+                          return Center(
+                            child: SizedBox(
+                              height: 50,
+                              width: 50,
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary_1,
+                              ),
+                            ),
+                          );
                         }
-                        if (selectedDate == null) {
-                          Get.snackbar("Error", "Please select a date",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
-                          return;
-                        }
-                        if (selectedTime == null) {
-                          Get.snackbar("Error", "Please select a time",snackPosition: SnackPosition.TOP,backgroundColor: Colors.red);
-                          return;
-                        }
 
+                        // Checkout button
+                        return SizedBox(
+                          height: 60,
+                          child: CustomButton(
+                            text: "Checkout",
+                            onTap: () async {
+                              // Validations
+                              if (selectedDuration == null) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please select a duration",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+                              if (selectedDate == null) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please select a date",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+                              if (selectedTime == null) {
+                                Get.snackbar(
+                                  "Error",
+                                  "Please select a time",
+                                  snackPosition: SnackPosition.TOP,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
 
-                        /// if validate then execute
-
-                        await  _createBooking();
-
-
-
-
-
-
+                              // Execute booking
+                              await _createBooking();
+                            },
+                          ),
+                        );
                       },
                     ),
                   ),
                 ],
               ),
-            ),
+            )
+
           ],
         ),
       ),

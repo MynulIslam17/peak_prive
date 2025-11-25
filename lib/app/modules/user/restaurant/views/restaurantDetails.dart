@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/widgets/provider_info.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shimmer.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
+import 'package:harry_service_app/app/modules/user/restaurant/controllers/restaurant_details_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/custome_back_button.dart';
-
-
-
-
-
-
 
 class RestaurantDetails extends StatefulWidget {
   const RestaurantDetails({super.key});
@@ -28,209 +25,280 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
   int currentTabIndex = 0; // For About/Review navigation
   int currentMealTabIndex = 0; // For Breakfast/Lunch/Dinner navigation
 
+
+  late final String productId;
+
+
+/// find controlller
+  final restaurantDetailsController=Get.find<RestaurantDetailsController>();
+
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+
+
+    /// get data from perevious class
+    var argument=Get.arguments;
+    productId=argument["id"];
+
+     if( productId.isNotEmpty){
+
+       _fetchDetails();
+
+     }
+  }
+
+
+
+  /// fetch details method
+
+
+  Future<void> _fetchDetails() async{
+
+    await restaurantDetailsController.fetchRestaurantDetails(productId);
+
+  }
+
+
+
+
+
+
+
+
+
+
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.sizeOf(context);
 
     return Scaffold(
-      body: SizedBox(
-        width: size.width,
-        height: size.height,
-        child: Stack(
-          children: [
-            // Background image
-            image.restu1.image(height: size.height * 0.6, fit: BoxFit.cover),
+      body: GetBuilder<RestaurantDetailsController>(builder: (controller){
 
-            // Draggable Bottom Sheet
-            DraggableScrollableSheet(
-              initialChildSize: 0.6,
-              minChildSize: 0.56,
-              maxChildSize: 0.7,
-              snap: true,
-              snapSizes: const [0.56, 0.6, 0.7],
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xffFDFAF6),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Drag Handle
-                      Padding(
-                        padding: EdgeInsets.only(top: 10.h, bottom: 10.h),
-                        child: Center(
-                          child: image.line.image(
-                            width: 87.w,
-                            height: 9.h,
-                            fit: BoxFit.contain,
-                          ),
+        if(controller.fetchProgress){
+          return RestaurantDetailsShimmer();
+        }
+
+        if(controller.restaurantDetails == null){
+          return Center(child: Text(
+            "Massage details not available",
+            style: AppTextStyle.sub_h3_regular_14(),
+          ),);
+        }else{
+
+         return  SizedBox(
+            width: size.width,
+            height: size.height,
+            child: Stack(
+              children: [
+                // Background image
+                image.restu1.image(height: size.height * 0.6, fit: BoxFit.cover),
+
+                // Draggable Bottom Sheet
+                DraggableScrollableSheet(
+                  initialChildSize: 0.6,
+                  minChildSize: 0.56,
+                  maxChildSize: 0.7,
+                  snap: true,
+                  snapSizes: const [0.56, 0.6, 0.7],
+                  builder: (context, scrollController) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xffFDFAF6),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          topRight: Radius.circular(40),
                         ),
-                      ),
-
-                      // Provider Info
-                      Card(
-                        child: SizedBox(
-                          height: 70.h,
-                          width: double.infinity,
-                          child: ProviderInfo(
-                            onTapCall: () {},
-                            onTapMessage: () {},
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, -3),
                           ),
-                        ),
+                        ],
                       ),
-
-                      Expanded(
-                        child: ListView(
-                          controller: scrollController,
-                          padding: EdgeInsets
-                              .zero, // Remove default ListView padding
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                              ),
-                              child: Column(
-                                children: [
-                                  SizedBox(height: 10.h),
-
-                                  // Custom Buttons for Navigation (About / Review)
-                                  Row(
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      CustomButton(
-                                        onTap: () {
-                                          setState(() {
-                                            currentTabIndex = 0;
-                                          });
-                                        },
-                                        text: "About",
-                                        backgroundColor: currentTabIndex == 0
-                                            ? AppColors.primary_1
-                                            : Colors.grey,
-                                      ),
-
-
-                                      SizedBox(width: 7.w,),
-
-                                      CustomButton(
-                                        onTap: () {
-                                          setState(() {
-                                            currentTabIndex = 1;
-                                          });
-                                        },
-                                        text: "Review",
-                                        backgroundColor: currentTabIndex == 1
-                                            ? AppColors.primary_1
-                                            : Colors.grey,
-                                      ),
-                                    ],
-                                  ),
-
-                                  SizedBox(height: 10.h),
-
-                                  // About / Review Content
-                                  if (currentTabIndex == 0) ...[
-                                    _buildAboutSection(),
-                                  ] else if (currentTabIndex == 1) ...[
-                                    _buildReviewSection(),
-                                  ],
-
-                                  // Meal Type Navigation (Only for "About" section)
-                                  if (currentTabIndex == 0) ...[
-                                    SizedBox(height: 20.h),
-                                    Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        CustomButton(
-                                          onTap: () {
-                                            setState(() {
-                                              currentMealTabIndex = 0;
-                                            });
-                                          },
-                                          text: "Breakfast",
-                                          backgroundColor:
-                                          currentMealTabIndex == 0
-                                              ? AppColors.primary_1
-                                              : Colors.grey,
-                                        ),
-
-                                        SizedBox(width: 5.w,),
-                                        CustomButton(
-                                          onTap: () {
-                                            setState(() {
-                                              currentMealTabIndex = 1;
-                                            });
-                                          },
-                                          text: "Lunch",
-                                          backgroundColor:
-                                          currentMealTabIndex == 1
-                                              ? AppColors.primary_1
-                                              : Colors.grey,
-                                        ),
-
-                                        SizedBox(width: 5.w,),
-                                        CustomButton(
-                                          onTap: () {
-                                            setState(() {
-                                              currentMealTabIndex = 2;
-                                            });
-                                          },
-                                          text: "Dinner",
-                                          backgroundColor:
-                                          currentMealTabIndex == 2
-                                              ? AppColors.primary_1
-                                              : Colors.grey,
-                                        ),
-
-                                      ],
-                                    ),
-                                    SizedBox(height: 10.h),
-
-                                    // Meal Type Content (Only for "About" section)
-                                    if (currentMealTabIndex == 0)
-                                      _buildMenuList("Breakfast")
-                                    else if (currentMealTabIndex == 1)
-                                      _buildMenuList("Lunch")
-                                    else if (currentMealTabIndex == 2)
-                                        _buildMenuList("Dinner"),
-                                  ],
-
-                                  SizedBox(
-                                    height: 20.h,
-                                  ),
-
-
-
-                                ],
+                      child: Column(
+                        children: [
+                          // Drag Handle
+                          Padding(
+                            padding: EdgeInsets.only(top: 10.h, bottom: 10.h),
+                            child: Center(
+                              child: image.line.image(
+                                width: 87.w,
+                                height: 9.h,
+                                fit: BoxFit.contain,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+                          ),
 
-            // Back Button
-            CustomBackButton(onTap: () => Get.back()),
-          ],
-        ),
-      ),
+                          // Provider Info
+                          Card(
+                            child: SizedBox(
+                              height: 70.h,
+                              width: double.infinity,
+                              child: ProviderInfo(
+
+                                onTapCall: () {},
+                                onTapMessage: () {},
+                              ),
+                            ),
+                          ),
+
+                          Expanded(
+                            child: ListView(
+                              controller: scrollController,
+                              padding: EdgeInsets
+                                  .zero, // Remove default ListView padding
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(height: 10.h),
+
+                                      // Custom Buttons for Navigation (About / Review)
+                                      Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          CustomButton(
+                                            onTap: () {
+                                              setState(() {
+                                                currentTabIndex = 0;
+                                              });
+                                            },
+                                            text: "About",
+                                            backgroundColor: currentTabIndex == 0
+                                                ? AppColors.primary_1
+                                                : Colors.grey,
+                                          ),
+
+
+                                          SizedBox(width: 7.w,),
+
+                                          CustomButton(
+                                            onTap: () {
+                                              setState(() {
+                                                currentTabIndex = 1;
+                                              });
+                                            },
+                                            text: "Review",
+                                            backgroundColor: currentTabIndex == 1
+                                                ? AppColors.primary_1
+                                                : Colors.grey,
+                                          ),
+                                        ],
+                                      ),
+
+                                      SizedBox(height: 10.h),
+
+                                      // About / Review Content
+                                      if (currentTabIndex == 0) ...[
+                                        _buildAboutSection(),
+                                      ] else if (currentTabIndex == 1) ...[
+                                        _buildReviewSection(),
+                                      ],
+
+                                      // Meal Type Navigation (Only for "About" section)
+                                      if (currentTabIndex == 0) ...[
+                                        SizedBox(height: 20.h),
+                                        Row(
+                                          mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            CustomButton(
+                                              onTap: () {
+                                                setState(() {
+                                                  currentMealTabIndex = 0;
+                                                });
+                                              },
+                                              text: "Breakfast",
+                                              backgroundColor:
+                                              currentMealTabIndex == 0
+                                                  ? AppColors.primary_1
+                                                  : Colors.grey,
+                                            ),
+
+                                            SizedBox(width: 5.w,),
+                                            CustomButton(
+                                              onTap: () {
+                                                setState(() {
+                                                  currentMealTabIndex = 1;
+                                                });
+                                              },
+                                              text: "Lunch",
+                                              backgroundColor:
+                                              currentMealTabIndex == 1
+                                                  ? AppColors.primary_1
+                                                  : Colors.grey,
+                                            ),
+
+                                            SizedBox(width: 5.w,),
+                                            CustomButton(
+                                              onTap: () {
+                                                setState(() {
+                                                  currentMealTabIndex = 2;
+                                                });
+                                              },
+                                              text: "Dinner",
+                                              backgroundColor:
+                                              currentMealTabIndex == 2
+                                                  ? AppColors.primary_1
+                                                  : Colors.grey,
+                                            ),
+
+                                          ],
+                                        ),
+                                        SizedBox(height: 10.h),
+
+                                        // Meal Type Content (Only for "About" section)
+                                        if (currentMealTabIndex == 0)
+                                          _buildMenuList("Breakfast")
+                                        else if (currentMealTabIndex == 1)
+                                          _buildMenuList("Lunch")
+                                        else if (currentMealTabIndex == 2)
+                                            _buildMenuList("Dinner"),
+                                      ],
+
+                                      SizedBox(
+                                        height: 20.h,
+                                      ),
+
+
+
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+
+                // Back Button
+                CustomBackButton(onTap: () => Get.back()),
+              ],
+            ),
+          );
+
+
+        }
+
+
+
+
+
+      })
     );
   }
 

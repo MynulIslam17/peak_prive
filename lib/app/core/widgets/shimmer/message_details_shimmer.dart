@@ -68,12 +68,21 @@ class MassageDetailsShimmer extends StatelessWidget {
                       ),
                       SizedBox(height: 20.h),
 
-                      // Profile info shimmer
-                      _buildProviderInfoShimmer(),
+                      // Provider Info Shimmer
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Card(
+                          child: SizedBox(
+                            height: 70.h,
+                            width: double.infinity,
+                            child: _buildProviderInfoShimmer(),
+                          ),
+                        ),
+                      ),
                       SizedBox(height: 20.h),
 
                       // Tab bar shimmer
-                      _buildTabBarShimmer(),
+                      _buildTabButtonsShimmer(),
 
                       // Tab content shimmer
                       Expanded(
@@ -118,87 +127,108 @@ class MassageDetailsShimmer extends StatelessWidget {
   }
 
   // Provider info shimmer
+  // Provider Info Shimmer
   Widget _buildProviderInfoShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 15.w, vertical: 10.h),
+        child: Row(
+          children: [
+            // Avatar
+            Container(
+              width: 50.w,
+              height: 50.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+            ),
+            SizedBox(width: 12.w),
+
+            // Name and rating
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120.w,
+                    height: 14.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 6.h),
+                  Container(
+                    width: 80.w,
+                    height: 10.h,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Action buttons
+            Row(
+              children: [
+                Container(
+                  width: 35.w,
+                  height: 35.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Container(
+                  width: 35.w,
+                  height: 35.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Tab Buttons Shimmer (About/Review)
+  Widget _buildTabButtonsShimmer() {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: Row(
         children: [
-          // Avatar
-          Container(
-            width: 60.w,
-            height: 60.h,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 12.w),
-
-          // Name and rating
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 150.w,
-                  height: 16.h,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                Container(
-                  width: 100.w,
-                  height: 12.h,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
+            child: Container(
+              height: 44.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
+              ),
             ),
           ),
-
-          // Action buttons
-          Row(
-            children: [
-              Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+          SizedBox(width: 7.w),
+          Expanded(
+            child: Container(
+              height: 44.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              SizedBox(width: 10.w),
-              Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
+            ),
           ),
         ],
-      ),
-    );
-  }
-
-  // Tab bar shimmer
-  Widget _buildTabBarShimmer() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Container(
-        height: 45.h,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
       ),
     );
   }
@@ -209,168 +239,31 @@ class MassageDetailsShimmer extends StatelessWidget {
       padding: EdgeInsets.all(20),
       children: [
         // Title and price row
-        Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                width: 150.w,
-                height: 20.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              Container(
-                width: 50.w,
-                height: 20.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildShimmerRow(150.w, 20.h, 50.w, 20.h),
         SizedBox(height: 10.h),
-
         // Open/Close time row
-        Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Row(
-            children: [
-              Container(
-                width: 70.w,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Container(
-                width: 10.w,
-                height: 10.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Container(
-                width: 80.w,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildShimmerRow(70.w, 12.h, 80.w, 12.h, circle: true),
         SizedBox(height: 10.h),
-
         // Location row
-        Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Row(
-            children: [
-              Container(
-                width: 20.w,
-                height: 20.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Container(
-                width: 200.w,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildShimmerRow(20.w, 20.h, 200.w, 12.h),
         SizedBox(height: 20.h),
-
         // Benefits title
-        Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Container(
-            width: 100.w,
-            height: 18.h,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
+        _buildShimmerLine(100.w, 18.h),
         SizedBox(height: 10.h),
-
         // Benefits description lines
-        ...List.generate(
-          3,
-              (index) => Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                width: double.infinity,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-        ),
+        ...List.generate(3, (_) => Padding(
+          padding: EdgeInsets.only(bottom: 8.h),
+          child: _buildShimmerLine(double.infinity, 12.h),
+        )),
         SizedBox(height: 20.h),
-
         // Recommendation title
-        Shimmer.fromColors(
-          baseColor: Colors.grey[300]!,
-          highlightColor: Colors.grey[100]!,
-          child: Container(
-            width: 180.w,
-            height: 18.h,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
+        _buildShimmerLine(180.w, 18.h),
         SizedBox(height: 10.h),
-
         // Recommendation description lines
-        ...List.generate(
-          4,
-              (index) => Padding(
-            padding: EdgeInsets.only(bottom: 8.h),
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                width: double.infinity,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-          ),
-        ),
+        ...List.generate(4, (_) => Padding(
+          padding: EdgeInsets.only(bottom: 8.h),
+          child: _buildShimmerLine(double.infinity, 12.h),
+        )),
       ],
     );
   }
@@ -404,4 +297,66 @@ class MassageDetailsShimmer extends StatelessWidget {
       ),
     );
   }
+
+  // Helper: shimmer row
+  Widget _buildShimmerRow(double width1, double height1, double width2, double height2,
+      {bool circle = false}) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Row(
+        children: [
+          Container(
+            width: width1,
+            height: height1,
+            decoration: circle
+                ? const BoxDecoration(color: Colors.white, shape: BoxShape.circle)
+                : BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Container(
+            width: width2,
+            height: height2,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Helper: shimmer line
+  Widget _buildShimmerLine(double width, double height) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
