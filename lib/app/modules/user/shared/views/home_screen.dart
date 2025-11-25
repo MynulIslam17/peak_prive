@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/core/widgets/item_card.dart';
 import 'package:harry_service_app/app/core/widgets/category_list.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/userProfileSection.dart';
+import 'package:harry_service_app/app/modules/user/shared/controllers/all_restaurant_controller.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/all_transport_controller.dart';
 
 import '../../../../core/constants/text-style.dart';
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final hire = Get.find<SkiHireController>();
   final transport = Get.find<TransportController>();
   final massage = Get.find<MassageController>();
+  final restaurant = Get.find<RestaurantController>();
   final nav = Get.find<NavController>();
 
   final TextEditingController searchCtrl = TextEditingController();
@@ -55,7 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (nav.getServiceType == "massage") {
       await massage.fetchAllMassageAndCategory();
     } else if (nav.getServiceType == "restaurant") {
-    } else {}
+      await restaurant.fetchAllRestaurantsAndCategory();
+    }
 
     setState(() {
       fullScreenLoading = false; // Hide full-screen shimmer after first load
@@ -109,319 +112,337 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (controller) {
                   return GetBuilder<MassageController>(
                     builder: (controller) {
-                      return ListView(
-                        children: [
-                          /// HEADER
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12.w,
-                              vertical: 20.h,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: AppColors.appBarBackground,
-                            ),
-                            child: Column(
-                              children: [
-                                UserProfileSection(
-                                  name: auth.userModel?.fullName ?? "User",
-                                  image: auth.userModel?.profilePic ?? "",
-                                  onTap: () {},
+                      return GetBuilder<RestaurantController>(
+                        builder: (controller) {
+                          return ListView(
+                            children: [
+                              /// HEADER
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 12.w,
+                                  vertical: 20.h,
                                 ),
-                                SizedBox(height: 20.h),
-                                CustomSearchBar(
-                                  controller: searchCtrl,
-                                  onChanged: (v) => setState(() {}),
-                                  onClear: () {
-                                    searchCtrl.clear();
-                                    setState(() {});
-                                  },
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.appBarBackground,
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          SizedBox(height: 20.h),
-
-                          /// CATEGORY SECTION
-                          if (type != "ski_pass") ...[
-                            Padding(
-                              padding:
-                              const EdgeInsets.symmetric(horizontal: 12),
-                              child: CategoryTitle(
-                                title: categoryTitle,
-                                text: "See All",
-                                onClick: () {},
-                              ),
-                            ),
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Padding(
-                                padding:
-                                EdgeInsets.symmetric(horizontal: 12.w),
-                                child: Row(
+                                child: Column(
                                   children: [
-                                    /// "All" Button
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        InkWell(
-                                          borderRadius:
-                                          BorderRadius.circular(23),
-                                          onTap: () async {
-                                            setState(() {
-                                              selectedCategory = "All";
-                                            });
-
-                                            loadData(); /// call method which will call api based on the serviceType
-                                          },
-                                          child: Container(
-                                            height: 60,
-                                            width: 60,
-                                            decoration: BoxDecoration(
-                                              color: selectedCategory == "All"
-                                                  ? AppColors.primary_1
-                                                  : Colors.white,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color:
-                                                selectedCategory == "All"
-                                                    ? Colors.orange
-                                                    : Colors.black54,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            padding: const EdgeInsets.all(6),
-                                            child: ClipOval(
-                                              child: Image.asset(
-                                                "assets/images/all_icon.png",
-                                                color: Colors.black87,
-                                                width: 30,
-                                                height: 30,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(height: 6.h),
-                                        Text(
-                                          "All",
-                                          style: AppTextStyle.p_medium_12()
-                                              ?.copyWith(
-                                            color: selectedCategory == "All"
-                                                ? AppColors.primary_1
-                                                : Colors.black87,
-                                            fontWeight:
-                                            selectedCategory == "All"
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
+                                    UserProfileSection(
+                                      name: auth.userModel?.fullName ?? "User",
+                                      image: auth.userModel?.profilePic ?? "",
+                                      onTap: () {},
                                     ),
-
-                                    SizedBox(width: 15.w),
-
-                                    /// Category List
-                                    CategoryList(
-                                      categoryList: type == "ski_hire"
-                                          ? hire.categoryList
-                                          : type == "transport"
-                                          ? transport.categoryList
-                                          : massage.categoryList, // ADDED
-                                      selectedCategoryName: selectedCategory,
-                                      onTap: (categoryName) {
-                                        setState(() {
-                                          selectedCategory = categoryName;
-                                        });
-
-                                        if (type == "ski_hire") {
-                                          hire.fetchAllSkiHireAndCategory(
-                                              categoryName);
-                                        } else if (type == "transport") {
-                                          transport
-                                              .fetchAllTransportAndCategory(
-                                              categoryName);
-                                        } else if (type == "massage") {
-                                          massage.fetchAllMassageAndCategory(
-                                              categoryName); // ADDED
-                                        }
+                                    SizedBox(height: 20.h),
+                                    CustomSearchBar(
+                                      controller: searchCtrl,
+                                      onChanged: (v) => setState(() {}),
+                                      onClear: () {
+                                        searchCtrl.clear();
+                                        setState(() {});
                                       },
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                          ],
 
-                          SizedBox(height: 10.h),
+                              SizedBox(height: 20.h),
 
-                          /// LIST SECTION
-                          Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12.w),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-
-                                /// item list category
-                                CategoryTitle(
-                                  title: type == "ski_pass"
-                                      ? "Top Ski Pass"
-                                      : type=="ski_hire"
-                                      ?"Top Ski Hire"
-                                      :type=="transport"
-                                      ? "Top Car in Town"
-                                      : type=="restaurant"
-                                      ?"Restaurant"
-                                      : "Massage",
-                                  text: "See All",
-                                  onClick: () {},
+                              /// CATEGORY SECTION
+                              if (type != "ski_pass") ...[
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: CategoryTitle(
+                                    title: categoryTitle,
+                                    text: "See All",
+                                    onClick: () {},
+                                  ),
                                 ),
-                                SizedBox(height: 10.h),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                    child: Row(
+                                      children: [
+                                        /// "All" Button
+                                        Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            InkWell(
+                                              borderRadius: BorderRadius.circular(23),
+                                              onTap: () async {
+                                                setState(() {
+                                                  selectedCategory = "All";
+                                                });
 
-                                /// SKI PASS LIST
-                                if (type == "ski_pass")
-                                  pass.fetchProgress
-                                      ? Center(child: CircularProgressIndicator())
-                                      : Column(
-                                    children: pass.skiPassList.map((item) {
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 7.h,
+                                                loadData(); /// call method which will call api based on the serviceType
+                                              },
+                                              child: Container(
+                                                height: 60,
+                                                width: 60,
+                                                decoration: BoxDecoration(
+                                                  color: selectedCategory == "All"
+                                                      ? AppColors.primary_1
+                                                      : Colors.white,
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color: selectedCategory == "All"
+                                                        ? Colors.orange
+                                                        : Colors.black54,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                padding: const EdgeInsets.all(6),
+                                                child: ClipOval(
+                                                  child: Image.asset(
+                                                    "assets/images/all_icon.png",
+                                                    color: Colors.black87,
+                                                    width: 30,
+                                                    height: 30,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            SizedBox(height: 6.h),
+                                            Text(
+                                              "All",
+                                              style: AppTextStyle.p_medium_12()?.copyWith(
+                                                color: selectedCategory == "All"
+                                                    ? AppColors.primary_1
+                                                    : Colors.black87,
+                                                fontWeight: selectedCategory == "All"
+                                                    ? FontWeight.bold
+                                                    : FontWeight.normal,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ],
                                         ),
-                                        child: ItemCard(
-                                          image: item.thumbnail ?? "",
-                                          title: item.title ?? "",
-                                          price:
-                                          "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
-                                          rating: item.averageRating ?? 0.0,
-                                          reviewCount:
-                                          "${item.reviews.length}",
-                                          location: item.serviceArea ?? "",
-                                          fromSkiPasses: true,
-                                          skiPassType: item.skiPassType ?? "",
-                                          onTap: () {
-                                            Get.toNamed(
-                                              Routes.passCardDetails,
-                                              arguments: {"id": item.id},
-                                            );
+
+                                        SizedBox(width: 15.w),
+
+                                        /// Category List
+                                        CategoryList(
+                                          categoryList: type == "ski_hire"
+                                              ? hire.categoryList
+                                              : type == "transport"
+                                              ? transport.categoryList
+                                              : type == "massage"
+                                              ? massage.categoryList
+                                              : restaurant.categoryList,
+                                          selectedCategoryName: selectedCategory,
+                                          onTap: (categoryName) {
+                                            setState(() {
+                                              selectedCategory = categoryName;
+                                            });
+
+                                            if (type == "ski_hire") {
+                                              hire.fetchAllSkiHireAndCategory(categoryName);
+                                            } else if (type == "transport") {
+                                              transport.fetchAllTransportAndCategory(categoryName);
+                                            } else if (type == "massage") {
+                                              massage.fetchAllMassageAndCategory(categoryName);
+                                            } else if (type == "restaurant") {
+                                              restaurant.fetchAllRestaurantsAndCategory(categoryName);
+                                            }
                                           },
                                         ),
-                                      );
-                                    }).toList(),
+                                      ],
+                                    ),
                                   ),
-
-                                /// SKI HIRE LIST
-                                if (type == "ski_hire")
-                                  hire.isLoading
-                                      ? Column(
-                                    children: [
-                                      ItemCardSkeleton(),
-                                      ItemCardSkeleton(),
-                                    ],
-                                  )
-                                      : Column(
-                                    children: hire.skiHireList.map((item) {
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 7.h,
-                                        ),
-                                        child: ItemCard(
-                                          image: item.thumbnail ?? "",
-                                          title: item.title ?? "",
-                                          price:
-                                          "\$${item.totalPrice?.toStringAsFixed(2) ?? "0"}",
-                                          rating: item.averageRating ?? 0.0,
-                                          reviewCount:
-                                          "${item.reviews.length}",
-                                          location: item.serviceArea ?? "",
-                                          fromSkiPasses: false,
-                                          skiPassType: "",
-                                          onTap: () {
-                                            Get.toNamed(
-                                              Routes.hireDetails,
-                                              arguments: {"id": item.id},
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                /// TRANSPORT
-                                if (type == "transport")
-                                  transport.isLoading
-                                      ? Column(
-                                    children: [
-                                      ItemCardSkeleton(),
-                                      ItemCardSkeleton(),
-                                    ],
-                                  )
-                                      : Column(
-                                    children: transport.transportList.map((item) {
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 7.h),
-                                        child: ItemCard(
-                                          image: item.thumbnail ?? "",
-                                          title: item.title ?? "",
-                                          price:
-                                          "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
-                                          rating: item.averageRating ?? 0.0,
-                                          reviewCount: "${item.reviews.length}",
-                                          location: item.serviceArea ?? "",
-                                          fromSkiPasses: false,
-                                          skiPassType: "",
-                                          onTap: () {
-                                            Get.toNamed(
-                                              Routes.transportDetails,
-                                              arguments: {"id": item.id},
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                /// MASSAGE
-                                if (type == "massage")
-                                  massage.isLoading
-                                      ? Column(
-                                    children: [
-                                      ItemCardSkeleton(),
-                                      ItemCardSkeleton(),
-                                    ],
-                                  )
-                                      : Column(
-                                    children: massage.massageList.map((item) {
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 7.h),
-                                        child: ItemCard(
-                                          image: item.thumbnail ?? "",
-                                          title: item.title ?? "",
-                                          price:
-                                          "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
-                                          rating: item.averageRating.toDouble() ?? 0,
-                                          reviewCount: "${item.reviews.length}",
-                                          location: item.serviceArea ?? "",
-                                          fromSkiPasses: false,
-                                          skiPassType: "",
-                                          onTap: () {
-                                            Get.toNamed(
-
-
-                                              Routes.massageDetails,
-                                              arguments: {"id": item.id},
-
-
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
+                                ),
                               ],
-                            ),
-                          ),
-                        ],
+
+                              SizedBox(height: 10.h),
+
+                              /// LIST SECTION
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+
+                                    /// item list category
+                                    CategoryTitle(
+                                      title: type == "ski_pass"
+                                          ? "Top Ski Pass"
+                                          : type == "ski_hire"
+                                          ? "Top Ski Hire"
+                                          : type == "transport"
+                                          ? "Top Car in Town"
+                                          : type == "restaurant"
+                                          ? "Restaurant"
+                                          : "Massage",
+                                      text: "See All",
+                                      onClick: () {},
+                                    ),
+                                    SizedBox(height: 10.h),
+
+                                    /// SKI PASS LIST
+                                    if (type == "ski_pass")
+                                      pass.fetchProgress
+                                          ? Center(child: CircularProgressIndicator())
+                                          : Column(
+                                        children: pass.skiPassList.map((item) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                                            child: ItemCard(
+                                              image: item.thumbnail ?? "",
+                                              title: item.title ?? "",
+                                              price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                                              rating: item.averageRating ?? 0.0,
+                                              reviewCount: "${item.reviews.length}",
+                                              location: item.serviceArea ?? "",
+                                              fromSkiPasses: true,
+                                              skiPassType: item.skiPassType ?? "",
+                                              onTap: () {
+                                                Get.toNamed(
+                                                  Routes.passCardDetails,
+                                                  arguments: {"id": item.id},
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+
+                                    /// SKI HIRE LIST
+                                    if (type == "ski_hire")
+                                      hire.isLoading
+                                          ? Column(
+                                        children: [
+                                          ItemCardSkeleton(),
+                                          ItemCardSkeleton(),
+                                        ],
+                                      )
+                                          : Column(
+                                        children: hire.skiHireList.map((item) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                                            child: ItemCard(
+                                              image: item.thumbnail ?? "",
+                                              title: item.title ?? "",
+                                              price:
+                                              "\$${item.totalPrice?.toStringAsFixed(2) ?? "0"}",
+                                              rating: item.averageRating ?? 0.0,
+                                              reviewCount: "${item.reviews.length}",
+                                              location: item.serviceArea ?? "",
+                                              fromSkiPasses: false,
+                                              skiPassType: "",
+                                              onTap: () {
+                                                Get.toNamed(
+                                                  Routes.hireDetails,
+                                                  arguments: {"id": item.id},
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+
+                                    /// TRANSPORT
+                                    if (type == "transport")
+                                      transport.isLoading
+                                          ? Column(
+                                        children: [
+                                          ItemCardSkeleton(),
+                                          ItemCardSkeleton(),
+                                        ],
+                                      )
+                                          : Column(
+                                        children: transport.transportList.map((item) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                                            child: ItemCard(
+                                              image: item.thumbnail ?? "",
+                                              title: item.title ?? "",
+                                              price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                                              rating: item.averageRating ?? 0.0,
+                                              reviewCount: "${item.reviews.length}",
+                                              location: item.serviceArea ?? "",
+                                              fromSkiPasses: false,
+                                              skiPassType: "",
+                                              onTap: () {
+                                                Get.toNamed(
+                                                  Routes.transportDetails,
+                                                  arguments: {"id": item.id},
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+
+                                    /// MASSAGE
+                                    if (type == "massage")
+                                      massage.isLoading
+                                          ? Column(
+                                        children: [
+                                          ItemCardSkeleton(),
+                                          ItemCardSkeleton(),
+                                        ],
+                                      )
+                                          : Column(
+                                        children: massage.massageList.map((item) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                                            child: ItemCard(
+                                              image: item.thumbnail ?? "",
+                                              title: item.title ?? "",
+                                              price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                                              rating: item.averageRating.toDouble() ?? 0,
+                                              reviewCount: "${item.reviews.length}",
+                                              location: item.serviceArea ?? "",
+                                              fromSkiPasses: false,
+                                              skiPassType: "",
+                                              onTap: () {
+                                                Get.toNamed(
+                                                  Routes.massageDetails,
+                                                  arguments: {"id": item.id},
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+
+                                    /// RESTAURANT
+                                    if (type == "restaurant")
+                                      restaurant.isLoading
+                                          ? Column(
+                                        children: [
+                                          ItemCardSkeleton(),
+                                          ItemCardSkeleton(),
+                                        ],
+                                      )
+                                          : Column(
+                                        children: restaurant.restaurantList.map((item) {
+                                          return Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 7.h),
+                                            child: ItemCard(
+                                              image: item.thumbnail ?? "",
+                                              title: item.title ?? "",
+                                              price: "", // no price for restaurant
+                                              rating: item.averageRating?.toDouble() ?? 0,
+                                              reviewCount: "${item.reviews?.length ?? 0}",
+                                              location: item.serviceArea ?? "",
+                                              fromSkiPasses: false,
+                                              skiPassType: "",
+                                              onTap: () {
+                                                Get.toNamed(
+                                                  Routes.restaurantDetails,
+                                                  arguments: {"id": item.id},
+                                                );
+                                              },
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   );
