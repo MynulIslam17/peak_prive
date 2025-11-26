@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
-
 import '../../../../../gen/assets.gen.dart';
 import '../../../../routes/app_routes.dart';
 
-class RestaurantInfoScreen extends StatelessWidget {
+class RestaurantInfoScreen extends StatefulWidget {
   const RestaurantInfoScreen({super.key});
+
+  @override
+  State<RestaurantInfoScreen> createState() => _RestaurantInfoScreenState();
+}
+
+class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
+
+  late Map<String, dynamic> productInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    productInfo = Get.arguments as Map<String, dynamic>;
+  }
 
   final icons = Assets.icons;
   final images = Assets.images;
@@ -19,59 +30,31 @@ class RestaurantInfoScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: valueColor,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: valueColor)),
         ],
       ),
     );
   }
 
-  Widget _buildPriceRow(String label, double price, Color goldColor) {
+  Widget _buildPriceRow(String label, String price, Color goldColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
+          Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           RichText(
             text: TextSpan(
               style: const TextStyle(fontFamily: 'Roboto', color: Colors.black),
               children: [
                 TextSpan(
-                  text: '\$${price.toStringAsFixed(0)}',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: goldColor,
-                  ),
+                  text: '\$$price',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: goldColor),
                 ),
                 const TextSpan(
                   text: '/per seat',
-                  style: TextStyle(
-                    fontSize: 14.0,
-                    color: Colors.black,
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.black),
                 ),
               ],
             ),
@@ -87,9 +70,7 @@ class RestaurantInfoScreen extends StatelessWidget {
     const Color availableColor = Colors.red;
 
     return Scaffold(
-      appBar:AppBarWithTitle(
-          title: "Restaurant Information",
-          icons:icons , onTap: (){}),
+      appBar: AppBarWithTitle(title: "Restaurant Information", icons: icons, onTap: () {}),
       body: Column(
         children: [
           Expanded(
@@ -98,44 +79,37 @@ class RestaurantInfoScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  // Image
                   AspectRatio(
                     aspectRatio: 16 / 9,
                     child: Image.network(
-                      'https://picsum.photos/600/337?random=1',
+                      productInfo["thumbnail"] ?? "",
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                      errorBuilder: (_, __, ___) => Container(
                         color: Colors.grey[200],
                         child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
                       ),
                     ),
                   ),
 
-                  // VIP Tag
-                  const Center(
+                  Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
                       child: Text(
-                        'VIP',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: goldColor,
-                        ),
+                        "${productInfo["seatType"]}",
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: goldColor),
                       ),
                     ),
                   ),
 
-                  // Detail Rows
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Column(
                       children: [
-                        _buildDetailRow('Total seat', '10'),
+                        _buildDetailRow("Total seat", productInfo["totalSeat"].toString()),
                         const Divider(height: 1),
-                        _buildDetailRow('Available seat', '05', valueColor: availableColor),
+                        _buildDetailRow("Available seat", productInfo["availableSeat"].toString(), valueColor: availableColor),
                         const Divider(height: 1),
-                        _buildPriceRow('Price', 10.0, goldColor),
+                        _buildPriceRow("Price", productInfo["price"].toString(), goldColor),
                         const Divider(height: 1),
                       ],
                     ),
@@ -143,27 +117,16 @@ class RestaurantInfoScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // Description Section
-                  const Padding(
+                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Description',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
+                        Text("Description", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         SizedBox(height: 8),
                         Text(
-                          'We also have seats beside the window, and you can choose one if you like.',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
+                          "${productInfo["description"]}",
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -173,29 +136,20 @@ class RestaurantInfoScreen extends StatelessWidget {
             ),
           ),
 
-          // Fixed Bottom Button
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  Get.toNamed(Routes.restaurantBookingInfo);
-                },
+                onPressed: () => Get.toNamed(Routes.restaurantBookingInfo),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: goldColor,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                 ),
                 child: const Text(
                   'Book Now',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
