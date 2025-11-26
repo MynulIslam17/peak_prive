@@ -54,8 +54,8 @@ class $AssetsIconsGen {
   SvgGenImage get carProfile =>
       const SvgGenImage('assets/icons/CarProfile.svg');
 
-  /// File path: assets/icons/CaretLeft.svg
-  SvgGenImage get caretLeft => const SvgGenImage('assets/icons/CaretLeft.svg');
+  /// File path: assets/icons/back_icon.svg
+  SvgGenImage get caretLeft => const SvgGenImage('assets/icons/back_icon.svg');
 
   /// File path: assets/icons/CurrencyCircleDollar.svg
   SvgGenImage get currencyCircleDollar =>

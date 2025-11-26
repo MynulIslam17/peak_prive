@@ -9,13 +9,13 @@ class RestaurantDetailsModel {
   final String? serviceArea;
   final String? foodType;
   final String? status;
-  final List<RestaurantItem>? items;
+  final List<RestaurantItem> items;
   final String? description;
-  final List<Slot>? slots;
+  final List<Slot> slots;
   final double averageRating;
-  final List<Slot>? availableSlots;
-  final List<dynamic>? reviews;
-  final List<dynamic>? refunds;
+  final List<Slot> availableSlots;
+  final List<dynamic> reviews;
+  final List<dynamic> refunds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -30,47 +30,52 @@ class RestaurantDetailsModel {
     this.serviceArea,
     this.foodType,
     this.status,
-    this.items,
+    this.items = const [],
     this.description,
-    this.slots,
-    required this.averageRating,
-    this.availableSlots,
-    this.reviews,
-    this.refunds,
+    this.slots = const [],
+    this.averageRating = 0.0,
+    this.availableSlots = const [],
+    this.reviews = const [],
+    this.refunds = const [],
     this.createdAt,
     this.updatedAt,
   });
 
   factory RestaurantDetailsModel.fromJson(Map<String, dynamic> json) {
     final data = json['data'] ?? {};
+
     return RestaurantDetailsModel(
       id: data['_id'] ?? '',
       title: data['title'] ?? '',
       thumbnail: data['thumbnail'],
-      category: data['category'] != null ? Category.fromJson(data['category']) : null,
+      category:
+      data['category'] != null ? Category.fromJson(data['category']) : null,
       owner: data['owner'] != null ? Owner.fromJson(data['owner']) : null,
       openTime: data['openTime'],
       closeTime: data['closeTime'],
       serviceArea: data['serviceArea'],
       foodType: data['foodType'],
       status: data['status'],
-      items: data['items'] != null
-          ? List<RestaurantItem>.from(
-          (data['items'] as List).map((e) => RestaurantItem.fromJson(e)))
-          : [],
+      items: (data['items'] as List<dynamic>? ?? [])
+          .map((e) => RestaurantItem.fromJson(e))
+          .toList(),
       description: data['description'],
-      slots: data['slots'] != null
-          ? List<Slot>.from((data['slots'] as List).map((e) => Slot.fromJson(e)))
-          : [],
-      averageRating: (data['averageRating'] ?? 0).toDouble(),
-      availableSlots: data['availableSlots'] != null
-          ? List<Slot>.from(
-          (data['availableSlots'] as List).map((e) => Slot.fromJson(e)))
-          : [],
-      reviews: data['reviews'] ?? [],
-      refunds: data['refunds'] ?? [],
-      createdAt: data['createdAt'] != null ? DateTime.tryParse(data['createdAt']) : null,
-      updatedAt: data['updatedAt'] != null ? DateTime.tryParse(data['updatedAt']) : null,
+      slots: (data['slots'] as List<dynamic>? ?? [])
+          .map((e) => Slot.fromJson(e))
+          .toList(),
+      averageRating:
+      (data['averageRating'] is num) ? (data['averageRating'] as num).toDouble() : 0.0,
+      availableSlots: (data['availableSlots'] as List<dynamic>? ?? [])
+          .map((e) => Slot.fromJson(e))
+          .toList(),
+      reviews: (data['reviews'] as List<dynamic>? ?? []),
+      refunds: (data['refunds'] as List<dynamic>? ?? []),
+      createdAt: data['createdAt'] != null
+          ? DateTime.tryParse(data['createdAt'])
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? DateTime.tryParse(data['updatedAt'])
+          : null,
     );
   }
 
@@ -85,11 +90,11 @@ class RestaurantDetailsModel {
     'serviceArea': serviceArea,
     'foodType': foodType,
     'status': status,
-    'items': items?.map((e) => e.toJson()).toList(),
+    'items': items.map((e) => e.toJson()).toList(),
     'description': description,
-    'slots': slots?.map((e) => e.toJson()).toList(),
+    'slots': slots.map((e) => e.toJson()).toList(),
     'averageRating': averageRating,
-    'availableSlots': availableSlots?.map((e) => e.toJson()).toList(),
+    'availableSlots': availableSlots.map((e) => e.toJson()).toList(),
     'reviews': reviews,
     'refunds': refunds,
     'createdAt': createdAt?.toIso8601String(),
@@ -97,12 +102,18 @@ class RestaurantDetailsModel {
   };
 }
 
+// ======================= CATEGORY =========================
+
 class Category {
   final String id;
   final String name;
   final String? categoryPhoto;
 
-  Category({required this.id, required this.name, this.categoryPhoto});
+  Category({
+    required this.id,
+    required this.name,
+    this.categoryPhoto,
+  });
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
     id: json['_id'] ?? '',
@@ -117,6 +128,8 @@ class Category {
   };
 }
 
+// ======================= OWNER =========================
+
 class Owner {
   final String id;
   final String? fullName;
@@ -126,9 +139,9 @@ class Owner {
   final String? providerType;
   final String? status;
   final String? role;
-  final bool? isAgreedTermsCondition;
-  final bool? isAgreedTermsConditions;
-  final bool? isResetPassword;
+  final bool isAgreedTermsCondition;
+  final bool isAgreedTermsConditions;
+  final bool isResetPassword;
 
   Owner({
     required this.id,
@@ -139,9 +152,9 @@ class Owner {
     this.providerType,
     this.status,
     this.role,
-    this.isAgreedTermsCondition,
-    this.isAgreedTermsConditions,
-    this.isResetPassword,
+    this.isAgreedTermsCondition = false,
+    this.isAgreedTermsConditions = false,
+    this.isResetPassword = false,
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) => Owner(
@@ -173,6 +186,8 @@ class Owner {
   };
 }
 
+// ======================= RESTAURANT ITEM =========================
+
 class RestaurantItem {
   final String id;
   final String? seat;
@@ -186,9 +201,9 @@ class RestaurantItem {
     required this.id,
     this.seat,
     this.photo,
-    required this.totalQty,
-    required this.availableQty,
-    required this.price,
+    this.totalQty = 0,
+    this.availableQty = 0,
+    this.price = 0.0,
     this.description,
   });
 
@@ -198,7 +213,7 @@ class RestaurantItem {
     photo: json['photo'],
     totalQty: json['totalQty'] ?? 0,
     availableQty: json['availableQty'] ?? 0,
-    price: (json['price'] ?? 0).toDouble(),
+    price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
     description: json['description'],
   );
 
@@ -213,12 +228,18 @@ class RestaurantItem {
   };
 }
 
+// ======================= SLOT =========================
+
 class Slot {
   final String id;
   final String? startTime;
   final String? endTime;
 
-  Slot({required this.id, this.startTime, this.endTime});
+  Slot({
+    required this.id,
+    this.startTime,
+    this.endTime,
+  });
 
   factory Slot.fromJson(Map<String, dynamic> json) => Slot(
     id: json['_id'] ?? '',

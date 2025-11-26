@@ -47,7 +47,7 @@ class AppBarWithTitle extends StatelessWidget implements PreferredSizeWidget {
           ),
 
           if (title != null)
-            Center(child: Text(title!, style: AppTextStyle.sub_h2_medium_16())),
+            Center(child: Text(title!, style: AppTextStyle.sub_h1_regular_18().copyWith(fontWeight: FontWeight.bold))),
         ],
       ),
     );
