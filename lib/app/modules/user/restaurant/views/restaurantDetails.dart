@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/provider_info.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shimmer.dart';
@@ -22,6 +23,8 @@ class RestaurantDetails extends StatefulWidget {
 }
 
 class _RestaurantDetailsState extends State<RestaurantDetails> {
+
+  final authController=Get.find<AuthController>();
   final PanelController panelController = PanelController();
   final image = Assets.images;
   final icon = Assets.icons;
@@ -71,18 +74,25 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
             return SlidingUpPanel(
               controller: panelController,
-              minHeight: size.height * 0.43,
-              maxHeight: size.height * 0.9,
+              minHeight: size.height * 0.48,
+              maxHeight: size.height * 0.66,
               borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
               parallaxEnabled: true,
               parallaxOffset: 0.2,
-              body: Column(
+              body: Stack(
                 children: [
                   Image.network(
                     restaurantModel!.thumbnail ?? "",
                     width: double.infinity,
                     height: size.height * 0.6,
                     fit: BoxFit.cover,
+                  ),
+                  Positioned(
+                    top: 16,
+                    left: 16,
+                    child: CustomBackButton(
+                      onTap: () => Get.back(),
+                    ),
                   ),
                 ],
               ),
@@ -258,12 +268,18 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
                 Get.toNamed(Routes.restaurantInfo,
                 arguments: {
+                  "userId" :authController.userModel!.id,
+                   "productId": productId,
+                    "quantity" : item.totalQty,
+                   "itemId" :item.id,
                   "thumbnail" : item.photo,
                   "seatType" : item.seat,
                   "totalSeat" : item.totalQty,
+
                   "availableSeat":item.availableQty,
                   "price"     : item.price,
-                  "description" : item.description
+                  "description" : item.description,
+
 
                 });
               },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
+import 'package:harry_service_app/app/core/widgets/custome_back_button.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -70,7 +71,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
     const Color availableColor = Colors.red;
 
     return Scaffold(
-      appBar: AppBarWithTitle(title: "Restaurant Information", icons: icons, onTap: () {}),
+
       body: Column(
         children: [
           Expanded(
@@ -78,18 +79,32 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
               padding: const EdgeInsets.only(bottom: 20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.network(
-                      productInfo["thumbnail"] ?? "",
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                children: [
+                  Stack(
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Image.network(
+                          productInfo["thumbnail"] ?? "",
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                          ),
+                        ),
                       ),
-                    ),
+
+                      // Properly positioned custom back button
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        child: CustomBackButton(
+                          onTap: () => Get.back(),
+                        ),
+                      ),
+                    ],
                   ),
+
 
                   Center(
                     child: Padding(
@@ -142,7 +157,10 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () => Get.toNamed(Routes.restaurantBookingInfo),
+                onPressed: () => Get.toNamed(Routes.restaurantBookingInfo,
+
+                arguments: productInfo
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: goldColor,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
