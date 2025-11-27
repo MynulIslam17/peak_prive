@@ -39,6 +39,7 @@ import 'package:harry_service_app/app/modules/user/restaurant/views/resturant_in
 
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/extra_booking_screen.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/bindings/trasnport_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 
@@ -148,6 +149,16 @@ abstract class AppPages {
         page: () => BottomNavScreen(),
       binding: BottomNavBinding(),
     ),
+
+
+      ///boooking extra payment
+    GetPage(name: Routes.bookingExtraPayment,
+        page: () => ExtraBookingScreen(),
+      binding: BottomNavBinding(),
+    ),
+
+
+
 
 
     /// transport

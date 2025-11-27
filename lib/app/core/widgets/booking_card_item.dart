@@ -62,8 +62,7 @@ class BookingCardItem extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: AppTextStyle.sub_h2_medium_16()
-                                .copyWith(fontSize: 17),
+                            style: AppTextStyle.sub_h3_medium_14(),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -100,7 +99,7 @@ class BookingCardItem extends StatelessWidget {
                         // Button
                         CustomButton(
                           text: buttonText,
-                          width: 80,
+                          width: 110,
                           height: 30,
                           textSize: 11,
                           onTap: onButtonTap,

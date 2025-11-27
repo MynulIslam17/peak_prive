@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/custome_back_button.dart';
+import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -15,6 +16,8 @@ class RestaurantInfoScreen extends StatefulWidget {
 class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
 
   late Map<String, dynamic> productInfo;
+
+
 
   @override
   void initState() {

@@ -12,6 +12,7 @@ import 'package:harry_service_app/app/modules/user/shared/controllers/hire_ratin
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/controllers/nav_controller.dart';
+import '../../../../routes/app_routes.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -61,7 +62,8 @@ class _BookingScreenState extends State<BookingScreen>
           DateTime date = DateTime.parse(datePart);
 
           // Format: "15 Jan 2024, 10:30 AM"
-          String formattedDate = "${date.day} ${_getMonthName(date.month)} ${date.year}";
+          String formattedDate =
+              "${date.day} ${_getMonthName(date.month)} ${date.year}";
           String formattedTime = _formatTime(booking.timeString);
 
           return "$formattedDate, $formattedTime";
@@ -79,8 +81,18 @@ class _BookingScreenState extends State<BookingScreen>
   /// Get month name
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return months[month - 1];
   }
@@ -127,7 +139,8 @@ class _BookingScreenState extends State<BookingScreen>
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18, horizontal: 20),
                     child: StatefulBuilder(
                       builder: (context, setState) {
                         return Column(
@@ -157,7 +170,8 @@ class _BookingScreenState extends State<BookingScreen>
                                 color: Colors.deepPurple,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.deepPurpleAccent.withOpacity(0.2),
+                                    color: Colors.deepPurpleAccent
+                                        .withOpacity(0.2),
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
                                   )
@@ -174,7 +188,8 @@ class _BookingScreenState extends State<BookingScreen>
                               direction: Axis.horizontal,
                               allowHalfRating: true,
                               itemCount: 5,
-                              itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+                              itemPadding:
+                              EdgeInsets.symmetric(horizontal: 4.0),
                               itemBuilder: (context, _) => Icon(
                                 Icons.star,
                                 color: Colors.amber,
@@ -198,7 +213,8 @@ class _BookingScreenState extends State<BookingScreen>
                                 filled: true,
                                 fillColor: Colors.deepPurple.withOpacity(0.05),
                                 hintText: "Write your feedback...",
-                                hintStyle: TextStyle(color: Colors.deepPurpleAccent),
+                                hintStyle:
+                                TextStyle(color: Colors.deepPurpleAccent),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -225,67 +241,79 @@ class _BookingScreenState extends State<BookingScreen>
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.primary_1,
                                       backgroundColor: Colors.white,
-                                      side: BorderSide(color: AppColors.primary_1, width: 1.5),
+                                      side: BorderSide(
+                                          color: AppColors.primary_1, width: 1.5),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: EdgeInsets.symmetric(vertical: 14),
+                                      padding:
+                                      EdgeInsets.symmetric(vertical: 14),
                                     ),
                                     child: Text(
                                       "Cancel",
-                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                      style:
+                                      TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),
                                 SizedBox(width: 15),
 
                                 /// Submit
-                                GetBuilder<HireRatingController>(builder: (controller) {
-                                  return controller.isLoading
-                                      ? Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppColors.primary_1,
-                                    ),
-                                  )
-                                      : SizedBox(
-                                    width: 110,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        double rating = _rating;
-                                        String feedback = feedbackTEController.text;
-
-                                        Map<String, dynamic> body = {
-                                          "rating": rating,
-                                          "comment": feedback
-                                        };
-
-                                        bool success = await ratingController.sendRating(
-                                            productId, body);
-
-                                        if (success) {
-                                          print("=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success");
-                                        }
-
-                                        Navigator.of(context).pop();
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.deepPurple,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                GetBuilder<HireRatingController>(
+                                    builder: (controller) {
+                                      return controller.isLoading
+                                          ? Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.primary_1,
                                         ),
-                                        padding: EdgeInsets.symmetric(vertical: 14),
-                                        elevation: 3,
-                                        shadowColor:
-                                        Colors.deepPurpleAccent.withOpacity(0.3),
-                                      ),
-                                      child: Text(
-                                        "Submit",
-                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  );
-                                })
+                                      )
+                                          : SizedBox(
+                                        width: 110,
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            double rating = _rating;
+                                            String feedback =
+                                                feedbackTEController.text;
+
+                                            Map<String, dynamic> body = {
+                                              "rating": rating,
+                                              "comment": feedback
+                                            };
+
+                                            bool success =
+                                            await ratingController
+                                                .sendRating(
+                                                productId, body);
+
+                                            if (success) {
+                                              print(
+                                                  "=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success");
+                                            }
+
+                                            Navigator.of(context).pop();
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.deepPurple,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                              BorderRadius.circular(12),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 14),
+                                            elevation: 3,
+                                            shadowColor: Colors
+                                                .deepPurpleAccent
+                                                .withOpacity(0.3),
+                                          ),
+                                          child: Text(
+                                            "Submit",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      );
+                                    })
                               ],
                             ),
                           ],
@@ -307,16 +335,16 @@ class _BookingScreenState extends State<BookingScreen>
     // Show shimmer loader
     if (_bookingController.isLoading) {
       return ListView(
-        children: [
-          const BookingCardSkeleton(),
-          const SizedBox(height: 5),
-          const BookingCardSkeleton(),
-          const SizedBox(height: 5),
-          const BookingCardSkeleton(),
-          const SizedBox(height: 5),
-          const BookingCardSkeleton(),
-          const SizedBox(height: 5),
-          const BookingCardSkeleton(),
+        children: const [
+          BookingCardSkeleton(),
+          SizedBox(height: 5),
+          BookingCardSkeleton(),
+          SizedBox(height: 5),
+          BookingCardSkeleton(),
+          SizedBox(height: 5),
+          BookingCardSkeleton(),
+          SizedBox(height: 5),
+          BookingCardSkeleton(),
         ],
       );
     }
@@ -336,14 +364,20 @@ class _BookingScreenState extends State<BookingScreen>
         final booking = filteredBookings[index];
         final product = booking.product;
 
+        // Clamp totalPrice to prevent negative
+        double safePrice =
+        (booking.totalPrice != null && booking.totalPrice >= 0)
+            ? booking.totalPrice
+            : 0;
+
+        String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
+
         return _navController.getServiceType == "ski_pass"
             ? BookingCard(
           image: product.thumbnail,
           personCount: booking.bookingItems.isNotEmpty
               ? booking.bookingItems.fold<int>(
-            0,
-                (sum, item) => sum + (item.quantity ?? 0),
-          )
+              0, (sum, item) => sum + (item.quantity ?? 0))
               : 1,
           passType: product?.title ?? "Default",
           location: product?.serviceArea ?? "-",
@@ -359,12 +393,12 @@ class _BookingScreenState extends State<BookingScreen>
           image: product.thumbnail,
           borderColor: status == "Active"
               ? Colors.yellow
-              : status == "Complete"
+              : status == "Completed"
               ? Colors.green
               : Colors.red,
           title: product.title,
           timeLabel: _formatBookingTime(booking),
-          price: booking.totalPrice.toString(),
+          price: displayPrice,
           buttonText: status == "Active"
               ? "Details"
               : status == "Completed"
@@ -373,6 +407,8 @@ class _BookingScreenState extends State<BookingScreen>
           onButtonTap: () {
             if (status == "Completed") {
               _showDialog(product.id);
+            }if(status=="Active"){
+              Get.toNamed(Routes.bookingExtraPayment);
             }
           },
         );

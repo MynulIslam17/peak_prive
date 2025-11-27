@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
+import 'package:harry_service_app/app/modules/user/restaurant/models/restaurant_details_model.dart';
+
+import '../../../../core/constants/text-style.dart';
+import '../../../../routes/app_routes.dart';
+import '../../pass/controllers/pass_booking_controller.dart';
 
 class RestaurantBookingInfo extends StatefulWidget {
   const RestaurantBookingInfo({super.key});
@@ -11,9 +16,9 @@ class RestaurantBookingInfo extends StatefulWidget {
 }
 
 class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
-
-  late final Map<String,dynamic> productInfo;
-  /// textEditing controller
+  late final Map<String, dynamic> productInfo;
+  final createBookingController = Get.find<CreateBookingController>();
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _bookingSeatController = TextEditingController();
 
   String? _selectedDate;
@@ -21,23 +26,52 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
   String? _selectedSlot;
 
   final Color goldColor = const Color(0xFFD4AF37);
-  final Color lightGoldColor = const Color(0xFFFAF6EB);
   final Color textColor = Colors.black;
-  final Color greyTextColor = Colors.grey[600]!;
-  final Color whiteColor = Colors.white;
+  final Color greyTextColor = Colors.grey;
 
-  // Example backend slot data
-  final List<String> backendSlots = [
-    '10:00 AM - 12:00 PM',
-    '10:00 AM - 3:00 PM',
-    '10:00 AM - 7:00 PM',
-    '10:00 AM - 5:00 PM',
-    '10:00 AM - 8:00 PM',
-    '10:00 AM - 9:00 PM',
-  ];
+  late final List<Slot> slotsList;
 
-  // --- Date/Time Picker Methods ---
+  @override
+  void initState() {
+    productInfo = Get.arguments;
+    slotsList = List<Slot>.from(Get.arguments["availableSlots"]);
+    super.initState();
+  }
 
+  /// --- Convert selected date & time to ISO 8601 ---
+  DateTime? _getIsoDateTime() {
+    if (_selectedDate == null || _selectedTime == null) return null;
+    try {
+      // Split date
+      List<String> dateParts = _selectedDate!.split('/');
+      int day = int.parse(dateParts[0]);
+      int month = int.parse(dateParts[1]);
+      int year = 2000 + int.parse(dateParts[2]); // convert "25" -> 2025
+
+      // Parse time
+      TimeOfDay timeOfDay = TimeOfDay(
+        hour: int.parse(_selectedTime!.split(":")[0]),
+        minute: int.parse(_selectedTime!.split(":")[1].split(" ")[0]),
+      );
+
+      // Handle AM/PM
+      if (_selectedTime!.toLowerCase().contains("pm") && timeOfDay.hour < 12) {
+        timeOfDay = TimeOfDay(
+          hour: timeOfDay.hour + 12,
+          minute: timeOfDay.minute,
+        );
+      } else if (_selectedTime!.toLowerCase().contains("am") &&
+          timeOfDay.hour == 12) {
+        timeOfDay = TimeOfDay(hour: 0, minute: timeOfDay.minute);
+      }
+
+      return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // --- Date/Time Pickers ---
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -87,24 +121,65 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
     }
   }
 
-  @override
-  void initState() {
-    productInfo = Get.arguments;
-    super.initState();
+  // --- Booking Function ---
+  Future<void> _createBooking(Map<String, dynamic> reqBody) async {
+    if (_formKey.currentState!.validate()) {
+      bool success = await createBookingController.proceedBooking(reqBody);
+
+      if (success) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+                SizedBox(height: 16),
+                Text(
+                  "Booking Successful!",
+                  style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  "Your Booking has been processed successfully",
+                  textAlign: TextAlign.center,
+                  style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted) {
+          Navigator.of(context).pop(); // Close dialog
+          Get.offAllNamed(Routes.bottomNav);
+
+          /// Back to previous screen
+        }
+      }
+    }
   }
 
-  // --- Widget Builder Methods ---
+  String _totalSeatPrice(dynamic price, dynamic seat) {
+    int seatCount = int.tryParse(seat.toString()) ?? 0;
+    double seatPrice = (price as num).toDouble();
+    return (seatPrice * seatCount).toStringAsFixed(2);
+  }
 
+  // --- Widgets ---
   Widget _buildSeatSelection() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            goldColor.withOpacity(0.1),
-            goldColor.withOpacity(0.05),
-          ],
+          colors: [goldColor.withOpacity(0.1), goldColor.withOpacity(0.05)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -136,7 +211,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                   : "assets/icons/star1.png",
               width: 28,
               height: 28,
-
             ),
           ),
           const SizedBox(width: 16),
@@ -149,16 +223,12 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                   color: goldColor,
-                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 "Premium seating experience",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: greyTextColor,
-                ),
+                style: TextStyle(fontSize: 12, color: greyTextColor),
               ),
             ],
           ),
@@ -168,25 +238,42 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
   }
 
   Widget _buildBookingSeatField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
+    return Form(
+      key: _formKey,
+      child: TextFormField(
         controller: _bookingSeatController,
         keyboardType: TextInputType.number,
+        validator: (value) {
+          if (value == null || value.isEmpty) return "Enter number of seats";
+          int availableSeat = productInfo["availableQty"];
+          int selectedSeat = int.tryParse(value) ?? 0;
+          if (selectedSeat <= 0) return "Enter a valid seat number";
+          if (selectedSeat > availableSeat)
+            return "$availableSeat seats available";
+          return null;
+        },
         decoration: InputDecoration(
           hintText: "Enter number of seats",
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
           prefixIcon: Icon(Icons.event_seat, color: goldColor),
+          suffix: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: goldColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                "Total: ${productInfo["availableQty"]}",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: goldColor,
+                ),
+              ),
+            ),
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -201,9 +288,16 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
-        style: TextStyle(fontSize: 15, color: textColor, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 15,
+          color: textColor,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }
@@ -217,9 +311,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
     return GestureDetector(
       onTap: () async {
         await _selectDate(context);
-        if (mounted) {
-          await _selectTime(context);
-        }
+        if (mounted) await _selectTime(context);
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -227,7 +319,9 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: (hasDate && hasTime) ? goldColor.withOpacity(0.3) : Colors.grey.shade200,
+            color: (hasDate && hasTime)
+                ? goldColor.withOpacity(0.3)
+                : Colors.grey.shade200,
             width: 1,
           ),
           boxShadow: [
@@ -279,7 +373,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
     );
   }
 
-  Widget _buildTimeSlotGrid(List<String> slots) {
+  Widget _buildTimeSlotGrid(List<Slot> slots) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -291,16 +385,12 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
       ),
       itemCount: slots.length,
       itemBuilder: (context, index) {
-        final String slot = slots[index];
-        final bool isSelected = _selectedSlot == slot;
-        final List<String> times = slot.split(' - ');
+        final slot = slots[index];
+        final bool isSelected = _selectedSlot == slot.id;
 
         return GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedSlot = isSelected ? null : slot;
-            });
-          },
+          onTap: () =>
+              setState(() => _selectedSlot = isSelected ? null : slot.id),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
@@ -308,15 +398,15 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                colors: [goldColor, goldColor.withOpacity(0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
+                      colors: [goldColor, goldColor.withOpacity(0.85)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
                   : LinearGradient(
-                colors: [Colors.white, Colors.grey.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+                      colors: [Colors.white, Colors.grey.shade50],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
@@ -324,20 +414,14 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                     : Colors.grey.shade300,
                 width: isSelected ? 0 : 1.5,
               ),
-              boxShadow: isSelected
-                  ? [
+              boxShadow: [
                 BoxShadow(
-                  color: goldColor.withOpacity(0.3),
-                  blurRadius: 12,
+                  color: isSelected
+                      ? goldColor.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: isSelected ? 12 : 6,
                   offset: const Offset(0, 4),
-                )
-              ]
-                  : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                )
+                ),
               ],
             ),
             child: Row(
@@ -364,7 +448,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        times[0],
+                        slot.startTime!,
                         style: TextStyle(
                           color: isSelected ? Colors.white : textColor,
                           fontWeight: FontWeight.bold,
@@ -372,7 +456,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                         ),
                       ),
                       Text(
-                        times[1],
+                        slot.endTime!,
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white.withOpacity(0.9)
@@ -391,11 +475,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.check,
-                      size: 16,
-                      color: goldColor,
-                    ),
+                    child: Icon(Icons.check, size: 16, color: goldColor),
                   ),
               ],
             ),
@@ -404,7 +484,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
       },
     );
   }
-
 
   Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
     return Padding(
@@ -433,19 +512,15 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        color: textColor,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.2,
-      ),
-    );
-  }
-
-  // --- Main Build Method ---
+  Widget _buildSectionTitle(String title) => Text(
+    title,
+    style: TextStyle(
+      fontSize: 16,
+      color: textColor,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.2,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +539,11 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios,
+            color: Colors.black87,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -475,35 +554,25 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  // Selected Seat Type
+                children: [
                   _buildSectionTitle('Selected Seat Type'),
                   const SizedBox(height: 12),
                   _buildSeatSelection(),
                   const SizedBox(height: 24),
-
-                  // Booking Seat
                   _buildSectionTitle('Number of Seats'),
                   const SizedBox(height: 12),
                   _buildBookingSeatField(),
                   const SizedBox(height: 24),
-
-                  // Select Start Date & Time
                   _buildSectionTitle('Select Start Date & Time'),
                   const SizedBox(height: 12),
                   _buildDateTimeSelector(),
                   const SizedBox(height: 24),
-
-                  // Slot Book Section
                   _buildSectionTitle('Available Time Slots'),
                   const SizedBox(height: 12),
-                  _buildTimeSlotGrid(backendSlots),
+                  _buildTimeSlotGrid(slotsList),
                   const SizedBox(height: 24),
-
-                  // Booking Summary
                   _buildSectionTitle('Booking Summary'),
                   const SizedBox(height: 12),
-
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -519,12 +588,22 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                     ),
                     child: Column(
                       children: [
-                        _buildSummaryRow('Total Seat', '\$250.00'),
+                        _buildSummaryRow(
+                          'Total Seat',
+                          _totalSeatPrice(
+                            productInfo["seatPrice"],
+                            _bookingSeatController.text,
+                          ),
+                        ),
                         Divider(color: Colors.grey[200], height: 1),
                         _buildSummaryRow('Service Fee', '\$25.00'),
                         Divider(color: Colors.grey[200], height: 1),
                         const SizedBox(height: 4),
-                        _buildSummaryRow('Total Amount', '\$275.00', isTotal: true),
+                        _buildSummaryRow(
+                          'Total Amount',
+                          '\$275.00',
+                          isTotal: true,
+                        ),
                       ],
                     ),
                   ),
@@ -534,7 +613,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
             ),
           ),
 
-          // Booking Confirm Button
+
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -550,30 +629,110 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
             child: SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle Booking Confirm logic
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: goldColor,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: GetBuilder<CreateBookingController>(builder: (controller) {
+                return ElevatedButton(
+                  onPressed: controller.bookingProgress
+                      ? null // disable while loading
+                      : () async {
+                    // --- VALIDATIONS ---
+                    if (_bookingSeatController.text.isEmpty) {
+                      Get.snackbar("Error", "Please enter number of seats",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    int selectedSeat = int.tryParse(_bookingSeatController.text) ?? 0;
+                    int availableSeat = productInfo["availableQty"];
+
+                    if (selectedSeat <= 0) {
+                      Get.snackbar("Error", "Please enter a valid seat number",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    if (selectedSeat > availableSeat) {
+                      Get.snackbar("Error", "Only $availableSeat seats available",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    if (_selectedDate == null) {
+                      Get.snackbar("Error", "Please select a date",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    if (_selectedTime == null) {
+                      Get.snackbar("Error", "Please select a time",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    if (_selectedSlot == null || _selectedSlot!.isEmpty) {
+                      Get.snackbar("Error", "Please select a time slot",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    // --- ISO DATE TIME ---
+                    DateTime? isoDateTime = _getIsoDateTime();
+                    if (isoDateTime == null) {
+                      Get.snackbar("Error", "Invalid date/time",
+                          backgroundColor: Colors.red);
+                      return;
+                    }
+
+                    // --- BOOKING REQUEST BODY ---
+                    Map<String, dynamic> reqBody = {
+                      "userId": productInfo["userId"],
+                      "productId": productInfo["productId"],
+                      "bookingItems": [
+                        {"itemId": productInfo["itemId"], "quantity": selectedSeat},
+                      ],
+                      "slots": [_selectedSlot],
+                      "date": isoDateTime.toIso8601String(),
+                    };
+
+                    // --- CALL API ---
+                    await _createBooking(reqBody);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: goldColor,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  shadowColor: goldColor.withOpacity(0.4),
-                ),
-                child: const Text(
-                  'Confirm Booking',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                  child: controller.bookingProgress
+                      ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary_1,
+                      strokeWidth: 3,
+                    ),
+                  )
+                      : const Text(
+                    'Confirm Booking',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
-          ),
+          )
+
+
+
+
+
+
+
+
         ],
       ),
     );

@@ -1,5 +1,6 @@
 
  import 'package:get/get.dart';
+import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/controllers/restaurant_details_controller.dart';
 
 class RestaurantDetailsBindings extends Bindings{
@@ -8,6 +9,7 @@ class RestaurantDetailsBindings extends Bindings{
     // TODO: implement dependencies
 
     Get.lazyPut<RestaurantDetailsController>(()=>RestaurantDetailsController());
+    Get.lazyPut<CreateBookingController>(()=>CreateBookingController());
 
 
   }

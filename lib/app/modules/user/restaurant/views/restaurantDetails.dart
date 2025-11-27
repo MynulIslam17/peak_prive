@@ -263,6 +263,7 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
           itemCount: restaurantDetailsController.restaurantDetails!.items.length,
           itemBuilder: (context, index) {
             final item=restaurantDetailsController.restaurantDetails!.items[index];
+
             return buildSeatingCard(
               onTap: () {
 
@@ -272,13 +273,17 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                    "productId": productId,
                     "quantity" : item.totalQty,
                    "itemId" :item.id,
+                   "availableQty" : item.availableQty,
                   "thumbnail" : item.photo,
                   "seatType" : item.seat,
                   "totalSeat" : item.totalQty,
+                  "seatPrice" : item.price,
 
                   "availableSeat":item.availableQty,
                   "price"     : item.price,
                   "description" : item.description,
+                  "availableSlots": restaurantDetailsController.restaurantDetails!.availableSlots,
+
 
 
                 });

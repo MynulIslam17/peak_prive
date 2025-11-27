@@ -10,6 +10,8 @@ abstract class Routes {
   /// Bottom Navigation
   static const bottomNav = "/bottomNav";
 
+  /// booking extra payment screen
+  static const bookingExtraPayment = "/bookingExtraPayment";
 
 
   /// Pass
@@ -44,6 +46,7 @@ abstract class Routes {
 
   /// Onboarding
   static const onBoarding = "/onboard";
+
 
   /// splash
   static const splash="/splash";
