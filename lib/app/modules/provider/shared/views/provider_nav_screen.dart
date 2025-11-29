@@ -25,77 +25,89 @@ class _ProviderNavScreenState extends State<ProviderNavScreen> {
   final icons = Assets.icons;
   final images = Assets.images;
 
-  final navController=Get.find<NavController>();
+  final navController = Get.find<NavController>();
 
-
- final List<Widget> _screens=[
-
+  final List<Widget> _screens = [
     ProviderHomeScreen(),
     ProviderServiceScreen(),
     ProviderBookingRequestScreen(),
-   ProviderChatScreen(),
-   ProviderProfileScreen()
-
+    ProviderChatScreen(),
+    ProviderProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-
-        body:GetBuilder<NavController>(builder: (controller){
-
+      body: GetBuilder<NavController>(
+        builder: (controller) {
           return _screens[controller.getIndex];
-        }) ,
+        },
+      ),
 
       bottomNavigationBar: GetBuilder<NavController>(
+        builder: (controller) {
+          return BottomNavigationBar(
+            backgroundColor: Colors.white,
+            type: BottomNavigationBarType.fixed,
 
-          builder: (controller){
+            selectedItemColor: AppColors.primary_1,
 
-            return BottomNavigationBar(
-              backgroundColor: Colors.white,
-              type: BottomNavigationBarType.fixed,
+            currentIndex: navController.getIndex,
+            onTap: (index) {
+              navController.changeIndex(index);
+            },
 
-               selectedItemColor: AppColors.primary_1,
-
-
-              currentIndex: navController.getIndex,
-              onTap: (index){
-                navController.changeIndex(index);
-              },
-
-              items: [
-                BottomNavigationBarItem(
-                  icon: icons.home.svg(color: Colors.grey, width: 20, height: 20),
-                  activeIcon:  icons.home.svg(color:AppColors.primary_1
-                      , width: 20, height: 20),
-                  label: "Home",
+            items: [
+              BottomNavigationBarItem(
+                icon: icons.home.svg(color: Colors.grey, width: 20, height: 20),
+                activeIcon: icons.home.svg(
+                  color: AppColors.primary_1,
+                  width: 20,
+                  height: 20,
                 ),
-                BottomNavigationBarItem(
-                  icon: icons.service.svg(width: 20, height: 20),
-                  activeIcon:  icons.service.svg(color:AppColors.primary_1, width: 20, height: 20),
-                  label: "Service",
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: icons.service.svg(width: 20, height: 20),
+                activeIcon: icons.service.svg(
+                  color: AppColors.primary_1,
+                  width: 20,
+                  height: 20,
                 ),
+                label: "Service",
+              ),
 
-                BottomNavigationBarItem(
-                  icon: icons.notepad.svg(width: 20, height: 20),
-                  activeIcon:  icons.notepad.svg(color:AppColors.primary_1, width: 20, height: 20),
-                  label: "Booking",
+              BottomNavigationBarItem(
+                icon: icons.notepad.svg(width: 20, height: 20),
+                activeIcon: icons.notepad.svg(
+                  color: AppColors.primary_1,
+                  width: 20,
+                  height: 20,
                 ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.chat,  size: 20,color: Colors.grey,),
-                  activeIcon: Icon(Icons.chat,  size: 20,color:AppColors.primary_1,),
-                  label: "Chats",
+                label: "Booking",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.chat, size: 20, color: Colors.grey),
+                activeIcon: Icon(
+                  Icons.chat,
+                  size: 20,
+                  color: AppColors.primary_1,
                 ),
+                label: "Chats",
+              ),
 
-                BottomNavigationBarItem(
-                  icon: icons.profile.svg(width: 20,height: 20),
-                  activeIcon:  icons.profile.svg(color:AppColors.primary_1, width: 20, height: 20),
-                  label: "Profile",
+              BottomNavigationBarItem(
+                icon: icons.profile.svg(width: 20, height: 20),
+                activeIcon: icons.profile.svg(
+                  color: AppColors.primary_1,
+                  width: 20,
+                  height: 20,
                 ),
-              ],
-            );
-          }
+                label: "Profile",
+              ),
+            ],
+          );
+        },
       ),
     );
   }

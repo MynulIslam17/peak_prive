@@ -15,6 +15,7 @@ import 'package:harry_service_app/app/modules/provider/pass/views/provider_booki
 import 'package:harry_service_app/app/modules/provider/register/views/provider_info_form.dart';
 import 'package:harry_service_app/app/modules/provider/restaurant/views/add_restaurant_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/change_pass_binding.dart';
+import 'package:harry_service_app/app/modules/provider/shared/bindings/provider_nav_bindings.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/change_password_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/messaging_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_account_information_screen.dart';
@@ -215,7 +216,8 @@ abstract class AppPages {
 
   /// shared provided
     GetPage(name: Routes.providerNavScreen,
-        page: ()=>ProviderNavScreen()
+        page: ()=>ProviderNavScreen(),
+      binding: ProviderNavBindings()
     ),
 
 

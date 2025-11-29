@@ -7,6 +7,8 @@ import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_home_shimmer.dart';
+import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/widgets/my_service_card.dart';
@@ -25,8 +27,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
 
   /// find controller
-
   final authController=Get.find<AuthController>();
+  final homeController=Get.find<ProviderHomeController>();
 
 
   final images = Assets.images;
@@ -38,7 +40,32 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     {"Amount": "20K"},
   ];
 
-  final _searchController = TextEditingController();
+
+
+  @override
+  void initState() {
+    // TODO: implement initState
+
+
+    ///call the method for fetch home data
+
+    _fetchData();
+
+    super.initState();
+  }
+
+
+
+  Future<void> _fetchData()async{
+    bool success=await homeController.fetchProviderHomeData();
+
+
+  }
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -46,9 +73,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       backgroundColor: Colors.white,
 
       body: SafeArea(
-        child: GetBuilder<AuthController>(builder: (controller){
+        child: GetBuilder<ProviderHomeController>(builder: (controller){
 
-          return controller.userModel==null ?CircularProgressIndicator() : SingleChildScrollView(
+          return controller.isLoading? ProviderHomeShimmer() : SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Column(
