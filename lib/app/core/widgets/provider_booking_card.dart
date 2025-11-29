@@ -7,10 +7,12 @@ import '../constants/text-style.dart';
 
 class ProviderBookingCard extends StatelessWidget {
   const ProviderBookingCard({
-    super.key, required this.images,
+    super.key,
+    required this.image,
     required this.onTap});
 
-  final AssetGenImage images;
+  final String image;
+
 
   final icons = Assets.icons;
   final VoidCallback onTap;
@@ -34,7 +36,7 @@ class ProviderBookingCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: images.image(width: 93, height: 95, fit: BoxFit.cover),
+                  child: Image.network(image,width: 93, height: 95, fit: BoxFit.cover),
                 ),
               ),
 

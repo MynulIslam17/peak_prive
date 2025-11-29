@@ -20,7 +20,7 @@ class MyServiceCard extends StatelessWidget {
     this.packageType,
   });
 
-  final AssetGenImage image;
+  final String image;
   final String title;
   final String price;
   final double rating;
@@ -56,12 +56,39 @@ class MyServiceCard extends StatelessWidget {
                     /// Image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: image.image(
-                        fit: BoxFit.cover,
+                      child: Image.network(
+                        image, // <-- use the network URL passed in
                         width: double.infinity,
                         height: 160,
+                        fit: BoxFit.cover, // keep the aspect ratio nicely
+                        errorBuilder: (context, error, stackTrace) {
+                          // optional: fallback image if network fails
+                          return Container(
+                            width: double.infinity,
+                            height: 160,
+                            color: Colors.grey.shade200,
+                            child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: double.infinity,
+                            height: 160,
+                            color: Colors.grey.shade200,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
+
 
                     SizedBox(height: 8.h),
 

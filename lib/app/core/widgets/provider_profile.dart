@@ -1,22 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../gen/assets.gen.dart';
 import '../constants/text-style.dart';
 
 class ProviderProfile extends StatelessWidget {
   const ProviderProfile({
     super.key,
-    required this.image,
+    required this.imageUrl,
     required this.name,
     required this.role,
     this.icon,
     this.onIconTap,
-    required this.onTap
-
+    required this.onTap,
   });
 
-  /// Accepts an image (can be from FlutterGen or custom)
-  final AssetGenImage image;
+  /// Network image URL
+  final String imageUrl;
 
   /// Provider name
   final String name;
@@ -25,7 +23,7 @@ class ProviderProfile extends StatelessWidget {
   final String role;
 
   /// Optional notification or action icon
-  final SvgGenImage? icon;
+  final Widget? icon;
 
   /// Optional callback for icon tap
   final VoidCallback? onIconTap;
@@ -34,28 +32,25 @@ class ProviderProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-
       children: [
-        /// Profile Image
-
+        /// Profile Image from network
         Material(
           shape: CircleBorder(),
-          clipBehavior: Clip.hardEdge, // ensures ripple doesn't overflow
+          clipBehavior: Clip.hardEdge,
           color: Colors.transparent,
           child: Ink.image(
-            image: image.provider(), // your image provider
+            image: NetworkImage(imageUrl),
             fit: BoxFit.cover,
-            width: 52, // diameter = 2 * radius
+            width: 52,
             height: 52,
             child: InkWell(
               onTap: onTap,
-              splashColor: Colors.grey.withOpacity(0.3), // visible ripple
-              highlightColor: Colors.grey.withOpacity(0.1), // subtle highlight
-              customBorder: CircleBorder(), // keeps ripple circular
+              splashColor: Colors.grey.withOpacity(0.3),
+              highlightColor: Colors.grey.withOpacity(0.1),
+              customBorder: CircleBorder(),
             ),
           ),
         ),
-
 
         SizedBox(width: 10.w),
 
@@ -81,7 +76,7 @@ class ProviderProfile extends StatelessWidget {
           InkWell(
             borderRadius: BorderRadius.circular(30),
             onTap: onIconTap,
-            child: icon!.svg(width: 25, height: 25),
+            child: icon!,
           ),
       ],
     );

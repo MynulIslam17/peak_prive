@@ -45,7 +45,7 @@ class ProviderBookingRequestScreen extends StatefulWidget {
            
            
                  /// provider profile
-                 ProviderProfile(image: images.user2, name: "Azaan Mahmud", role: "Ski Pass Provider",icon: icons.notificaton, onTap: () {  },),
+               // ProviderProfile(image: images.user2, name: "Azaan Mahmud", role: "Ski Pass Provider",icon: icons.notificaton, onTap: () {  },),
            
                  SizedBox(height: 18,),
            
@@ -88,7 +88,7 @@ class ProviderBookingRequestScreen extends StatefulWidget {
                      scrollDirection: Axis.vertical,
                      itemBuilder: (context,index){
            
-                       return ProviderBookingCard(images: images.skiAccories3,
+                       return ProviderBookingCard(image: "",
                          onTap: () {
 
                          print("af");

@@ -174,28 +174,107 @@ class BookingUser {
 
 class BookingProduct {
   final String id;
+  final String category;
+  final String title;
+  final String thumbnail;
   final String owner;
+  final num extraChargePerHour;
+  final num totalPrice;
+  final String serviceArea;
+  final num averageRating;
+  final List<Review> reviews;
+  final List<dynamic> refunds;
+  final String createdAt;
+  final String updatedAt;
 
   BookingProduct({
     required this.id,
+    required this.category,
+    required this.title,
+    required this.thumbnail,
     required this.owner,
+    required this.extraChargePerHour,
+    required this.totalPrice,
+    required this.serviceArea,
+    required this.averageRating,
+    required this.reviews,
+    required this.refunds,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory BookingProduct.fromJson(Map<String, dynamic> json) {
     return BookingProduct(
       id: json["_id"] ?? "",
+      category: json["category"] ?? "",
+      title: json["title"] ?? "",
+      thumbnail: json["thumbnail"] ?? "",
       owner: json["owner"] ?? "",
+      extraChargePerHour: json["extraChargePerHour"] ?? 0,
+      totalPrice: json["totalPrice"] ?? 0,
+      serviceArea: json["serviceArea"] ?? "",
+      averageRating: json["averageRating"] ?? 0,
+      reviews: (json["reviews"] as List? ?? [])
+          .map((e) => Review.fromJson(e))
+          .toList(),
+      refunds: json["refunds"] ?? [],
+      createdAt: json["createdAt"] ?? "",
+      updatedAt: json["updatedAt"] ?? "",
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       "_id": id,
+      "category": category,
+      "title": title,
+      "thumbnail": thumbnail,
       "owner": owner,
+      "extraChargePerHour": extraChargePerHour,
+      "totalPrice": totalPrice,
+      "serviceArea": serviceArea,
+      "averageRating": averageRating,
+      "reviews": reviews.map((e) => e.toJson()).toList(),
+      "refunds": refunds,
+      "createdAt": createdAt,
+      "updatedAt": updatedAt,
     };
   }
 }
 
+class Review {
+  final String userId;
+  final double rating;
+  final String comment;
+  final String createdAt;
+
+  Review({
+    required this.userId,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      userId: json["userId"] ?? "",
+      rating: (json["rating"] ?? 0).toDouble(),
+      comment: json["comment"] ?? "",
+      createdAt: json["createdAt"] ?? "",
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "userId": userId,
+      "rating": rating,
+      "comment": comment,
+      "createdAt": createdAt,
+    };
+  }
+}
+
+// BookingItem remains same
 class BookingItem {
   final String itemId;
   final int quantity;
@@ -220,6 +299,7 @@ class BookingItem {
   }
 }
 
+// RecentService remains same as before
 class RecentService {
   final String id;
   final String category;
@@ -230,10 +310,11 @@ class RecentService {
   final num totalPrice;
   final String serviceArea;
   final num averageRating;
-  final List<dynamic> reviews;
+  final List<Review> reviews;
   final List<dynamic> refunds;
   final String createdAt;
   final String updatedAt;
+  final int v;
   final String model;
 
   RecentService({
@@ -250,6 +331,7 @@ class RecentService {
     required this.refunds,
     required this.createdAt,
     required this.updatedAt,
+    required this.v,
     required this.model,
   });
 
@@ -264,10 +346,13 @@ class RecentService {
       totalPrice: json["totalPrice"] ?? 0,
       serviceArea: json["serviceArea"] ?? "",
       averageRating: json["averageRating"] ?? 0,
-      reviews: json["reviews"] ?? [],
+      reviews: (json["reviews"] as List? ?? [])
+          .map((e) => Review.fromJson(e))
+          .toList(),
       refunds: json["refunds"] ?? [],
       createdAt: json["createdAt"] ?? "",
       updatedAt: json["updatedAt"] ?? "",
+      v: json["__v"] ?? 0,
       model: json["model"] ?? "",
     );
   }
@@ -283,10 +368,11 @@ class RecentService {
       "totalPrice": totalPrice,
       "serviceArea": serviceArea,
       "averageRating": averageRating,
-      "reviews": reviews,
+      "reviews": reviews.map((e) => e.toJson()).toList(),
       "refunds": refunds,
       "createdAt": createdAt,
       "updatedAt": updatedAt,
+      "__v": v,
       "model": model,
     };
   }

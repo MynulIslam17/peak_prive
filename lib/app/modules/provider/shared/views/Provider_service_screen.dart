@@ -37,13 +37,13 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
           
           
                 /// provider profile
-                ProviderProfile(
-                  image: images.user2,
-                  name: "Azaan Mahmud",
-                  role: "Ski Pass Provider",
-                  icon: icons.notificaton,
-                  onTap: () {  },
-                ),
+                // ProviderProfile(
+                //   image: images.user2,
+                //   name: "Azaan Mahmud",
+                //   role: "Ski Pass Provider",
+                //   icon: icons.notificaton,
+                //   onTap: () {  },
+                // ),
           
                 SizedBox(height: 24,),
           
@@ -108,7 +108,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                       return    Padding(
                         padding: const EdgeInsets.only(right: 10),
                         child: MyServiceCard(
-                          image: Assets.images.skiPass9,
+                          image: "",
                           title: "Season Best Ski Pass",
                           price: "\$12/Day",
                           rating: 4.9,
