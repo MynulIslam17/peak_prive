@@ -11,6 +11,8 @@ class ProviderProfile extends StatelessWidget {
     required this.role,
     this.icon,
     this.onIconTap,
+    required this.onTap
+
   });
 
   /// Accepts an image (can be from FlutterGen or custom)
@@ -27,6 +29,7 @@ class ProviderProfile extends StatelessWidget {
 
   /// Optional callback for icon tap
   final VoidCallback? onIconTap;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +37,25 @@ class ProviderProfile extends StatelessWidget {
 
       children: [
         /// Profile Image
-        CircleAvatar(
-          backgroundImage: image.provider(),
-          radius: 26,
+
+        Material(
+          shape: CircleBorder(),
+          clipBehavior: Clip.hardEdge, // ensures ripple doesn't overflow
+          color: Colors.transparent,
+          child: Ink.image(
+            image: image.provider(), // your image provider
+            fit: BoxFit.cover,
+            width: 52, // diameter = 2 * radius
+            height: 52,
+            child: InkWell(
+              onTap: onTap,
+              splashColor: Colors.grey.withOpacity(0.3), // visible ripple
+              highlightColor: Colors.grey.withOpacity(0.1), // subtle highlight
+              customBorder: CircleBorder(), // keeps ripple circular
+            ),
+          ),
         ),
+
 
         SizedBox(width: 10.w),
 
@@ -47,11 +65,11 @@ class ProviderProfile extends StatelessWidget {
           children: [
             Text(
               name,
-              style: AppTextStyle.h3_semibold_20(),
+              style: AppTextStyle.sub_h3_medium_14(),
             ),
             Text(
               role,
-              style: AppTextStyle.c_regular_12(),
+              style: AppTextStyle.p_medium_12(),
             ),
           ],
         ),

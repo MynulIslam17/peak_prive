@@ -12,6 +12,7 @@ class AuthController  extends GetxController{
   static const String _tokenKey = 'access-token';
   static const String _userDataKey = 'user-model';
   static const String _roleKey = 'role';
+  static const String _providerTypeKey = 'providerType';
 
   // -------------------------
   // VARIABLES
@@ -19,6 +20,7 @@ class AuthController  extends GetxController{
   String? accessToken;
   String? role;
   UserModel? userModel;
+
 
   // -------------------------
   // SAVE USER + TOKEN + ROLE
@@ -32,10 +34,15 @@ class AuthController  extends GetxController{
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_userDataKey, jsonEncode(model.toJson()));
     await prefs.setString(_roleKey, model.role);
+    if(model.providerType!=null){
+      await prefs.setString(_providerTypeKey, model.providerType!);
+    }
+
 
     accessToken = token;
     userModel = model;
     role = model.role;
+
   }
 
   // -------------------------

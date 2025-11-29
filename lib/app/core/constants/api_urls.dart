@@ -144,7 +144,12 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
 
+/// ===================provider===========================
 
+/// ======================= home ==================================
+
+
+   static String providerHome="$baseUrl/dashboard/meta/provider";
 
 
 

@@ -224,6 +224,10 @@ class _OtpVerificationState extends State<OtpVerification> {
   /// Verify OTP event
   void _verifyOtpButton() async {
 
+
+    /// hide the keyboard
+    FocusScope.of(context).unfocus();
+
     String otp=otpTEController.text;
 
     if(otp.length<6){

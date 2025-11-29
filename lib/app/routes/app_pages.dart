@@ -20,6 +20,7 @@ import 'package:harry_service_app/app/modules/provider/shared/views/messaging_sc
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_account_information_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_booking_request_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_nav_screen.dart';
+import 'package:harry_service_app/app/modules/provider/shared/views/provider_profile_secreen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_settings_screen.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
@@ -89,7 +90,9 @@ abstract class AppPages {
     /// provider signup
     GetPage(
         name: Routes.providerSignUp,
-        page: ()=>ProviderSignUp()
+        page: ()=>ProviderSignUp(),
+        binding: signupBindings()
+
     ),
 
     /// email Verify
@@ -98,6 +101,9 @@ abstract class AppPages {
         page: ()=>EmailVerifyScreen(),
       binding: EmailVerifyBindings()
     ),
+
+
+
 
 
 
@@ -217,9 +223,17 @@ abstract class AppPages {
         page: ()=>MessagingScreen()
      ),
 
+   /// provider profile
+    GetPage(name: Routes.providerProfileScreen,
+        page: ()=>ProviderProfileScreen(),
+        binding: GetProfileBinding()
+
+    ),
 
 
-    ///provider profile
+
+
+    ///provider account information
     GetPage(name: Routes.providerInfoScreen,
         page: ()=>ProviderAccountInformationScreen(),
       binding: GetProfileBinding()

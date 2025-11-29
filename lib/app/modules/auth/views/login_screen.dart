@@ -53,6 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
   /// click event on login
 
   void _handleLogin() async {
+
+    /// hide the keyboard
+    FocusScope.of(context).unfocus();
+
+
     if (_formKey.currentState!.validate()) {
       String email = emailTEController.text.trim();
       String password = passwordTEController.text.trim();

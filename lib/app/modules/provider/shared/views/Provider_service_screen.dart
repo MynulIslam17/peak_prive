@@ -42,6 +42,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                   name: "Azaan Mahmud",
                   role: "Ski Pass Provider",
                   icon: icons.notificaton,
+                  onTap: () {  },
                 ),
           
                 SizedBox(height: 24,),

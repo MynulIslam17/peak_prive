@@ -30,9 +30,11 @@ class UserProfileSection extends StatelessWidget {
       children: [
         /// ------------------------- PROFILE IMAGE -------------------------
         CircleAvatar(
-          radius: 20,
+          radius: 26,
           backgroundImage: NetworkImage(image)
         ),
+
+
 
         SizedBox(width: 10.w),
 
@@ -43,7 +45,7 @@ class UserProfileSection extends StatelessWidget {
             /// User Name
             Text(
               name,
-              style: AppTextStyle.c_regular_12(),
+              style: AppTextStyle.sub_h3_medium_14(),
             ),
 
             SizedBox(height: 4.h),
@@ -55,7 +57,7 @@ class UserProfileSection extends StatelessWidget {
                 SizedBox(width: 6.w),
                 Text(
                   welcomeText,
-                  style: AppTextStyle.c_regular_12(),
+                  style: AppTextStyle.p_medium_12(),
                 ),
               ],
             ),

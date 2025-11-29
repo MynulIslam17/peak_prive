@@ -101,6 +101,7 @@ abstract class Routes {
   static const termsConditions = "/termsConditions";
   static const providerAbout = "/providerAboutUs";
   static const providerPassScreen = "/providerPassScreen";
+  static const  providerProfileScreen = "/providerProfileScreen";
 
 
 ///add services  part

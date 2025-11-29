@@ -2,7 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/modules/auth/controllers/user_singup_controller.dart';
+import 'package:harry_service_app/app/modules/auth/models/signup_request_model.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:intl_phone_field/phone_number.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -12,7 +15,6 @@ import '../../../../core/widgets/cusom_text_fiield.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../routes/app_routes.dart';
 
-
 class ProviderSignUp extends StatefulWidget {
   const ProviderSignUp({super.key});
 
@@ -21,15 +23,20 @@ class ProviderSignUp extends StatefulWidget {
 }
 
 class _ProviderSignUpState extends State<ProviderSignUp> {
-
   final icons = Assets.icons;
 
+  /// finds controller
+  final signUpController = Get.find<UserSignupController>();
+
+  /// by default role for
+  final String role = "Provider";
 
   final TextEditingController nameTEController = TextEditingController();
   final TextEditingController emailTEController = TextEditingController();
   final TextEditingController phoneTEController = TextEditingController();
   final TextEditingController passwordTEController = TextEditingController();
-  final TextEditingController confirmConfirmTEController = TextEditingController();
+  final TextEditingController confirmPasswordTEController =
+      TextEditingController();
 
   final List<String> _serviceList = [
     "Ski Pass",
@@ -41,8 +48,20 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
 
   String? _selectedService;
   bool _isAgreed = false;
+  String? _phoneNumber;
+  bool _isPhoneValid = false;
 
-  final _formKey=GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    nameTEController.dispose();
+    emailTEController.dispose();
+    phoneTEController.dispose();
+    passwordTEController.dispose();
+    confirmPasswordTEController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,153 +70,183 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
       appBar: AppBarWithTitle(
         icons: icons,
         title: "Personal Info",
-        onTap: () {},
+        onTap: () => Get.back(),
       ),
-
       body: SafeArea(
-
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-
-                  /// --- Profile Photo Section ---
-                  Text("Add a Profile Photo", style: AppTextStyle.c_regular_12()),
-                  SizedBox(height: 8.h),
-                  Container(
-                    height: 54.h,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(Icons.upload, size: 25, color: AppColors.black_2),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    "Clear, professional photos help customers trust your service",
-                    style: AppTextStyle.c_regular_12(),
-                  ),
-                  SizedBox(height: 10.h), // Separator
+                  SizedBox(height: 24.h),
 
                   /// --- Full Name ---
-                  buildLabel("Full Name"),
-                  SizedBox(height: 14.h),
-                  textFormField(hint: "Name", controller: nameTEController, type: TextInputType.name),
-                  SizedBox(height: 10.h),
+                  _buildLabel("Full Name"),
+                  SizedBox(height: 8.h),
+                  _buildTextFormField(
+                    hint: "Enter your full name",
+                    controller: nameTEController,
+                    type: TextInputType.name,
+                    prefixIcon: Icons.person_outline,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Please enter your full name";
+                      }
+                      if (value.trim().length < 3) {
+                        return "Name must be at least 3 characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.h),
 
-                  ///--- Email ---
-                  buildLabel("Email Address"),
-                  SizedBox(height: 14.h),
-                  textFormField(hint: "Email", controller: emailTEController, type: TextInputType.emailAddress),
-                  SizedBox(height: 10.h),
+                  /// --- Email ---
+                  _buildLabel("Email Address"),
+                  SizedBox(height: 8.h),
+                  _buildTextFormField(
+                    hint: "Enter your email",
+                    controller: emailTEController,
+                    type: TextInputType.emailAddress,
+                    prefixIcon: Icons.email_outlined,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return "Please enter your email";
+                      }
+                      final emailRegex = RegExp(
+                        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+                      );
+                      if (!emailRegex.hasMatch(value)) {
+                        return "Please enter a valid email";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.h),
 
                   /// --- Phone ---
-                  buildLabel("Phone"),
-                  SizedBox(height: 14.h),
-                  textFormField(hint: "Phone", controller: phoneTEController, type: TextInputType.phone),
-                  SizedBox(height: 10.h),
-
-                  /// --- Service Type ---
-                  buildLabel("Service Type"),
-                  SizedBox(height: 14.h),
-                  Container(
-                    height: 40.h,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.black_3),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: DropdownButton<String>(
-                      value: _selectedService,
-                      hint: const Text("Select One"),
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      dropdownColor: const Color(0xFFFFFAFA),
-                      items: _serviceList.map((service) {
-                        return DropdownMenuItem(
-                          value: service,
-                          child: Text(service, style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedService = value;
-                        });
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-
-                  /// --- New Password ---
-                  buildLabel("New Password"),
-                  SizedBox(height: 14.h),
-                  SizedBox(
-                    height: 50,
-                    child: CustomTextField(
-
-                      hintText: "Password",
-                      controller: passwordTEController,
-                      isPassword: true,
-                      prefixIcon: Icons.lock,
-                      filledColor: Colors.transparent,
-                      borderColors: AppColors.black_2,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-
-                  /// --- Confirm Password ---
-                  buildLabel("Confirm Password"),
-                  SizedBox(height: 14.h),
-                  SizedBox(
-                    height: 50,
-                    child: CustomTextField(
-                      hintText: "Confirm Password",
-                      controller: confirmConfirmTEController,
-                      isPassword: true,
-                      prefixIcon: Icons.lock,
-                      filledColor: Colors.transparent,
-                      borderColors: AppColors.black_2,
-                    ),
-                  ),
-                  SizedBox(height: 10.h),
-
-                  /// --- Checkbox Row ---
-                  Row(
-                    children: [
-                      Checkbox(
-                        activeColor: AppColors.primary_1,
-                        value: _isAgreed,
-                        onChanged: (value) {
-                          setState(() {
-                            _isAgreed = value!;
-                          });
-                        },
+                  _buildLabel("Phone Number"),
+                  SizedBox(height: 8.h),
+                  IntlPhoneField(
+                    controller: phoneTEController,
+                    decoration: InputDecoration(
+                      hintText: 'Enter phone number',
+                      hintStyle: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 14.sp,
                       ),
-                      SizedBox(width: 5.w),
-                      Expanded(
-                        child: Text(
-                          "Agree terms and conditions",
-                          style: AppTextStyle.c_regular_12(),
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: 12.h,
+                        horizontal: 16.w,
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(
+                          color: AppColors.primary_1,
+                          width: 2,
                         ),
                       ),
-                    ],
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(color: Colors.red.shade400),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                        borderSide: BorderSide(
+                          color: Colors.red.shade400,
+                          width: 2,
+                        ),
+                      ),
+                      errorStyle: TextStyle(fontSize: 12.sp, height: 0.8),
+                    ),
+                    initialCountryCode: 'US',
+                    dropdownTextStyle: TextStyle(fontSize: 14.sp),
+                    style: TextStyle(fontSize: 14.sp),
+                    onChanged: (phone) {
+                      _phoneNumber = phone.completeNumber;
+                      _isPhoneValid = phone.isValidNumber();
+                    },
+                    validator: (phone) {
+                      if (phone == null || phone.number.isEmpty) {
+                        return "Please enter your phone number";
+                      }
+                      if (!_isPhoneValid) {
+                        return "Please enter a valid phone number";
+                      }
+                      return null;
+                    },
                   ),
-                  SizedBox(height: 14.h),
+                  SizedBox(height: 16.h),
+
+                  /// --- Service Type ---
+                  _buildLabel("Service Type"),
+                  SizedBox(height: 8.h),
+                  _buildServiceDropdown(),
+                  SizedBox(height: 16.h),
+
+                  /// --- New Password ---
+                  _buildLabel("Password"),
+                  SizedBox(height: 8.h),
+                  _buildPasswordField(
+                    hintText: "Enter password",
+                    controller: passwordTEController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Please enter a password";
+                      }
+                      if (value.length < 6) {
+                        return "Password must be at least 6 characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 16.h),
+
+                  /// --- Confirm Password ---
+                  _buildLabel("Confirm Password"),
+                  SizedBox(height: 8.h),
+                  _buildPasswordField(
+                    hintText: "Re-enter password",
+                    controller: confirmPasswordTEController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Please confirm your password";
+                      }
+                      if (value != passwordTEController.text) {
+                        return "Passwords do not match";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 20.h),
+
+                  /// --- Checkbox Row ---
+                  _buildTermsCheckbox(),
+                  SizedBox(height: 24.h),
 
                   /// --- Submit Button ---
-                  CustomButton(
-                    width: double.infinity,
-                    onTap: _handleSubmit,
-                    text: "Submit",
-                    backgroundColor: AppColors.primary_1,
-                  ),
-                  SizedBox(height: 30.h),
+                  GetBuilder<UserSignupController>(builder: (controller){
+                    return controller.signupProgress ?Center(child: CircularProgressIndicator(color: AppColors.primary_1,)): CustomButton(
+                      width: double.infinity,
+                      onTap: _handleSubmit,
+                      text: "Create Account",
+                      backgroundColor: AppColors.primary_1,
+                    );
+
+                  }),
+                  SizedBox(height: 40.h),
                 ],
               ),
             ),
@@ -207,47 +256,316 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
     );
   }
 
-  /// method for style text
-  Widget buildLabel(String text) {
+  /// Build label widget
+  Widget _buildLabel(String text) {
     return Text(
       text,
-      style: AppTextStyle.c_regular_12().copyWith(fontSize: 14),
-    );
-  }
-
-  /// method for make textField
-  SizedBox textFormField({
-    TextInputType? type,
-    required String hint,
-    required TextEditingController controller,
-  }) {
-    return SizedBox(
-      height: 50,
-      child: TextFormField(
-        controller: controller,
-        keyboardType: type ?? TextInputType.text,
-        style: AppTextStyle.c_regular_12(),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppColors.black_2),
-          ),
-        ),
+      style: AppTextStyle.c_regular_12().copyWith(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w600,
+        color: Colors.grey.shade800,
       ),
     );
   }
 
-  /// method for submit handle
-  void _handleSubmit(){
+  /// Build text form field with consistent styling
+  Widget _buildTextFormField({
+    required String hint,
+    required TextEditingController controller,
+    TextInputType? type,
+    IconData? prefixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: type ?? TextInputType.text,
+      style: TextStyle(fontSize: 14.sp, color: Colors.black87),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14.sp),
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: Colors.grey.shade600, size: 20.sp)
+            : null,
+        contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 16.w),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: AppColors.primary_1, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: Colors.red.shade400),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+        ),
+        errorStyle: TextStyle(fontSize: 12.sp, height: 0.8),
+        errorMaxLines: 2,
+      ),
+      validator: validator,
+    );
+  }
 
-    Get.snackbar(" success", "Register success please log in first");
+  /// Build password field
+  Widget _buildPasswordField({
+    required String hintText,
+    required TextEditingController controller,
+    String? Function(String?)? validator,
+  }) {
+    return CustomTextField(
+      hintText: hintText,
+      controller: controller,
+      isPassword: true,
+      prefixIcon: Icons.lock_outline,
+      filledColor: Colors.grey.shade50,
+      borderColors: Colors.grey.shade300,
+      validator: validator,
+    );
+  }
+
+  /// Build service dropdown
+  Widget _buildServiceDropdown() {
+    return FormField<String>(
+      validator: (value) {
+        if (_selectedService == null) {
+          return "Please select a service type";
+        }
+        return null;
+      },
+      builder: (FormFieldState<String> state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 40.h,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: state.hasError
+                      ? Colors.red.shade400
+                      : Colors.grey.shade300,
+                  width: state.hasError ? 1.5 : 1,
+                ),
+                color: Colors.grey.shade50,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedService,
+                  hint: Text(
+                    "Select service type",
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                  isExpanded: true,
+                  icon: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.grey.shade600,
+                  ),
+                  dropdownColor: Colors.white,
+                  items: _serviceList.map((service) {
+                    return DropdownMenuItem(
+                      value: service,
+                      child: Text(
+                        service,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedService = value;
+                    });
+                    state.didChange(value);
+                  },
+                ),
+              ),
+            ),
+            if (state.hasError)
+              Padding(
+                padding: EdgeInsets.only(left: 12.w, top: 8.h),
+                child: Text(
+                  state.errorText!,
+                  style: TextStyle(color: Colors.red.shade400, fontSize: 12.sp),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Build terms checkbox
+  Widget _buildTermsCheckbox() {
+    return FormField<bool>(
+      validator: (value) {
+        if (!_isAgreed) {
+          return "You must agree to the terms and conditions";
+        }
+        return null;
+      },
+      builder: (FormFieldState<bool> state) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 24.h,
+                  width: 24.w,
+                  child: Checkbox(
+                    activeColor: AppColors.primary_1,
+                    value: _isAgreed,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    side: BorderSide(
+                      color: state.hasError
+                          ? Colors.red.shade400
+                          : Colors.grey.shade400,
+                      width: 2,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _isAgreed = value!;
+                      });
+                      state.didChange(value);
+                    },
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isAgreed = !_isAgreed;
+                      });
+                      state.didChange(_isAgreed);
+                    },
+                    child: Text(
+                      "I agree to the Terms and Conditions and Privacy Policy",
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.grey.shade700,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (state.hasError)
+              Padding(
+                padding: EdgeInsets.only(left: 36.w, top: 4.h),
+                child: Text(
+                  state.errorText!,
+                  style: TextStyle(color: Colors.red.shade400, fontSize: 12.sp),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Handle form submission
+  void _handleSubmit() async {
+
+    // Hide the keyboard
+    FocusScope.of(context).unfocus();
+
+    if (_formKey.currentState!.validate()) {
+      // All validations passed
+      String type;
+
+      if (_selectedService == "Ski Hire") {
+        type = "Ski_Hire";
+      } else if (_selectedService == "Ski Pass") {
+        type = "Ski_Pass";
+      } else {
+        type = _selectedService!;
+      }
+
+      String name = nameTEController.text.trim();
+      String email = emailTEController.text.trim();
+      String phoneNumber = phoneTEController.text.trim();
+      String password = passwordTEController.text;
+      String confirmPassword = confirmPasswordTEController.text;
+
+      /// call the api for create account
+
+      SignupRequestModel model = SignupRequestModel(
+        fullName: name,
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
+        role: role,
+        providerType: type,
+        phoneNumber: phoneNumber
+
+      );
+
+      bool success = await signUpController.signup(model);
+
+      if (success) {
+        Get.snackbar(
+          "Success",
+          "Registration successful! An OTP has been sent to your phone/email for verification.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          duration: Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
+
+        Get.offAllNamed(  Routes.otpVerify,
+            arguments: {
+              "isFromSignUp" : true,
+              "email" : email,
+            }
+            );
 
 
-    /// go to login screen
-    Get.offAllNamed(Routes.login);
+      } else {
+        Get.snackbar(
+          "Error",
+          signUpController.errorMessage!,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green.shade100,
+          colorText: Colors.green.shade900,
+          duration: Duration(seconds: 3),
+          margin: EdgeInsets.all(16.w),
+        );
 
 
+      }
+    } else {
+      // Show error message
+      Get.snackbar(
+        "Validation Error",
+        "Please fill in all required fields correctly",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+        duration: Duration(seconds: 3),
+        margin: EdgeInsets.all(16.w),
+      );
+    }
   }
 }

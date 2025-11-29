@@ -6,6 +6,7 @@ class UserModel {
   final String phone;
   final String address;
   final String profilePic;
+  final String ? providerType;
 
   UserModel({
     required this.id,
@@ -14,7 +15,8 @@ class UserModel {
     required this.role,
     required this.phone,
     required this.address,
-    required this.profilePic
+    required this.profilePic,
+     this.providerType
   });
 
   /// Factory constructor to create a UserModel from JSON
@@ -27,7 +29,8 @@ class UserModel {
       phone: json["phoneNumber"] ?? "N/A",
       address: json["address"] ?? "N/A",
     //  profilePic: json["profileUrl"] ??"assets/images/profile_img.jpg"
-      profilePic: json["profileUrl"] ?? ""
+      profilePic: json["profileUrl"] ?? "",
+      providerType: json["providerType"]
     );
   }
 
@@ -40,7 +43,12 @@ class UserModel {
       "role": role,
       "phoneNumber": phone,
       "address": address,
-      "profileUrl" : profilePic
+      "profileUrl" : profilePic,
+      // Only include providerType if not null
+      if (providerType != null)...{
+        "providerType": providerType
+      },
+      // Only send providerType if it exists
     };
   }
 }

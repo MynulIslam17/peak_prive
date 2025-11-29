@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    if (authController.role == "provider") { /// if login then check the role then based on the role shows page
+    if (authController.role == "Provider") { /// if login then check the role then based on the role shows page
       Get.offAllNamed(Routes.providerNavScreen);
     } else {
       Get.offAllNamed(Routes.service);
