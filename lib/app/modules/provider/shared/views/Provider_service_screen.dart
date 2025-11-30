@@ -1,14 +1,14 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/my_service_card.dart';
-
-import '../../../../../gen/assets.gen.dart';
-import '../../../../core/widgets/provider_profile.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_service_shimmer.dart';
 import '../../../../routes/app_routes.dart';
+import '../controllers/provider_all_service_controller.dart';
 
 class ProviderServiceScreen extends StatefulWidget {
   const ProviderServiceScreen({super.key});
@@ -18,121 +18,136 @@ class ProviderServiceScreen extends StatefulWidget {
 }
 
 class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
+  final authController = Get.find<AuthController>();
+  final skiPassController = Get.put(SkiPassController());
 
-  final images=Assets.images;
-  final icons=Assets.icons;
+  @override
+  void initState() {
+    super.initState();
+    // Fetch ski passes on screen load
+    skiPassController.fetchSkiPassData();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
+        child: GetBuilder<SkiPassController>(
+          builder: (controller) {
+            // Show shimmer fullscreen while loading
+            if (controller.isLoading) {
+              return const ProviderServiceShimmer();
+            }
 
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24,vertical: 20),
-            child: Column(
-              children: [
-          
-          
-                /// provider profile
-                // ProviderProfile(
-                //   image: images.user2,
-                //   name: "Azaan Mahmud",
-                //   role: "Ski Pass Provider",
-                //   icon: icons.notificaton,
-                //   onTap: () {  },
-                // ),
-          
-                SizedBox(height: 24,),
-          
-                ///my service
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    
-                    Text("My service",style: AppTextStyle.sub_h2_medium_16(),),
-          
-          
-          
-                    InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () {
+            // After loading ends
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                children: [
+                  /// Provider profile
+                  ProviderProfile(
+                    imageUrl: authController.userModel?.profilePic ?? '',
+                    role: "${authController.userModel?.providerType ?? ""} Provider",
+                    name: authController.userModel?.fullName ?? "",
+                    onTap: () {
+                      Get.toNamed(Routes.providerProfileScreen);
+                    },
+                    icon: Icon(
+                      Icons.notifications,
+                      color: Colors.red,
+                      size: 30,
+                    ),
+                    onIconTap: () => print("Icon tapped!"),
+                  ),
 
-                        /// go for add ing new pass
+                  SizedBox(height: 24.h),
 
-                        Get.toNamed(Routes.addRestaurantService);
-
-                      },
-                      splashColor: Colors.white24,
-                      child: Ink(
-                        decoration: BoxDecoration(
-                          color: AppColors.primary_1,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add, color: Colors.white,size: 15,),
-                            SizedBox(width: 4),
-                            Text(
-                              "Add",
-                              style: AppTextStyle.p_medium_12(color: Colors.white),
-                            ),
-                          ],
+                  /// My service title with Add button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("My service", style: AppTextStyle.sub_h2_medium_16()),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => Get.toNamed(Routes.addRestaurantService),
+                        splashColor: Colors.white24,
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary_1,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add, color: Colors.white, size: 15),
+                              SizedBox(width: 4.w),
+                              Text(
+                                "Add",
+                                style: AppTextStyle.p_medium_12(color: Colors.white),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    )
-          
-          
-          
-          
-          
-                  ],
-                ), /// service titile
-          
-                SizedBox(height: 17,),
-          
-          
-                ListView.builder(
-          
-                  shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-          
-                    itemCount: 4,
-                    scrollDirection: Axis.vertical,
-                    itemBuilder: (context,index){
-          
-                      return    Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: MyServiceCard(
-                          image: "",
-                          title: "Season Best Ski Pass",
-                          price: "\$12/Day",
-                          rating: 4.9,
-                          reviews: 150,
-                          location: "Bymountain",
-                          packageType: "Basic", // optional
-                          onDelete: () => print("Delete clicked"),
-                          onEdit: () => print("Edit clicked"),
-                        ),
-                      );
-          
-          
-                    }),
-          
-          
-          
-          
-          
-              ],
-            ),
-          ),
+                    ],
+                  ),
+
+                  SizedBox(height: 17.h),
+
+                  /// Ski Pass List or "No services found"
+                  Expanded(
+                    child: Builder(
+                      builder: (_) {
+                        if (controller.errorMessage != null) {
+                          return Center(
+                            child: Text(
+                              controller.errorMessage!,
+                              style: AppTextStyle.sub_h3_medium_14(),
+                            ),
+                          );
+                        }
+
+                        if (controller.skiPassList.isEmpty) {
+                          return Center(
+                            child: Text(
+                              "No services found.",
+                              style: AppTextStyle.sub_h3_medium_14(),
+                            ),
+                          );
+                        }
+
+                        // List of ski passes
+                        return ListView.builder(
+                          itemCount: controller.skiPassList.length,
+                          itemBuilder: (context, index) {
+                            final pass = controller.skiPassList[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: MyServiceCard(
+                                image: pass.thumbnail,
+                                title: pass.title,
+                                price: "\$${pass.amount}/Day",
+                                rating: pass.averageRating.toDouble(),
+                                reviews: pass.reviews.length,
+                                location: pass.serviceArea,
+                                packageType: pass.skiPassType,
+                                onDelete: () => print("Delete ${pass.title}"),
+                                onEdit: () => print("Edit ${pass.title}"),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
-
     );
   }
 }

@@ -37,10 +37,8 @@ class ProviderHomeController extends GetxController {
       await Get.find<NetworkCaller>().getRequest(url: AppUrls.providerHome);
 
       // Check if API response is valid
-      if (response.statusCode == 200 &&
-          response.body != null &&
-          response.body!["data"] != null) {
-        final data = response.body!["data"];
+      if (response.statusCode == 200) {
+        final data = response.body!["data"]!;
         providerHome = ProviderHomeModel.fromJson(data); // Parse JSON
         return true;
       } else {

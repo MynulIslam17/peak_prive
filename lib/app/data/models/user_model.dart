@@ -6,7 +6,8 @@ class UserModel {
   final String phone;
   final String address;
   final String profilePic;
-  final String ? providerType;
+  final String? providerType;
+  String? token; // Store accessToken here
 
   UserModel({
     required this.id,
@@ -16,10 +17,11 @@ class UserModel {
     required this.phone,
     required this.address,
     required this.profilePic,
-     this.providerType
+    this.providerType,
+    this.token,
   });
 
-  /// Factory constructor to create a UserModel from JSON
+  /// Create UserModel from JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json["_id"] ?? "",
@@ -28,13 +30,13 @@ class UserModel {
       role: json["role"] ?? "N/A",
       phone: json["phoneNumber"] ?? "N/A",
       address: json["address"] ?? "N/A",
-    //  profilePic: json["profileUrl"] ??"assets/images/profile_img.jpg"
       profilePic: json["profileUrl"] ?? "",
-      providerType: json["providerType"]
+      providerType: json["providerType"],
+      token: json["token"], // optional, might be null
     );
   }
 
-  /// Convert the UserModel back to JSON
+  /// Convert UserModel to JSON
   Map<String, dynamic> toJson() {
     return {
       "_id": id,
@@ -43,12 +45,9 @@ class UserModel {
       "role": role,
       "phoneNumber": phone,
       "address": address,
-      "profileUrl" : profilePic,
-      // Only include providerType if not null
-      if (providerType != null)...{
-        "providerType": providerType
-      },
-      // Only send providerType if it exists
+      "profileUrl": profilePic,
+      if (providerType != null) "providerType": providerType,
+      if (token != null) "token": token,
     };
   }
 }

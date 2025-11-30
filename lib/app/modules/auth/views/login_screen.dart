@@ -53,10 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// click event on login
 
   void _handleLogin() async {
-
-    /// hide the keyboard
     FocusScope.of(context).unfocus();
-
 
     if (_formKey.currentState!.validate()) {
       String email = emailTEController.text.trim();
@@ -67,28 +64,20 @@ class _LoginScreenState extends State<LoginScreen> {
       bool isSuccess = await loginController.login(model);
 
       if (isSuccess) {
-        Get.snackbar(
-          "Success",
-          "Login successful",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: AppColors.primary_1,
-        );
 
-        /// Save user data + token
-        authController.saveUserData(
-          model: loginController.getUserModel!,
-          token: loginController.getAccessToken!,
-        );
+        // Get.snackbar(
+        //   "Success",
+        //   "Login successful",
+        //   snackPosition: SnackPosition.TOP,
+        //   backgroundColor: AppColors.primary_1,
+        // );
 
-        // Navigate based on role
         final role = loginController.getUserModel!.role;
-
         if (role == "User") {
           Get.offAllNamed(Routes.service);
         } else {
           Get.offAllNamed(Routes.providerNavScreen);
         }
-
       } else {
         Get.snackbar(
           "Failed",
@@ -99,6 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
 
   /// forget pass  text button

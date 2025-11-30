@@ -10,6 +10,7 @@ import 'package:harry_service_app/app/core/widgets/provider_booking_card.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/controllers/auth_controller.dart';
 import '../../../../core/widgets/my_service_card.dart';
 import '../../../../data/models/booking_details_model.dart';
 import '../../../../routes/app_routes.dart';
@@ -29,6 +30,10 @@ class ProviderBookingRequestScreen extends StatefulWidget {
 
   final _searchTEController=TextEditingController();
 
+  /// finds controller
+
+  final authController = Get.find<AuthController>();
+
    @override
    Widget build(BuildContext context) {
 
@@ -45,33 +50,32 @@ class ProviderBookingRequestScreen extends StatefulWidget {
            
            
                  /// provider profile
-               // ProviderProfile(image: images.user2, name: "Azaan Mahmud", role: "Ski Pass Provider",icon: icons.notificaton, onTap: () {  },),
-           
-                 SizedBox(height: 18,),
-           
-           
-                 /// search bar
-           
-                 CustomSearchBar(controller: _searchTEController,
-                 filledColor: Colors.grey.shade100,
-                 onChanged: (value){
-                   setState(() {
-           
-                   });
-                 },
-           
-                   onClear: (){
-           
-                   _searchTEController.clear();
-                   setState(() {
-           
-                   });
+
+                 ProviderProfile(
+                   imageUrl: authController.userModel!.profilePic ?? '',
+                   role:
+                   "${authController.userModel!.providerType ?? ""} Provider",
+                   name: authController.userModel!.fullName ?? "",
+                   onTap: () {
+                     Get.toNamed(Routes.providerProfileScreen);
                    },
-           
-           
+                   icon: Icon(
+                     Icons.notifications,
+                     color: Colors.red,
+                     size: 30,
+                   ),
+                   onIconTap: () {
+
+                     print("Icon tapped!");
+                   },
+
                  ),
            
-                 SizedBox(height: 20,),
+                 SizedBox(height: 18,),
+
+
+           
+
            
            
                 /// all booking list

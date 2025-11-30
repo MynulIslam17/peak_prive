@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
@@ -11,8 +10,8 @@ import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_hom
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/widgets/dynamic_booking_card.dart';
 import '../../../../core/widgets/my_service_card.dart';
-import '../../../../core/widgets/provider_booking_card.dart';
 import '../../../../core/widgets/provider_profile.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -24,52 +23,40 @@ class ProviderHomeScreen extends StatefulWidget {
 }
 
 class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
-  /// find controller
   final authController = Get.find<AuthController>();
   final homeController = Get.find<ProviderHomeController>();
 
   final images = Assets.images;
   final icons = Assets.icons;
 
-  final List<Map<String, dynamic>> _requestPending = [
-    {"Today booking": 06},
-    {"Booking request": 33},
-    {"Amount": "20K"},
-  ];
-
   @override
   void initState() {
-    // TODO: implement initState
-
-    ///call the method for fetch home data
+    super.initState();
 
     _fetchData();
-
-    super.initState();
   }
 
   Future<void> _fetchData() async {
-    bool success = await homeController.fetchProviderHomeData();
+    await homeController.fetchProviderHomeData();
+
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: GetBuilder<ProviderHomeController>(
           builder: (controller) {
-            // Show shimmer while loading
-            if (controller.isLoading) {
+            if (authController.userModel == null || controller.isLoading) {
               return ProviderHomeShimmer();
             }
 
             if (controller.providerHome == null) {
-              return Center(child: Text("Not Data Found"));
+
+              return const Center(child: Text("No Data Found"));
             }
 
-            /// get stats map
             final providerStats = controller.providerHome!.stats;
             final statsMap = {
               "Today booking": providerStats.todayBookingCount,
@@ -77,10 +64,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
               "Amount": providerStats.totalBalance,
             };
 
-            // Use recent services from model
             final recentServices = controller.providerHome!.recentServices;
-
-            // Use recent bookings from model
             final recentBookings = controller.providerHome!.recentBookings;
 
             return SingleChildScrollView(
@@ -88,33 +72,39 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Column(
                   children: [
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                    /// profile section
+                    // Profile
                     ProviderProfile(
-                      imageUrl:
-                          authController.userModel!.profilePic ??
-                          '', // network URL
+                      imageUrl: authController.userModel!.profilePic ?? '',
                       role:
-                          "${authController.userModel!.providerType!} Provider",
+                      "${authController.userModel!.providerType ?? ""} Provider",
                       name: authController.userModel!.fullName ?? "",
                       onTap: () {
                         Get.toNamed(Routes.providerProfileScreen);
                       },
+                      icon: Icon(
+                        Icons.notifications,
+                        color: Colors.red,
+                        size: 30,
+                      ),
+                      onIconTap: () {
+
+                        print("Icon tapped!");
+                      },
+
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                    ///pending service booking request section
+                    // Stats Cards
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween, // evenly spaced
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: statsMap.entries.map((entry) {
                         final title = entry.key;
                         final value = entry.value;
 
                         return Expanded(
-                          /// makes all cards equal width
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             height: 85,
@@ -132,24 +122,24 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 FittedBox(
                                   child: Text(
-                                    "$title",
+                                    title,
                                     textAlign: TextAlign.center,
                                     style: AppTextStyle.sub_h2_medium_16()
                                         .copyWith(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade700,
-                                        ),
+                                      fontSize: 11,
+                                      color: Colors.grey.shade700,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   "$value",
                                   textAlign: TextAlign.center,
-                                  style: AppTextStyle.h3_semibold_20().copyWith(
+                                  style: AppTextStyle.h3_semibold_20()
+                                      .copyWith(
                                     color: AppColors.primary_1,
                                     fontSize: 17,
                                   ),
@@ -161,16 +151,16 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                       }).toList(),
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                    /// my service
+                    // My Services Section
                     CategoryTitle(
                       title: "My service",
                       text: "See All",
                       onClick: () {},
                     ),
 
-                    SizedBox(height: 11),
+                    const SizedBox(height: 11),
 
                     SizedBox(
                       height: 255,
@@ -178,18 +168,19 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                         scrollDirection: Axis.horizontal,
                         itemCount: recentServices.length,
                         itemBuilder: (context, index) {
+
                           final service = recentServices[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
                             child: SizedBox(
                               width: 300,
                               child: MyServiceCard(
-                                image: service.thumbnail, // thumbnail from model
-                                title: service.title,
-                                price: "\$${service.totalPrice}", // convert to string
-                                rating: service.averageRating.toDouble(),
-                                reviews: service.reviews.length,
-                                location: service.serviceArea,
+                                image: service.thumbnail, // service thumbnail
+                                title: service.title, // service title
+                                price: "\$${service.totalPrice}", // service amount/price
+                                rating: service.averageRating.toDouble(), // rating
+                                reviews: service.reviews.length, // number of reviews
+                                location: service.serviceArea, // location/service area
                                 onDelete: () {},
                                 onEdit: () {},
                                 packageType: "Premium",
@@ -198,35 +189,76 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                           );
                         },
                       ),
+
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                    /// My booking
+                    // Booking Management Section
                     CategoryTitle(
                       title: "Booking management",
                       text: "See All",
                       onClick: () {},
                     ),
 
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: recentBookings.length,
-                      itemBuilder: (context, index) {
-                        final booking = recentBookings[index];
-                        return ProviderBookingCard(
-                          image: booking.product!.thumbnail, // you can decide what to show as image
-                          onTap: () {},
-                        );
-                      },
-                    ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: recentBookings.length,
+                  itemBuilder: (context, index) {
+                    final booking = recentBookings[index];
+                    final product = booking.product;
+                    final providerType=authController.userModel!.providerType;
+
+
+                    if (product == null) return const SizedBox();
+
+                    if(providerType=="Ski_Pass"){
+                      return ServiceInfoCard(
+                        imageUrl: product.thumbnail ?? '',
+                        title1: "Title",
+                        value1: product.title ?? '',
+                        icon1Path: "assets/icons/info.svg",
+
+                        title2: "SkiPass Type",
+                        value2: product.skiPassType ?? '-',
+                        icon2Path: "assets/icons/badge.svg",
+
+                        title3: "Total Amount",
+                        value3: (booking.totalPrice ?? product.totalPrice ?? 0).toString(),
+                        icon3Path: "assets/icons/amount.svg",
+
+                        title4: "Location",
+                        value4: product.serviceArea ?? '-',
+                        icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                      );
+                    }else {
+                      return ServiceInfoCard(
+                        imageUrl: product.thumbnail ?? '',
+                        title1: "Title",
+                        value1: product.title ?? '',
+                        icon1Path: "assets/icons/info.svg",
+
+                        title2: "Duration",
+                        value2: booking.duration ?? '-',
+                        icon2Path: "assets/icons/time.svg",
+
+                        title3: "Total Amount",
+                        value3: (booking.totalPrice ?? product.totalPrice ?? 0).toString(),
+                        icon3Path: "assets/icons/amount.svg",
+
+                        title4: "Location",
+                        value4: product.serviceArea ?? '-',
+                        icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                      );
+                    }
 
 
 
+                  },
+                )
 
-
-                  ],
+                ],
                 ),
               ),
             );

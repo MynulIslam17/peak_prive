@@ -150,6 +150,8 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
    static String providerHome="$baseUrl/dashboard/meta/provider";
+   static String providerServiceUrl="$baseUrl/ski-pass/my-all";
+   static String providerBookingUrl="$baseUrl/booking/all";
 
 
 
