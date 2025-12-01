@@ -8,6 +8,7 @@ import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/my_service_card.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_service_shimmer.dart';
 import '../../../../routes/app_routes.dart';
+import '../../pass/views/add_pass_screen.dart';
 import '../controllers/provider_all_service_controller.dart';
 
 class ProviderServiceScreen extends StatefulWidget {
@@ -20,6 +21,42 @@ class ProviderServiceScreen extends StatefulWidget {
 class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final authController = Get.find<AuthController>();
   final skiPassController = Get.put(SkiPassController());
+
+  void _createNewService() {
+    final providerType = authController.userModel!.providerType;
+
+    if (providerType == "Ski_Pass") {
+      _navigateToAddPass();
+    } else if (providerType == "Transport") {
+      Get.toNamed(Routes.transportDetails);
+    } else if (providerType == "Restaurant") {
+      Get.toNamed(Routes.addRestaurantService);
+    } else if (providerType == "Massage") {
+      Get.toNamed(Routes.addMessageService);
+    } else {
+      Get.toNamed(Routes.addMessageService);
+    }
+  }
+
+  /// Navigate to AddPassScreen and refresh data on return
+  Future<void> _navigateToAddPass() async {
+
+    final result = await Get.to(() => const AddPassScreen());
+
+    // If result is true, refresh the ski pass list
+    if (result == true) {
+      await _refreshSkiPassList();
+    }
+
+
+
+  }
+
+  /// Refresh ski pass list
+  Future<void> _refreshSkiPassList() async {
+    // Call the refresh method from controller
+    await skiPassController.refreshData();
+  }
 
   @override
   void initState() {
@@ -70,7 +107,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                       Text("My service", style: AppTextStyle.sub_h2_medium_16()),
                       InkWell(
                         borderRadius: BorderRadius.circular(8),
-                        onTap: () => Get.toNamed(Routes.addRestaurantService),
+                        onTap: _createNewService,
                         splashColor: Colors.white24,
                         child: Ink(
                           decoration: BoxDecoration(

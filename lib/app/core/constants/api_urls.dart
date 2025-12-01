@@ -149,13 +149,13 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 /// ======================= home ==================================
 
 
-   static String providerHome="$baseUrl/dashboard/meta/provider";
+   static String providerHome="$baseUrl/dashboard/meta/provider"; /// home
    static String providerServiceUrl="$baseUrl/ski-pass/my-all";
    static String providerBookingUrl="$baseUrl/booking/all";
 
 
-
-
+/// ==============pass create url=================
+  static String providerPassCreateUrl="$baseUrl/ski-pass/create";
 
 
 
