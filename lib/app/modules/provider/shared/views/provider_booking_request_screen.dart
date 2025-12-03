@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/provider_booking_card.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_booking_shimmer.dart';
+import 'package:harry_service_app/app/modules/provider/shared/controllers/all_booking_controller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_all_booking_controller.dart';
 
 import '../../../../../gen/assets.gen.dart';
@@ -38,13 +39,14 @@ class ProviderBookingRequestScreen extends StatefulWidget {
   /// finds controller
 
   final authController = Get.find<AuthController>();
-  final  bookingController=Get.put(ProviderBookingController());
+ // final  bookingController=Get.put(ProviderBookingController());
+  final  allBookingController=Get.put(BookingController());
 
 
   @override
   void initState() {
     // TODO: implement initState
-    bookingController.fetchProviderBookings();
+     allBookingController.fetchBookings();
     super.initState();
   }
 
@@ -58,7 +60,7 @@ class ProviderBookingRequestScreen extends StatefulWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: GetBuilder<ProviderBookingController>(builder: (controller){
+        child: GetBuilder<BookingController>(builder: (controller){
         
           if(controller.isLoading){
             return BookingItemShimmer();
@@ -92,20 +94,20 @@ class ProviderBookingRequestScreen extends StatefulWidget {
                   const SizedBox(height: 15),
           
                   /// Booking list
-                  GetBuilder<ProviderBookingController>(
+                  GetBuilder<BookingController>(
                     builder: (controller) {
 
                       // Determine which list to use based on provider type
-                      final isSkiPass = authController.userModel!.providerType == "SkiPass";
+                      final isSkiPass = authController.userModel!.providerType == "Ski_Pass";
                       final isRestaurant = authController.userModel!.providerType == "Restaurant";
 
-                      final bookings = isSkiPass
-                          ? controller.bookingResultsList
-                          : isRestaurant
-                          ? controller.restaurantList
-                          : controller.bookingResultsList; // fallback
+                      // final bookings = isSkiPass
+                      //     ? controller.bookingResultsList
+                      //     : isRestaurant
+                      //     ? controller.restaurantList
+                      //     : controller.bookingResultsList; // fallback
 
-                      if (bookings.isEmpty) {
+                      if (controller.bookings.isEmpty) {
                         return Center(
                           child: Text(controller.errorMessage ?? "No bookings found."),
                         );
@@ -117,16 +119,16 @@ class ProviderBookingRequestScreen extends StatefulWidget {
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
-                          itemCount: bookings.length,
+                          itemCount: controller.bookings.length,
                           itemBuilder: (context, index) {
-                            final booking = bookings[index]as Result;
-                            final user = booking.user;
-                            final product = booking.product;
+
+                            final result=controller.bookings[index];
+                            final product=result.product;
 
                             if (product == null) return const SizedBox.shrink();
 
                             return ServiceInfoCard(
-                              imageUrl: product.thumbnail ?? '',
+                              imageUrl:product.thumbnail?? "",
                               title1: "Title",
                               value1: product.title ?? '',
                               icon1Path: "assets/icons/info.svg",
@@ -134,10 +136,10 @@ class ProviderBookingRequestScreen extends StatefulWidget {
                               value2:  product.skiPassType?? '-',
                               icon2Path: "assets/icons/badge.svg",
                               title3: "Total Amount",
-                              value3: (booking.totalPrice ?? 0).toString(),
+                              value3: result.totalPrice.toString(),
                               icon3Path: "assets/icons/amount.svg",
                               title4: "Location",
-                              value4: user!.address?? '-',
+                              value4: product.serviceArea?? '-',
                               icon4Path: "assets/icons/MapPinSimpleArea.svg",
                             );
                           },
@@ -147,62 +149,72 @@ class ProviderBookingRequestScreen extends StatefulWidget {
                         return ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
-                          itemCount: bookings.length,
+                          itemCount: controller.bookings.length,
                           itemBuilder: (context, index) {
-                            final booking = bookings[index] as RestaurantResult;
-                            final user = booking.user;
+                            final result = controller.bookings[index];
+                            final product = result.product;
 
-                            final product = booking.product;
+                            if (product == null || result.bookingItems.isEmpty || result.slots.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
 
-                            if (product == null) return const SizedBox.shrink();
+                            final bookingItem = result.bookingItems[0];
+                            final slot = result.slots[0];
 
                             return ServiceInfoCard(
                               imageUrl: product.thumbnail ?? '',
-                              title1: "Title",
-                              value1: product.title ?? '',
-                              icon1Path: "assets/icons/info.svg",
-                              title2: "Name",//"Seat Type",
-                              value2: user!.fullName ?? '-',
-                              icon2Path: "assets/icons/badge.svg",
-                              title3: "Total Amount",
-                              value3: (booking.totalPrice ?? 0).toString(),
-                              icon3Path: "assets/icons/amount.svg",
-                              title4: "Address",
-                              value4:  user!.address ?? '-',
-                              icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                            );
-                          },
-                        );
-                      } else{
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: controller.bookingResultsList.length,
-                          itemBuilder: (context, index) {
-                            final booking = controller.bookingResultsList[index];
-                            final user = controller.bookingResultsList[index].user;
-                            final product = booking.product;
-
-                            if (product == null) return const SizedBox.shrink();
-
-                            return ServiceInfoCard(
-                              imageUrl: product.thumbnail ?? '',
-                              title1: "Title",
-                              value1: product.title ?? '',
-                              icon1Path: "assets/icons/info.svg",
-                              title2: "SkiPass Type",
-                              value2:  product.skiPassType?? '-',
-                              icon2Path: "assets/icons/badge.svg",
-                              title3: "Total Amount",
-                              value3: (booking.totalPrice ?? 0).toString(),
-                              icon3Path: "assets/icons/amount.svg",
-                              title4: "Location",
-                              value4: user!.address?? '-',
-                              icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                              title1: "SetType",
+                              value1: bookingItem.itemDetails?.seat ?? '-',
+                              icon1Path: "assets/icons/badge.svg",
+                              title2: "Seat Count",
+                              value2: bookingItem.quantity?.toString() ?? '0',
+                              icon2Path: "assets/icons/user3.svg",
+                              title3: "Slot",
+                              value3: "${slot.startTime ?? '-'}-${slot.endTime ?? '-'}",
+                              icon3Path: "assets/icons/time.svg",
+                              title4: "Total Price",
+                              value4: (result.totalPrice ?? 0).toString(),
+                              icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                             );
                           },
                         );
                       }
+                      else{
+                        return Text("sa");
+                      }
+
+
+
+                      //else{
+                      //   return ListView.builder(
+                      //     shrinkWrap: true,
+                      //     physics: NeverScrollableScrollPhysics(),
+                      //     itemCount: controller.bookingResultsList.length,
+                      //     itemBuilder: (context, index) {
+                      //       final booking = controller.bookingResultsList[index];
+                      //       final user = controller.bookingResultsList[index].user;
+                      //       final product = booking.product;
+                      //
+                      //       if (product == null) return const SizedBox.shrink();
+                      //
+                      //       return ServiceInfoCard(
+                      //         imageUrl: product.thumbnail ?? '',
+                      //         title1: "Title",
+                      //         value1: product.title ?? '',
+                      //         icon1Path: "assets/icons/info.svg",
+                      //         title2: "SkiPass Type",
+                      //         value2:  product.skiPassType?? '-',
+                      //         icon2Path: "assets/icons/badge.svg",
+                      //         title3: "Total Amount",
+                      //         value3: (booking.totalPrice ?? 0).toString(),
+                      //         icon3Path: "assets/icons/amount.svg",
+                      //         title4: "Location",
+                      //         value4: user!.address?? '-',
+                      //         icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                      //       );
+                      //     },
+                      //   );
+                      // }
 
 
 

@@ -162,6 +162,12 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 /// ==============pass create url=================
   static String providerPassCreateUrl="$baseUrl/ski-pass/create";
+  static String providerRestaurantService="$baseUrl/restaurant/my-all";
+
+
+
+
+
 
 
 

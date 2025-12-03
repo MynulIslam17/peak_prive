@@ -8,9 +8,13 @@ import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/my_service_card.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_service_shimmer.dart';
+import 'package:harry_service_app/app/modules/provider/pass/controller/delete_controller.dart';
+import '../../../../core/widgets/delete_dialog.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/views/add_pass_screen.dart';
 import '../controllers/provider_all_service_controller.dart';
+import '../models/provider_resturant_service.dart';
+import '../../../user/shared/models/ski_pass_model.dart' hide SkiPass;
 
 class ProviderServiceScreen extends StatefulWidget {
   const ProviderServiceScreen({super.key});
@@ -21,18 +25,19 @@ class ProviderServiceScreen extends StatefulWidget {
 
 class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final authController = Get.find<AuthController>();
-  final skiPassController = Get.put(AllServiceController());
+  final serviceController = Get.put(AllServiceController());
 
+  /// Navigate based on provider type
   void _createNewService() {
-    final providerType = authController.userModel!.providerType;
+    final providerType = authController.userModel!.providerType?.toLowerCase() ?? '';
 
-    if (providerType == "Ski_Pass") {
+    if (providerType == "ski_pass") {
       _navigateToAddPass();
-    } else if (providerType == "Transport") {
-      Get.toNamed(Routes.transportDetails);
-    } else if (providerType == "Restaurant") {
+    } else if (providerType == "restaurant") {
       Get.toNamed(Routes.addRestaurantService);
-    } else if (providerType == "Massage") {
+    } else if (providerType == "transport") {
+      Get.toNamed(Routes.transportDetails);
+    } else if (providerType == "massage") {
       Get.toNamed(Routes.addMessageService);
     } else {
       Get.toNamed(Routes.addMessageService);
@@ -41,60 +46,80 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
 
   /// Navigate to AddPassScreen and refresh data on return
   Future<void> _navigateToAddPass() async {
-
-    final result = await Get.to(() => const AddPassScreen(),arguments: {
-      "isEdit":false
+    final result = await Get.to(() => const AddPassScreen(), arguments: {
+      "isEdit": false,
     });
 
-    // If result is true, refresh the ski pass list
     if (result == true) {
-      await _refreshSkiPassList();
+      await serviceController.refreshServices();
     }
-
-
-
-  }
-
-  /// Refresh ski pass list
-  Future<void> _refreshSkiPassList() async {
-    // Call the refresh method from controller
-    await skiPassController.refreshData();
   }
 
   @override
   void initState() {
     super.initState();
-    // Fetch ski passes on screen load
-    skiPassController.fetchSkiPassData(
-      AppUrls.providerServiceUrl
-    );
+    final providerType = authController.userModel!.providerType?.toLowerCase() ?? '';
+
+    String url;
+
+    if (providerType == "ski_pass") {
+      url = AppUrls.providerPassService; // example URL for ski pass
+    } else if (providerType == "restaurant") {
+      url = AppUrls.providerRestaurantService;
+    } else {
+      url = AppUrls.providerPassService; // fallback
+    }
+
+    serviceController.fetchServices(url);
   }
 
   @override
   Widget build(BuildContext context) {
+    final providerType = authController.userModel!.providerType?.toLowerCase() ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: GetBuilder<AllServiceController>(
           builder: (controller) {
-            // Show shimmer fullscreen while loading
             if (controller.isLoading) {
               return const ProviderServiceShimmer();
             }
 
-            // After loading ends
+            final errorMessage = controller.errorMessage;
+            final skiPassList = controller.skiPassList;
+            final restaurantList = controller.restaurantServiceList;
+
+            final isSkiPass = providerType == "ski_pass";
+            final activeListLength = isSkiPass ? skiPassList.length : restaurantList.length;
+
+            if (errorMessage != null) {
+              return Center(
+                child: Text(
+                  errorMessage,
+                  style: AppTextStyle.sub_h3_medium_14(),
+                ),
+              );
+            }
+
+            if (activeListLength == 0) {
+              return Center(
+                child: Text(
+                  "No services found.",
+                  style: AppTextStyle.sub_h3_medium_14(),
+                ),
+              );
+            }
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 children: [
-                  /// Provider profile
                   ProviderProfile(
                     imageUrl: authController.userModel?.profilePic ?? '',
                     role: "${authController.userModel?.providerType ?? ""} Provider",
                     name: authController.userModel?.fullName ?? "",
-                    onTap: () {
-                      Get.toNamed(Routes.providerProfileScreen);
-                    },
+                    onTap: () => Get.toNamed(Routes.providerProfileScreen),
                     icon: Icon(
                       Icons.notifications,
                       color: Colors.red,
@@ -102,10 +127,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                     ),
                     onIconTap: () => print("Icon tapped!"),
                   ),
-
                   SizedBox(height: 24.h),
-
-                  /// My service title with Add button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -135,65 +157,81 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                       ),
                     ],
                   ),
-
                   SizedBox(height: 17.h),
-
-                  /// Ski Pass List or "No services found"
                   Expanded(
-                    child: Builder(
-                      builder: (_) {
-                        if (controller.errorMessage != null) {
-                          return Center(
-                            child: Text(
-                              controller.errorMessage!,
-                              style: AppTextStyle.sub_h3_medium_14(),
-                            ),
-                          );
-                        }
-
-                        if (controller.skiPassList.isEmpty) {
-                          return Center(
-                            child: Text(
-                              "No services found.",
-                              style: AppTextStyle.sub_h3_medium_14(),
-                            ),
-                          );
-                        }
-
-                        // List of ski passes
-                        return ListView.builder(
-                          itemCount: controller.skiPassList.length,
-                          itemBuilder: (context, index) {
-                            final pass = controller.skiPassList[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: MyServiceCard(
-                                image: pass.thumbnail,
-                                title: pass.title,
-                                price: "\$${pass.amount}/Day",
-                                rating: pass.averageRating.toDouble(),
-                                reviews: pass.reviews.length,
-                                location: pass.serviceArea,
-                                packageType: pass.skiPassType,
-                                onDelete: () => print("Delete ${pass.title}"),
-                                  onEdit: () async {
-                                    // Navigate to AddPassScreen in edit mode and wait for the result
-                                    final result = await Get.to(() => const AddPassScreen(), arguments: {
-                                      "pass": pass,
-                                      "isEdit": true,
-                                    });
-
-                                    // If AddPassScreen returns true, refresh the list from API
-                                    if (result == true) {
-                                      await _refreshSkiPassList();
+                    child: ListView.builder(
+                      itemCount: activeListLength,
+                      itemBuilder: (context, index) {
+                        if (isSkiPass) {
+                          final pass = skiPassList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: MyServiceCard(
+                              image: pass.thumbnail,
+                              title: pass.title,
+                              price: "\$${pass.amount}/Day",
+                              rating: pass.averageRating.toDouble(),
+                              reviews: pass.reviews.length,
+                              location: pass.serviceArea,
+                              packageType: pass.skiPassType,
+                              onDelete: () async {
+                                DeleteDialogService.show(
+                                  context: context,
+                                  title: "Delete Pass",
+                                  message: "Are you sure you want to delete this pass?",
+                                  onDelete: () async {
+                                    final deleteController = Get.put(DeleteController());
+                                    final result = await deleteController.deleteItem(
+                                      url: AppUrls.providerPassServiceDelete(pass.id),
+                                    );
+                                    if (result) {
+                                      await serviceController.refreshServices();
+                                    } else {
+                                      Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
                                     }
-                                  }
+                                    return result;
+                                  },
+                                );
+                              },
+                              onEdit: () async {
+                                final result = await Get.to(() => const AddPassScreen(), arguments: {
+                                  "pass": pass,
+                                  "isEdit": true,
+                                });
+                                if (result == true) {
+                                  await serviceController.refreshServices();
+                                }
+                              },
+                            ),
+                          );
+                        } else {
+                          final restaurant = restaurantList[index];
+                          final items = restaurantList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: MyServiceCard(
+                              image: restaurant.thumbnail,
+                              title: restaurant.title,
+                              price: "\$${restaurant.serviceFee ?? 0}/Service",
+                              rating: restaurant.averageRating ?? 0.0,
+                              reviews: restaurant.reviews.length,
+                              location: restaurant.serviceArea,
 
+                              onDelete: () async {
 
-                              ),
-                            );
-                          },
-                        );
+                              },
+                              onEdit: () async {
+                                // You can navigate to restaurant edit screen if exists
+                                Get.toNamed(Routes.addRestaurantService, arguments: {
+                                  "restaurant": restaurant,
+                                  "isEdit": true,
+                                })?.then((value) {
+                                  serviceController.refreshServices();
+                                });
+                              },
+                            ),
+                          );
+                        }
                       },
                     ),
                   ),

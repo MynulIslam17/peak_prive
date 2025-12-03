@@ -238,11 +238,12 @@ class NetworkCaller {
       };
 
       _logRequest(url, body, headers);
-      Response response = await delete(
+      final response = await delete(
         uri,
         headers: headers,
-        body: jsonEncode(body),
+        body: body != null ? jsonEncode(body) : null,
       );
+
       _logResponse(url, response);
 
       final decoded = jsonDecode(response.body);

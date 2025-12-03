@@ -1,27 +1,33 @@
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
-import 'package:harry_service_app/app/modules/provider/shared/models/provider_all_service_model.dart' show SkiPass;
 import '../../../user/shared/models/ski_pass_model.dart' hide SkiPass;
+import '../models/provider_resturant_service.dart';
+import '../models/provider_pass_service.dart';
 
 class AllServiceController extends GetxController {
-  /// List of ski passes or services
+  /// Lists for different provider types
   List<SkiPass> skiPassList = [];
+  List<Result> restaurantServiceList = [];
 
-  /// Indicates if API request is ongoing
+
+  final authController = Get.find<AuthController>();
+
+  /// Loading state
   bool isLoading = false;
 
-  /// Stores error messages
+  /// Error message (if any)
   String? errorMessage;
 
-  /// Last used URL for fetch/refresh
-  String? lastUrl;
+  /// Cache last URL for refresh
+  String? lastFetchedUrl;
 
-  /// Fetch data from the API
-  Future<bool> fetchSkiPassData(String url) async {
+  /// Fetch ANY service list (generic)
+  Future<bool> fetchServices(String url) async {
     try {
       isLoading = true;
       errorMessage = null;
-      lastUrl = url; // store the URL for later refresh
+      lastFetchedUrl = url;
       update();
 
       final response = await Get.find<NetworkCaller>().getRequest(url: url);
@@ -30,19 +36,34 @@ class AllServiceController extends GetxController {
         final data = response.body?['data'];
         final resultList = data?['result'] as List? ?? [];
 
-        skiPassList = resultList
-            .map((e) => SkiPass.fromJson(e as Map<String, dynamic>?))
-            .toList();
+        final providerType = authController.userModel?.providerType ?? '';
+
+        switch (providerType) {
+          case 'ski_pass':
+            skiPassList = resultList
+                .map((e) => SkiPass.fromJson(e as Map<String, dynamic>))
+                .toList();
+            break;
+          case 'Restaurant':
+            restaurantServiceList = resultList
+                .map((e) => Result.fromJson(e as Map<String, dynamic>))
+                .toList();
+            break;
+
+          default:
+            errorMessage = "Unknown provider type: $providerType";
+            return false;
+        }
 
         return true;
       } else {
         errorMessage = "Failed to load data: ${response.statusCode}";
-        skiPassList = [];
+        clearLists();
         return false;
       }
     } catch (e) {
       errorMessage = "Something went wrong: $e";
-      skiPassList = [];
+      clearLists();
       return false;
     } finally {
       isLoading = false;
@@ -50,13 +71,20 @@ class AllServiceController extends GetxController {
     }
   }
 
-  /// Pull-to-refresh using last URL
-  Future<void> refreshData() async {
-    if (lastUrl != null) {
-      await fetchSkiPassData(lastUrl!);
+  /// Refresh using last fetched URL
+  Future<void> refreshServices() async {
+    if (lastFetchedUrl != null) {
+      await fetchServices(lastFetchedUrl!);
     } else {
       errorMessage = "No previous URL to refresh";
       update();
     }
+  }
+
+  /// Clear all lists
+  void clearLists() {
+    skiPassList = [];
+    restaurantServiceList = [];
+
   }
 }
