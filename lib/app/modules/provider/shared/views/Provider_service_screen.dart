@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
@@ -20,7 +21,7 @@ class ProviderServiceScreen extends StatefulWidget {
 
 class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final authController = Get.find<AuthController>();
-  final skiPassController = Get.put(SkiPassController());
+  final skiPassController = Get.put(AllServiceController());
 
   void _createNewService() {
     final providerType = authController.userModel!.providerType;
@@ -41,7 +42,9 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   /// Navigate to AddPassScreen and refresh data on return
   Future<void> _navigateToAddPass() async {
 
-    final result = await Get.to(() => const AddPassScreen());
+    final result = await Get.to(() => const AddPassScreen(),arguments: {
+      "isEdit":false
+    });
 
     // If result is true, refresh the ski pass list
     if (result == true) {
@@ -62,7 +65,9 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   void initState() {
     super.initState();
     // Fetch ski passes on screen load
-    skiPassController.fetchSkiPassData();
+    skiPassController.fetchSkiPassData(
+      AppUrls.providerServiceUrl
+    );
   }
 
   @override
@@ -70,7 +75,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: GetBuilder<SkiPassController>(
+        child: GetBuilder<AllServiceController>(
           builder: (controller) {
             // Show shimmer fullscreen while loading
             if (controller.isLoading) {
@@ -171,7 +176,20 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                 location: pass.serviceArea,
                                 packageType: pass.skiPassType,
                                 onDelete: () => print("Delete ${pass.title}"),
-                                onEdit: () => print("Edit ${pass.title}"),
+                                  onEdit: () async {
+                                    // Navigate to AddPassScreen in edit mode and wait for the result
+                                    final result = await Get.to(() => const AddPassScreen(), arguments: {
+                                      "pass": pass,
+                                      "isEdit": true,
+                                    });
+
+                                    // If AddPassScreen returns true, refresh the list from API
+                                    if (result == true) {
+                                      await _refreshSkiPassList();
+                                    }
+                                  }
+
+
                               ),
                             );
                           },

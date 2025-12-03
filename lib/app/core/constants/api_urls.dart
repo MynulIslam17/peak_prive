@@ -153,6 +153,12 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
    static String providerServiceUrl="$baseUrl/ski-pass/my-all";
    static String providerBookingUrl="$baseUrl/booking/all";
 
+/// ski all service url======
+  static String providerPassService="$baseUrl/ski-pass/my-all";
+  /// ski service update url
+  static String  providerPassServiceUpdate(String id)=>"$baseUrl/ski-pass/update/$id";
+  /// ski service delete url
+  static String  providerPassServiceDelete(String id)=>"$baseUrl/ski-pass/delete/$id";
 
 /// ==============pass create url=================
   static String providerPassCreateUrl="$baseUrl/ski-pass/create";

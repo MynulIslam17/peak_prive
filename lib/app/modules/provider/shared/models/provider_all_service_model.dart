@@ -1,83 +1,31 @@
 class SkiPassResponse {
   final int code;
   final String message;
-  final SkiPassData data;
+  final List<SkiPass> result;
 
   SkiPassResponse({
     required this.code,
     required this.message,
-    required this.data,
+    required this.result,
   });
 
   factory SkiPassResponse.fromJson(Map<String, dynamic>? json) {
     json ??= {};
+    final data = json['data'] ?? {};
+
     return SkiPassResponse(
       code: json['code'] ?? 0,
       message: json['message'] ?? '',
-      data: SkiPassData.fromJson(json['data']),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    "code": code,
-    "message": message,
-    "data": data.toJson(),
-  };
-}
-
-class SkiPassData {
-  final Pagination pagination;
-  final List<SkiPass> result;
-
-  SkiPassData({
-    required this.pagination,
-    required this.result,
-  });
-
-  factory SkiPassData.fromJson(Map<String, dynamic>? json) {
-    json ??= {};
-    return SkiPassData(
-      pagination: Pagination.fromJson(json['pagination']),
-      result: (json['result'] as List<dynamic>? ?? [])
+      result: (data['result'] as List<dynamic>? ?? [])
           .map((e) => SkiPass.fromJson(e as Map<String, dynamic>?))
           .toList(),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    "pagination": pagination.toJson(),
+    "code": code,
+    "message": message,
     "result": result.map((e) => e.toJson()).toList(),
-  };
-}
-
-class Pagination {
-  final int total;
-  final int page;
-  final int limit;
-  final int totalPages;
-
-  Pagination({
-    required this.total,
-    required this.page,
-    required this.limit,
-    required this.totalPages,
-  });
-
-  factory Pagination.fromJson(Map<String, dynamic>? json) {
-    json ??= {};
-    return Pagination(
-      total: json['total'] ?? 0,
-      page: json['page'] ?? 0,
-      limit: json['limit'] ?? 0,
-      totalPages: json['totalPages'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-    "total": total,
-    "page": page,
-    "limit": limit,
-    "totalPages": totalPages,
   };
 }
 

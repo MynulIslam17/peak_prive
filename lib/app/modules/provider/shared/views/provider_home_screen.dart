@@ -183,7 +183,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 location: service.serviceArea, // location/service area
                                 onDelete: () {},
                                 onEdit: () {},
-                                packageType: "Premium",
+                                packageType: service.skiPassType,
                               ),
                             ),
                           );

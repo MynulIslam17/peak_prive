@@ -8,7 +8,16 @@ import 'package:harry_service_app/app/core/constants/text-style.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/widgets/image_picker_dialog.dart';
+import '../../shared/models/provider_all_service_model.dart';
 import '../controller/create_ski_pass_controller.dart';
+import '../controller/update_pass_controller.dart';
+
+
+
+// ============================================
+// ADD PASS SCREEN
+// ============================================
 
 class AddPassScreen extends StatefulWidget {
   const AddPassScreen({super.key});
@@ -22,6 +31,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
   final icons = Assets.icons;
 
   final CreatePassController createPassController = Get.put(CreatePassController());
+  final UpdatePassController updatePassController = Get.put(UpdatePassController());
 
   final titleTEController = TextEditingController();
   final priceTEController = TextEditingController();
@@ -39,16 +49,127 @@ class _AddPassScreenState extends State<AddPassScreen> {
 
   File? selectedImage;
   bool isValid = false;
+  bool hasChanges = false;
+
+  late final bool isFromEdit;
+  SkiPass? editingPass;
+
+  String? originalTitle;
+  String? originalPrice;
+  String? originalDescription;
+  String? originalPassType;
+  String? originalArea;
+  List<Map<String, String>> originalServices = [];
 
   @override
   void initState() {
     super.initState();
-    titleTEController.addListener(_validateForm);
-    priceTEController.addListener(_validateForm);
-    descriptionTEController.addListener(_validateForm);
+
+    var argument = Get.arguments ?? {};
+    isFromEdit = argument["isEdit"] ?? false;
+    editingPass = argument["pass"] as SkiPass?;
+
+    if (isFromEdit && editingPass != null) {
+      _fillFieldsForEdit(editingPass!);
+    }
+
+    titleTEController.addListener(_checkForChanges);
+    priceTEController.addListener(_checkForChanges);
+    descriptionTEController.addListener(_checkForChanges);
+
+    if (!isFromEdit) {
+      _validateForm();
+    }
+  }
+
+  void _fillFieldsForEdit(SkiPass pass) {
+    titleTEController.text = pass.title;
+    priceTEController.text = pass.amount.toString();
+    descriptionTEController.text = pass.description;
+    selectedPassType = pass.skiPassType;
+    selectedArea = pass.serviceArea;
+
+    originalTitle = pass.title;
+    originalPrice = pass.amount.toString();
+    originalDescription = pass.description;
+    originalPassType = pass.skiPassType;
+    originalArea = pass.serviceArea;
+
+    serviceFields.clear();
+    if (pass.services != null && pass.services!.isNotEmpty) {
+      for (var service in pass.services!) {
+        final titleController = TextEditingController(text: service.title);
+        final serviceController = TextEditingController(text: service.description);
+
+        titleController.addListener(_checkForChanges);
+        serviceController.addListener(_checkForChanges);
+
+        serviceFields.add({
+          "title": titleController,
+          "service": serviceController,
+        });
+      }
+    } else {
+      final titleController = TextEditingController();
+      final serviceController = TextEditingController();
+      titleController.addListener(_checkForChanges);
+      serviceController.addListener(_checkForChanges);
+      serviceFields.add({"title": titleController, "service": serviceController});
+    }
+
+    originalServices = serviceFields
+        .map((field) => {
+      "title": field["title"]!.text,
+      "service": field["service"]!.text,
+    })
+        .toList();
+  }
+
+  void _checkForChanges() {
+    if (!isFromEdit) {
+      _validateForm();
+      return;
+    }
+
+    bool titleChanged = titleTEController.text != originalTitle;
+    bool priceChanged = priceTEController.text != originalPrice;
+    bool descriptionChanged = descriptionTEController.text != originalDescription;
+    bool typeChanged = selectedPassType != originalPassType;
+    bool areaChanged = selectedArea != originalArea;
+    bool imageChanged = selectedImage != null;
+
+    bool servicesChanged = false;
+    if (serviceFields.length != originalServices.length) {
+      servicesChanged = true;
+    } else {
+      for (int i = 0; i < serviceFields.length; i++) {
+        String currentTitle = serviceFields[i]["title"]!.text;
+        String currentService = serviceFields[i]["service"]!.text;
+        if (currentTitle != originalServices[i]["title"] ||
+            currentService != originalServices[i]["service"]) {
+          servicesChanged = true;
+          break;
+        }
+      }
+    }
+
+    setState(() {
+      hasChanges = titleChanged ||
+          priceChanged ||
+          descriptionChanged ||
+          typeChanged ||
+          areaChanged ||
+          imageChanged ||
+          servicesChanged;
+    });
   }
 
   void _validateForm() {
+    if (isFromEdit) {
+      _checkForChanges();
+      return;
+    }
+
     bool allServicesFilled = serviceFields.every((field) =>
     field["title"]!.text.trim().isNotEmpty &&
         field["service"]!.text.trim().isNotEmpty);
@@ -66,6 +187,27 @@ class _AddPassScreenState extends State<AddPassScreen> {
     });
   }
 
+  // ============================================
+  // USE IMAGE PICKER DIALOG SERVICE
+  // ============================================
+  void _showImagePickerDialog() {
+    ImagePickerDialogService.show(
+      context: context,
+      title: "Add Service Photo",
+      subtitle: "Choose from gallery or take a new photo",
+      galleryLabel: "Gallery",
+      gallerySubtitle: "Choose from your photos",
+      cameraLabel: "Camera",
+      cameraSubtitle: "Take a new photo",
+      primaryColor: AppColors.primary_1,
+      galleryIconColor: Colors.blue,
+      cameraIconColor: Colors.orange,
+      onImageSourceSelected: (source) async {
+        await pickImage(source);
+      },
+    );
+  }
+
   Future<void> pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: source);
@@ -74,168 +216,13 @@ class _AddPassScreenState extends State<AddPassScreen> {
       setState(() {
         selectedImage = File(picked.path);
       });
+      _checkForChanges();
       _validateForm();
     }
   }
 
-  void showImagePickerDialog() {
-    showDialog(
-      context: context,
-      builder: (_) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          elevation: 10,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, Colors.grey.shade50],
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary_1.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.image_search,
-                      color: AppColors.primary_1,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Select Image",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Choose from gallery or take a photo",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _buildImagePickerOption(
-                    icon: Icons.photo_library_rounded,
-                    title: "Gallery",
-                    subtitle: "Choose from your photos",
-                    onTap: () {
-                      Navigator.pop(context);
-                      pickImage(ImageSource.gallery);
-                    },
-                    color: Colors.blue,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildImagePickerOption(
-                    icon: Icons.camera_alt_rounded,
-                    title: "Camera",
-                    subtitle: "Take a new photo",
-                    onTap: () {
-                      Navigator.pop(context);
-                      pickImage(ImageSource.camera);
-                    },
-                    color: Colors.orange,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey.shade700,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text(
-                        "Cancel",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildImagePickerOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200, width: 1.5),
-            color: Colors.white,
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87)),
-                    const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.grey.shade600)),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: color, size: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _savePass() async {
-    FocusManager.instance.primaryFocus?.unfocus(); // hide keyboard
+    FocusManager.instance.primaryFocus?.unfocus();
 
     List<Map<String, String>> services = serviceFields
         .map((field) => {
@@ -244,27 +231,55 @@ class _AddPassScreenState extends State<AddPassScreen> {
     })
         .toList();
 
-    final success = await createPassController.createSkiPass(
-      title: titleTEController.text.trim(),
-      skiPassType: selectedPassType!,
-      area: selectedArea!,
-      price: priceTEController.text.trim(),
-      description: descriptionTEController.text.trim(),
-      profileImage: selectedImage!,
-      serviceFields: services,
-      ApiUrl: AppUrls.providerPassCreateUrl,
-    );
+    bool success = false;
 
-    if (success) {
-      Navigator.pop(context, true);
-    } else {
-      Get.snackbar(
-        "Error",
-        createPassController.errorMessage ?? "Failed to save pass",
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 2),
+    if (isFromEdit && editingPass != null) {
+      final updateController = Get.put(UpdatePassController());
+      success = await updateController.updateSkiPass(
+        passId: editingPass!.id,
+        title: titleTEController.text.trim(),
+        skiPassType: selectedPassType!,
+        area: selectedArea!,
+        price: priceTEController.text.trim(),
+        description: descriptionTEController.text.trim(),
+        profileImage: selectedImage,
+        serviceFields: services,
+        ApiUrl: AppUrls.providerPassServiceUpdate(editingPass!.id),
       );
+
+      if (!success) {
+        Get.snackbar(
+          "Error",
+          updateController.errorMessage ?? "Failed to update pass",
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        );
+        return;
+      }
+    } else {
+      success = await createPassController.createSkiPass(
+        title: titleTEController.text.trim(),
+        skiPassType: selectedPassType!,
+        area: selectedArea!,
+        price: priceTEController.text.trim(),
+        description: descriptionTEController.text.trim(),
+        profileImage: selectedImage!,
+        serviceFields: services,
+        ApiUrl: AppUrls.providerPassCreateUrl,
+      );
+
+      if (!success) {
+        Get.snackbar(
+          "Error",
+          createPassController.errorMessage ?? "Failed to save pass",
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        );
+        return;
+      }
     }
+
+    Navigator.pop(context, true);
   }
 
   @override
@@ -290,8 +305,8 @@ class _AddPassScreenState extends State<AddPassScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Add Pass",
+        title: Text(
+          isFromEdit ? "Edit Pass" : "Add Pass",
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 16),
         ),
         centerTitle: true,
@@ -303,13 +318,13 @@ class _AddPassScreenState extends State<AddPassScreen> {
           children: [
             Text("Title", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildTextField("Enter Title", titleTEController, onChanged: _validateForm),
+            _buildTextField("Enter Title", titleTEController, onChanged: _checkForChanges),
             SizedBox(height: 20.h),
 
             Text("Add a Service Photo", style: AppTextStyle.c_light_12()),
             SizedBox(height: 10.h),
             GestureDetector(
-              onTap: showImagePickerDialog,
+              onTap: _showImagePickerDialog,
               child: Container(
                 height: 54.h,
                 width: double.infinity,
@@ -320,6 +335,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
                 child: const Icon(Icons.upload, size: 28, color: Colors.black54),
               ),
             ),
+
             SizedBox(height: 8.h),
             selectedImage != null
                 ? const Text("Image Selected", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))
@@ -331,26 +347,39 @@ class _AddPassScreenState extends State<AddPassScreen> {
 
             Text("Ski Pass Type", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildDropdownField("Type", skiPassTypes, (value) {
-              selectedPassType = value;
-              _validateForm();
-            }),
+            _buildDropdownField(
+              hint: "Type",
+              items: skiPassTypes,
+              selectedValue: selectedPassType,
+              onChanged: (value) {
+                setState(() {
+                  selectedPassType = value;
+                });
+                _checkForChanges();
+              },
+            ),
             SizedBox(height: 20.h),
 
             Text("Price/day", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildPriceTextField("0.00", priceTEController, onChanged: _validateForm),
+            _buildPriceTextField("0.00", priceTEController, onChanged: _checkForChanges),
             SizedBox(height: 20.h),
 
             Text("Select Area", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildDropdownField("Select Area", areaList, (value) {
-              selectedArea = value;
-              _validateForm();
-            }),
+            _buildDropdownField(
+              hint: "Select Area",
+              items: areaList,
+              selectedValue: selectedArea,
+              onChanged: (value) {
+                setState(() {
+                  selectedArea = value;
+                });
+                _checkForChanges();
+              },
+            ),
             SizedBox(height: 20.h),
 
-            // Dynamic Services
             for (int i = 0; i < serviceFields.length; i++) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -360,39 +389,44 @@ class _AddPassScreenState extends State<AddPassScreen> {
                     IconButton(
                       onPressed: () {
                         setState(() {
+                          serviceFields[i]["title"]?.dispose();
+                          serviceFields[i]["service"]?.dispose();
                           serviceFields.removeAt(i);
                         });
-                        _validateForm();
+                        _checkForChanges();
                       },
                       icon: const Icon(Icons.cancel, color: Colors.red),
                     ),
                 ],
               ),
               SizedBox(height: 8.h),
-              _buildTextField("Service Title (e.g. Free Parking)", serviceFields[i]["title"]!, onChanged: _validateForm),
+              _buildTextField("Service Title (e.g. Free Parking)", serviceFields[i]["title"]!, onChanged: _checkForChanges),
               SizedBox(height: 16.h),
               Text("Services", style: AppTextStyle.c_regular_12()),
               SizedBox(height: 8.h),
-              _buildTextField("3 car parking", serviceFields[i]["service"]!, onChanged: _validateForm),
+              _buildTextField("3 car parking", serviceFields[i]["service"]!, onChanged: _checkForChanges),
               SizedBox(height: 20.h),
             ],
             _buildAddMoreButton(),
-            SizedBox(height: 24.h),
 
+            SizedBox(height: 24.h),
             Text("Add Description", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildLargeTextField("Write a Description", descriptionTEController, onChanged: _validateForm),
+            _buildLargeTextField("Write a Description", descriptionTEController, onChanged: _checkForChanges),
             SizedBox(height: 30.h),
 
-            GetBuilder<CreatePassController>(
+            isFromEdit
+                ? GetBuilder<UpdatePassController>(
+              init: UpdatePassController(),
               builder: (controller) {
+                bool buttonEnabled = hasChanges;
                 return SizedBox(
                   width: double.infinity,
                   height: 50.h,
                   child: ElevatedButton(
-                    onPressed: isValid && !controller.isLoading ? _savePass : null,
+                    onPressed: buttonEnabled && !controller.isLoading ? _savePass : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isValid && !controller.isLoading
+                      backgroundColor: buttonEnabled && !controller.isLoading
                           ? AppColors.primary_1
                           : Colors.grey,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -401,9 +435,55 @@ class _AddPassScreenState extends State<AddPassScreen> {
                         ? SizedBox(
                       width: 24.w,
                       height: 24.w,
-                      child: const CircularProgressIndicator(color: AppColors.primary_1, strokeWidth: 2),
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
-                        : const Text("Save", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                        : const Text(
+                      "Update",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+                : GetBuilder<CreatePassController>(
+              init: CreatePassController(),
+              builder: (controller) {
+                bool buttonEnabled = isValid;
+                return SizedBox(
+                  width: double.infinity,
+                  height: 50.h,
+                  child: ElevatedButton(
+                    onPressed: buttonEnabled && !controller.isLoading ? _savePass : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: buttonEnabled && !controller.isLoading
+                          ? AppColors.primary_1
+                          : Colors.grey,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: controller.isLoading
+                        ? SizedBox(
+                      width: 24.w,
+                      height: 24.w,
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : const Text(
+                      "Save",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 );
               },
@@ -447,8 +527,14 @@ class _AddPassScreenState extends State<AddPassScreen> {
     );
   }
 
-  Widget _buildDropdownField(String hint, List<String> items, Function(String?) onChanged) {
+  Widget _buildDropdownField({
+    required String hint,
+    required List<String> items,
+    required Function(String?) onChanged,
+    String? selectedValue,
+  }) {
     return DropdownButtonFormField<String>(
+      value: selectedValue,
       dropdownColor: Colors.white,
       decoration: InputDecoration(
         hintText: hint,
@@ -458,11 +544,16 @@ class _AddPassScreenState extends State<AddPassScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
       ),
-      items: items.map((item) => DropdownMenuItem(
+      items: items
+          .map((item) => DropdownMenuItem(
         value: item,
-        child: Row(children: [icons.ticket.svg(), SizedBox(width: 5), Text(item)]),
-      )).toList(),
-      onChanged: onChanged,
+        child: Row(children: [icons.ticket.svg(), const SizedBox(width: 5), Text(item)]),
+      ))
+          .toList(),
+      onChanged: (value) {
+        onChanged(value);
+        setState(() {});
+      },
     );
   }
 
@@ -470,9 +561,18 @@ class _AddPassScreenState extends State<AddPassScreen> {
     return InkWell(
       onTap: () {
         setState(() {
-          serviceFields.add({"title": TextEditingController(), "service": TextEditingController()});
+          final titleController = TextEditingController();
+          final serviceController = TextEditingController();
+
+          titleController.addListener(_checkForChanges);
+          serviceController.addListener(_checkForChanges);
+
+          serviceFields.add({
+            "title": titleController,
+            "service": serviceController,
+          });
         });
-        _validateForm();
+        _checkForChanges();
       },
       borderRadius: BorderRadius.circular(10),
       child: Ink(
