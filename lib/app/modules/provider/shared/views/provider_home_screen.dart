@@ -61,7 +61,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             final statsMap = {
               "Today booking": providerStats.todayBookingCount,
               "Booking Request": providerStats.totalBooking,
-              "Amount": providerStats.totalBalance,
+              "Amount": "\$${providerStats.totalBalance}",
             };
 
             final recentServices = controller.providerHome!.recentServices;

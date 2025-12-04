@@ -28,14 +28,26 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final serviceController = Get.put(AllServiceController());
 
   /// Navigate based on provider type
-  void _createNewService() {
-    final providerType = authController.userModel!.providerType?.toLowerCase() ?? '';
+  void _createNewService() async {
+    final providerType = authController.userModel?.providerType?.toLowerCase() ?? '';
 
     if (providerType == "ski_pass") {
-      _navigateToAddPass();
+      /// Navigate to AddPassScreen
+      final result = await Get.to(() => const AddPassScreen(), arguments: {"isEdit": false});
+      if (result == true) {
+        await serviceController.refreshServices();
+      }
     } else if (providerType == "restaurant") {
-      Get.toNamed(Routes.addRestaurantService);
+      /// Navigate to AddRestaurantScreen
+      final result = await Get.toNamed(Routes.addRestaurantService, arguments: {"isEdit": false});
+      if (result == true) {
+        await serviceController.refreshServices();
+      }
     } else if (providerType == "transport") {
+      final result = await Get.to(() => const AddPassScreen(), arguments: {"isEdit": false});
+      if (result == true) {
+        await serviceController.refreshServices();
+      }
       Get.toNamed(Routes.transportDetails);
     } else if (providerType == "massage") {
       Get.toNamed(Routes.addMessageService);
@@ -44,16 +56,6 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     }
   }
 
-  /// Navigate to AddPassScreen and refresh data on return
-  Future<void> _navigateToAddPass() async {
-    final result = await Get.to(() => const AddPassScreen(), arguments: {
-      "isEdit": false,
-    });
-
-    if (result == true) {
-      await serviceController.refreshServices();
-    }
-  }
 
   @override
   void initState() {
@@ -113,53 +115,55 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Column(
-                children: [
-                  ProviderProfile(
-                    imageUrl: authController.userModel?.profilePic ?? '',
-                    role: "${authController.userModel?.providerType ?? ""} Provider",
-                    name: authController.userModel?.fullName ?? "",
-                    onTap: () => Get.toNamed(Routes.providerProfileScreen),
-                    icon: Icon(
-                      Icons.notifications,
-                      color: Colors.red,
-                      size: 30,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ProviderProfile(
+                      imageUrl: authController.userModel?.profilePic ?? '',
+                      role: "${authController.userModel?.providerType ?? ""} Provider",
+                      name: authController.userModel?.fullName ?? "",
+                      onTap: () => Get.toNamed(Routes.providerProfileScreen),
+                      icon: Icon(
+                        Icons.notifications,
+                        color: Colors.red,
+                        size: 30,
+                      ),
+                      onIconTap: () => print("Icon tapped!"),
                     ),
-                    onIconTap: () => print("Icon tapped!"),
-                  ),
-                  SizedBox(height: 24.h),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("My service", style: AppTextStyle.sub_h2_medium_16()),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: _createNewService,
-                        splashColor: Colors.white24,
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            color: AppColors.primary_1,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.all(8),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add, color: Colors.white, size: 15),
-                              SizedBox(width: 4.w),
-                              Text(
-                                "Add",
-                                style: AppTextStyle.p_medium_12(color: Colors.white),
-                              ),
-                            ],
+                    SizedBox(height: 24.h),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("My service", style: AppTextStyle.sub_h2_medium_16()),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: _createNewService,
+                          splashColor: Colors.white24,
+                          child: Ink(
+                            decoration: BoxDecoration(
+                              color: AppColors.primary_1,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, color: Colors.white, size: 15),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  "Add",
+                                  style: AppTextStyle.p_medium_12(color: Colors.white),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 17.h),
-                  Expanded(
-                    child: ListView.builder(
+                      ],
+                    ),
+                    SizedBox(height: 17.h),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
                       itemCount: activeListLength,
                       itemBuilder: (context, index) {
                         if (isSkiPass) {
@@ -210,9 +214,10 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: MyServiceCard(
+
                               image: restaurant.thumbnail,
                               title: restaurant.title,
-                              price: "\$${restaurant.serviceFee ?? 0}/Service",
+                              price: restaurant.status,
                               rating: restaurant.averageRating ?? 0.0,
                               reviews: restaurant.reviews.length,
                               location: restaurant.serviceArea,
@@ -221,7 +226,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
 
                               },
                               onEdit: () async {
-                                // You can navigate to restaurant edit screen if exists
+
                                 Get.toNamed(Routes.addRestaurantService, arguments: {
                                   "restaurant": restaurant,
                                   "isEdit": true,
@@ -234,8 +239,8 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                         }
                       },
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

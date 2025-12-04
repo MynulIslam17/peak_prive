@@ -9,7 +9,8 @@ import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/widgets/image_picker_dialog.dart';
-import '../../shared/models/provider_all_service_model.dart';
+
+import '../../shared/models/provider_pass_service.dart';
 import '../controller/create_ski_pass_controller.dart';
 import '../controller/update_pass_controller.dart';
 
