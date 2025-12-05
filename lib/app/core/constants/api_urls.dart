@@ -169,6 +169,10 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   ///      create restaurant
   static String createRestaurantUrl="$baseUrl/restaurant/create";
+  ///      update restaurant
+  static String updateRestaurantUrl(String id)=>"$baseUrl/restaurant/update/${id}";
+  ///      delete restaurant
+  static String deleteRestaurantUrl(String id)=>"$baseUrl/restaurant/delete/${id}";
 
 
 

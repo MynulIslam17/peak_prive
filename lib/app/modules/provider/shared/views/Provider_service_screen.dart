@@ -27,6 +27,9 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final authController = Get.find<AuthController>();
   final serviceController = Get.put(AllServiceController());
 
+
+  /// make a category list for add
+
   /// Navigate based on provider type
   void _createNewService() async {
     final providerType = authController.userModel?.providerType?.toLowerCase() ?? '';
@@ -40,9 +43,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     } else if (providerType == "restaurant") {
       /// Navigate to AddRestaurantScreen
       final result = await Get.toNamed(Routes.addRestaurantService, arguments: {"isEdit": false});
-      if (result == true) {
-        await serviceController.refreshServices();
-      }
+
     } else if (providerType == "transport") {
       final result = await Get.to(() => const AddPassScreen(), arguments: {"isEdit": false});
       if (result == true) {
@@ -173,7 +174,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                             child: MyServiceCard(
                               image: pass.thumbnail,
                               title: pass.title,
-                              price: "\$${pass.amount}/Day",
+                              status: "\$${pass.amount}/Day",
                               rating: pass.averageRating.toDouble(),
                               reviews: pass.reviews.length,
                               location: pass.serviceArea,
@@ -211,29 +212,51 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                         } else {
                           final restaurant = restaurantList[index];
                           final items = restaurantList[index];
+
+
+
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: MyServiceCard(
 
                               image: restaurant.thumbnail,
                               title: restaurant.title,
-                              price: restaurant.status,
+                              status: restaurant.status,
                               rating: restaurant.averageRating ?? 0.0,
                               reviews: restaurant.reviews.length,
                               location: restaurant.serviceArea,
 
                               onDelete: () async {
-
+                                DeleteDialogService.show(
+                                  context: context,
+                                  title: "Delete Restaurant Seat",
+                                  message: "Are you sure you want to delete this seat?",
+                                  onDelete: () async {
+                                    final deleteController = Get.put(DeleteController());
+                                    final result = await deleteController.deleteItem(
+                                      url: AppUrls.deleteRestaurantUrl(restaurant.sId),
+                                    );
+                                    if (result) {
+                                      await serviceController.refreshServices();
+                                    } else {
+                                      Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                    }
+                                    return result;
+                                  },
+                                );
                               },
                               onEdit: () async {
-
-                                Get.toNamed(Routes.addRestaurantService, arguments: {
+                                final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
                                   "restaurant": restaurant,
                                   "isEdit": true,
-                                })?.then((value) {
-                                  serviceController.refreshServices();
                                 });
+
+                                if (result == true) { /// only refresh if actual changes happened
+                                  await serviceController.refreshServices();
+                                }
                               },
+
                             ),
                           );
                         }

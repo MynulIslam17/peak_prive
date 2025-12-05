@@ -11,7 +11,7 @@ class MyServiceCard extends StatelessWidget {
     super.key,
     required this.image,
     required this.title,
-    required this.price,
+    required this.status,
     required this.rating,
     required this.reviews,
     required this.location,
@@ -22,7 +22,7 @@ class MyServiceCard extends StatelessWidget {
 
   final String image;
   final String title;
-  final String price;
+  final String status;
   final double rating;
   final int reviews;
   final String location;
@@ -104,7 +104,7 @@ class MyServiceCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          price,
+                          status,
                           style: AppTextStyle.sub_h3_medium_14(
                             color: AppColors.primary_1,
                           ),

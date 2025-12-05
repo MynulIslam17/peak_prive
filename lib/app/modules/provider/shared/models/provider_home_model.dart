@@ -59,6 +59,93 @@ class ProviderStats {
 }
 
 /// Unified Booking model
+// class Booking {
+//   final String? id;
+//   final User? user;
+//   final Product? product;
+//   final String? productModel;
+//   final String? category;
+//   final DateTime? startDateAndTime;
+//   final DateTime? endDateAndTime;
+//   final DateTime? date;
+//   final String? time;
+//   final List<String>? slots;
+//   final String? duration;
+//   final String? bookingStatus;
+//   final double? totalPrice;
+//   final bool? isPermitted;
+//   final List<BookingItem> bookingItems;
+//
+//   Booking({
+//     this.id,
+//     this.user,
+//     this.product,
+//     this.productModel,
+//     this.category,
+//     this.startDateAndTime,
+//     this.endDateAndTime,
+//     this.date,
+//     this.time,
+//     this.slots,
+//     this.duration,
+//     this.bookingStatus,
+//     this.totalPrice,
+//     this.isPermitted,
+//     required this.bookingItems,
+//   });
+//
+//   factory Booking.fromJson(Map<String, dynamic> json) {
+//     return Booking(
+//       id: json['_id'],
+//       user: json['user'] != null ? User.fromJson(json['user']) : null,
+//       product:
+//       json['product'] != null ? Product.fromJson(json['product']) : null,
+//       productModel: json['productModel'],
+//       category: json['category'],
+//       startDateAndTime: json['startDateAndTime'] != null
+//           ? DateTime.parse(json['startDateAndTime'])
+//           : null,
+//       endDateAndTime: json['endDateAndTime'] != null
+//           ? DateTime.parse(json['endDateAndTime'])
+//           : null,
+//       date: json['date'] != null ? DateTime.parse(json['date']) : null,
+//       time: json['time'],
+//       slots: json['slots'] != null ? List<String>.from(json['slots']) : null,
+//       duration: json['duration'],
+//       bookingStatus: json['bookingStatus'],
+//       totalPrice: (json['totalPrice'] != null)
+//           ? (json['totalPrice'] as num).toDouble()
+//           : null,
+//       isPermitted: json['isPermitted'],
+//       bookingItems: json['bookingItems'] != null
+//           ? List<BookingItem>.from(
+//           json['bookingItems'].map((x) => BookingItem.fromJson(x)))
+//           : [],
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       "_id": id,
+//       "user": user?.toJson(),
+//       "product": product?.toJson(),
+//       "productModel": productModel,
+//       "category": category,
+//       "startDateAndTime": startDateAndTime?.toIso8601String(),
+//       "endDateAndTime": endDateAndTime?.toIso8601String(),
+//       "date": date?.toIso8601String(),
+//       "time": time,
+//       "slots": slots,
+//       "duration": duration,
+//       "bookingStatus": bookingStatus,
+//       "totalPrice": totalPrice,
+//       "isPermitted": isPermitted,
+//       "bookingItems": bookingItems.map((e) => e.toJson()).toList(),
+//     };
+//   }
+// }
+
+
 class Booking {
   final String? id;
   final User? user;
@@ -96,28 +183,27 @@ class Booking {
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
-      id: json['_id'],
+      id: json['_id'] ?? '', // default empty string if missing
       user: json['user'] != null ? User.fromJson(json['user']) : null,
-      product:
-      json['product'] != null ? Product.fromJson(json['product']) : null,
-      productModel: json['productModel'],
-      category: json['category'],
+      product: json['product'] != null ? Product.fromJson(json['product']) : null,
+      productModel: json['productModel'] ?? '',
+      category: json['category'] ?? '',
       startDateAndTime: json['startDateAndTime'] != null
-          ? DateTime.parse(json['startDateAndTime'])
+          ? DateTime.tryParse(json['startDateAndTime'])
           : null,
       endDateAndTime: json['endDateAndTime'] != null
-          ? DateTime.parse(json['endDateAndTime'])
+          ? DateTime.tryParse(json['endDateAndTime'])
           : null,
-      date: json['date'] != null ? DateTime.parse(json['date']) : null,
-      time: json['time'],
-      slots: json['slots'] != null ? List<String>.from(json['slots']) : null,
-      duration: json['duration'],
-      bookingStatus: json['bookingStatus'],
+      date: json['date'] != null ? DateTime.tryParse(json['date']) : null,
+      time: json['time'] ?? '',
+      slots: json['slots'] != null ? List<String>.from(json['slots']) : [],
+      duration: json['duration'] ?? '',
+      bookingStatus: json['bookingStatus'] ?? '',
       totalPrice: (json['totalPrice'] != null)
           ? (json['totalPrice'] as num).toDouble()
-          : null,
-      isPermitted: json['isPermitted'],
-      bookingItems: json['bookingItems'] != null
+          : 0,
+      isPermitted: json['isPermitted'] ?? false,
+      bookingItems: (json['bookingItems'] != null)
           ? List<BookingItem>.from(
           json['bookingItems'].map((x) => BookingItem.fromJson(x)))
           : [],
@@ -144,6 +230,7 @@ class Booking {
     };
   }
 }
+
 
 /// User model
 class User {
@@ -276,6 +363,95 @@ class BookingItem {
 }
 
 /// Recent Service model (updated with skiPassType and services)
+// class RecentService {
+//   final String id;
+//   final String category;
+//   final String title;
+//   final String thumbnail;
+//   final String owner;
+//   final num extraChargePerHour;
+//   final num totalPrice;
+//   final String serviceArea;
+//   final num averageRating;
+//   final List<Review> reviews;
+//   final List<dynamic> refunds;
+//   final String createdAt;
+//   final String updatedAt;
+//   final int v;
+//   final String model;
+//   final String? skiPassType; // new field
+//   final List<ProductService>? services; // new field
+//
+//   RecentService({
+//     required this.id,
+//     required this.category,
+//     required this.title,
+//     required this.thumbnail,
+//     required this.owner,
+//     required this.extraChargePerHour,
+//     required this.totalPrice,
+//     required this.serviceArea,
+//     required this.averageRating,
+//     required this.reviews,
+//     required this.refunds,
+//     required this.createdAt,
+//     required this.updatedAt,
+//     required this.v,
+//     required this.model,
+//     this.skiPassType,
+//     this.services,
+//   });
+//
+//   factory RecentService.fromJson(Map<String, dynamic> json) {
+//     return RecentService(
+//       id: json["_id"] ?? "",
+//       category: json["category"] ?? "",
+//       title: json["title"] ?? "",
+//       thumbnail: json["thumbnail"] ?? "",
+//       owner: json["owner"] ?? "",
+//       extraChargePerHour: json["extraChargePerHour"] ?? 0,
+//       totalPrice: json["amount"] ?? json["totalPrice"] ?? 0,
+//       serviceArea: json["serviceArea"] ?? "",
+//       averageRating: json["averageRating"] ?? 0,
+//       reviews: (json["reviews"] as List? ?? [])
+//           .map((e) => Review.fromJson(e))
+//           .toList(),
+//       refunds: json["refunds"] ?? [],
+//       createdAt: json["createdAt"] ?? "",
+//       updatedAt: json["updatedAt"] ?? "",
+//       v: json["__v"] ?? 0,
+//       model: json["model"] ?? "",
+//       skiPassType: json['skiPassType'],
+//       services: json['services'] != null
+//           ? List<ProductService>.from(
+//           json['services'].map((x) => ProductService.fromJson(x)))
+//           : [],
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       "_id": id,
+//       "category": category,
+//       "title": title,
+//       "thumbnail": thumbnail,
+//       "owner": owner,
+//       "extraChargePerHour": extraChargePerHour,
+//       "totalPrice": totalPrice,
+//       "serviceArea": serviceArea,
+//       "averageRating": averageRating,
+//       "reviews": reviews.map((e) => e.toJson()).toList(),
+//       "refunds": refunds,
+//       "createdAt": createdAt,
+//       "updatedAt": updatedAt,
+//       "__v": v,
+//       "model": model,
+//       "skiPassType": skiPassType,
+//       "services": services?.map((e) => e.toJson()).toList(),
+//     };
+//   }
+// }
+
 class RecentService {
   final String id;
   final String category;
@@ -292,8 +468,16 @@ class RecentService {
   final String updatedAt;
   final int v;
   final String model;
-  final String? skiPassType; // new field
-  final List<ProductService>? services; // new field
+  final String? skiPassType;
+  final List<ProductService>? services;
+
+  // NEW FIELDS
+  final String status;
+  final String openTime;
+  final String closeTime;
+  final String foodType;
+  final List<Slot> slots;
+  final List<Slot> availableSlots;
 
   RecentService({
     required this.id,
@@ -301,44 +485,62 @@ class RecentService {
     required this.title,
     required this.thumbnail,
     required this.owner,
-    required this.extraChargePerHour,
-    required this.totalPrice,
+    this.extraChargePerHour = 0,
+    this.totalPrice = 0,
     required this.serviceArea,
-    required this.averageRating,
+    this.averageRating = 0,
     required this.reviews,
     required this.refunds,
     required this.createdAt,
     required this.updatedAt,
-    required this.v,
+    this.v = 0,
     required this.model,
     this.skiPassType,
     this.services,
+    // NEW
+    this.status = '',
+    this.openTime = '',
+    this.closeTime = '',
+    this.foodType = '',
+    this.slots = const [],
+    this.availableSlots = const [],
   });
 
   factory RecentService.fromJson(Map<String, dynamic> json) {
     return RecentService(
-      id: json["_id"] ?? "",
-      category: json["category"] ?? "",
-      title: json["title"] ?? "",
-      thumbnail: json["thumbnail"] ?? "",
-      owner: json["owner"] ?? "",
+      id: json["_id"] ?? '',
+      category: json["category"] ?? '',
+      title: json["title"] ?? '',
+      thumbnail: json["thumbnail"] ?? '',
+      owner: json["owner"] ?? '',
       extraChargePerHour: json["extraChargePerHour"] ?? 0,
       totalPrice: json["amount"] ?? json["totalPrice"] ?? 0,
-      serviceArea: json["serviceArea"] ?? "",
+      serviceArea: json["serviceArea"] ?? '',
       averageRating: json["averageRating"] ?? 0,
       reviews: (json["reviews"] as List? ?? [])
           .map((e) => Review.fromJson(e))
           .toList(),
       refunds: json["refunds"] ?? [],
-      createdAt: json["createdAt"] ?? "",
-      updatedAt: json["updatedAt"] ?? "",
+      createdAt: json["createdAt"] ?? '',
+      updatedAt: json["updatedAt"] ?? '',
       v: json["__v"] ?? 0,
-      model: json["model"] ?? "",
+      model: json["model"] ?? '',
       skiPassType: json['skiPassType'],
       services: json['services'] != null
           ? List<ProductService>.from(
           json['services'].map((x) => ProductService.fromJson(x)))
           : [],
+      // NEW FIELDS
+      status: json['status'] ?? '',
+      openTime: json['openTime'] ?? '',
+      closeTime: json['closeTime'] ?? '',
+      foodType: json['foodType'] ?? '',
+      slots: (json['slots'] as List? ?? [])
+          .map((e) => Slot.fromJson(e))
+          .toList(),
+      availableSlots: (json['availableSlots'] as List? ?? [])
+          .map((e) => Slot.fromJson(e))
+          .toList(),
     );
   }
 
@@ -361,9 +563,43 @@ class RecentService {
       "model": model,
       "skiPassType": skiPassType,
       "services": services?.map((e) => e.toJson()).toList(),
+      // NEW FIELDS
+      "status": status,
+      "openTime": openTime,
+      "closeTime": closeTime,
+      "foodType": foodType,
+      "slots": slots.map((e) => e.toJson()).toList(),
+      "availableSlots": availableSlots.map((e) => e.toJson()).toList(),
     };
   }
 }
+
+class Slot {
+  final String id;
+  final String startTime;
+  final String endTime;
+
+  Slot({
+    required this.id,
+    required this.startTime,
+    required this.endTime,
+  });
+
+  factory Slot.fromJson(Map<String, dynamic> json) {
+    return Slot(
+      id: json['_id'] ?? '',
+      startTime: json['startTime'] ?? '',
+      endTime: json['endTime'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    "_id": id,
+    "startTime": startTime,
+    "endTime": endTime,
+  };
+}
+
 
 /// Review model
 class Review {

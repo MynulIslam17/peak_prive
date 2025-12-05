@@ -10,7 +10,6 @@ class AllServiceController extends GetxController {
   List<SkiPass> skiPassList = [];
   List<Result> restaurantServiceList = [];
 
-
   final authController = Get.find<AuthController>();
 
   /// Loading state
@@ -49,9 +48,9 @@ class AllServiceController extends GetxController {
                 .map((e) => Result.fromJson(e as Map<String, dynamic>))
                 .toList();
             break;
-
           default:
             errorMessage = "Unknown provider type: $providerType";
+            clearLists();
             return false;
         }
 
@@ -85,6 +84,28 @@ class AllServiceController extends GetxController {
   void clearLists() {
     skiPassList = [];
     restaurantServiceList = [];
+  }
 
+  /// ----------------------------
+  /// Restaurant Category Helpers
+  /// ----------------------------
+
+  /// Get unique restaurant categories (original casing)
+  List<String> getRestaurantCategories() {
+    return restaurantServiceList
+        .map((r) => r.category?.name ?? 'Unknown')
+        .toSet()
+        .toList();
+  }
+
+  /// Group restaurants by category (original casing)
+  Map<String, List<Result>> getRestaurantByCategory() {
+    final Map<String, List<Result>> map = {};
+    for (var r in restaurantServiceList) {
+      final name = r.category?.name ?? 'Unknown';
+      map.putIfAbsent(name, () => []);
+      map[name]!.add(r);
+    }
+    return map;
   }
 }

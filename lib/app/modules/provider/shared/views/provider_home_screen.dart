@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_home_shimmer.dart';
@@ -25,6 +26,7 @@ class ProviderHomeScreen extends StatefulWidget {
 class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
   final authController = Get.find<AuthController>();
   final homeController = Get.find<ProviderHomeController>();
+  final navController = Get.find<NavController>();
 
   final images = Assets.images;
   final icons = Assets.icons;
@@ -157,7 +159,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                     CategoryTitle(
                       title: "My service",
                       text: "See All",
-                      onClick: () {},
+                      onClick: () {
+                        navController.changeIndex(1);
+                      },
                     ),
 
                     const SizedBox(height: 11),
@@ -177,13 +181,23 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                               child: MyServiceCard(
                                 image: service.thumbnail, // service thumbnail
                                 title: service.title, // service title
-                                price: "\$${service.totalPrice}", // service amount/price
+
                                 rating: service.averageRating.toDouble(), // rating
                                 reviews: service.reviews.length, // number of reviews
                                 location: service.serviceArea, // location/service area
                                 onDelete: () {},
-                                onEdit: () {},
+                                onEdit: () async {
+                                  final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
+                                    "restaurant": service,
+                                    "isEdit": true,
+                                  });
+
+                                  if (result == true) { /// only refresh if actual changes happened
+
+                                  }
+                                },
                                 packageType: service.skiPassType,
+                                status: service.status,
                               ),
                             ),
                           );
@@ -198,7 +212,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                     CategoryTitle(
                       title: "Booking management",
                       text: "See All",
-                      onClick: () {},
+                      onClick: () {
+                        navController.changeIndex(2);
+                      },
                     ),
 
                 ListView.builder(
