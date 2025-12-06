@@ -79,6 +79,38 @@ class AllServiceController extends GetxController {
     }
   }
 
+  /// Removes an item locally from the correct list after a successful delete API call,
+  /// avoiding a full data refresh (and the shimmer effect).
+  void removeItemFromList(String itemId, String providerType) {
+    int initialLength;
+
+    switch (providerType) {
+      case 'Ski_Pass':
+        initialLength = skiPassList.length;
+        // 1. PERFORM THE REMOVAL (This returns void)
+        skiPassList.removeWhere((item) => item.id == itemId);
+        // 2. CHECK IF LIST LENGTH CHANGED
+        if (skiPassList.length < initialLength) update();
+        break;
+
+      case 'Restaurant':
+        initialLength = restaurantServiceList.length;
+        // 1. PERFORM THE REMOVAL
+        restaurantServiceList.removeWhere((item) => item.sId == itemId);
+        // 2. CHECK IF LIST LENGTH CHANGED
+        if (restaurantServiceList.length < initialLength) update();
+        break;
+
+      case 'Massage':
+        initialLength = massageServiceList.length;
+        // 1. PERFORM THE REMOVAL
+        massageServiceList.removeWhere((item) => item.sId == itemId);
+        // 2. CHECK IF LIST LENGTH CHANGED
+        if (massageServiceList.length < initialLength) update();
+        break;
+    }
+  }
+
   /// Refresh using last fetched URL
   Future<void> refreshServices() async {
     if (lastFetchedUrl != null) {

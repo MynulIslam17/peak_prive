@@ -49,6 +49,17 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     super.dispose();
   }
 
+  void _saveMassage()async{
+
+    String title=titleTEController.text;
+    String openTime=openTimeTEController.text;
+    String closeTime=closeTimeTEController.text;
+    String amount=amountTEController.text;
+    String description=descriptionTEController.text;
+    String recommendation=recommendationTEController.text;
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -220,9 +231,8 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
               width: double.infinity,
               height: 50.h,
               child: ElevatedButton(
-                onPressed: () {
-                  // Save logic
-                },
+
+                onPressed: _saveMassage,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary_1,
                   shape: RoundedRectangleBorder(

@@ -9,7 +9,6 @@ import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/my_service_card.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_service_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/pass/controller/delete_controller.dart';
-
 import '../../../../core/widgets/delete_dialog.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/views/add_pass_screen.dart';
@@ -29,28 +28,19 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   final authController = Get.find<AuthController>();
   final serviceController = Get.put(AllServiceController());
 
-  /// ----------------------------
-  /// Create Service by Provider
-  /// ----------------------------
   void _createNewService() async {
     final providerType = authController.userModel?.providerType ?? '';
 
     if (providerType == "Ski_Pass") {
       final result = await Get.to(() => const AddPassScreen(), arguments: {"isEdit": false});
-      if (result == true) {
-        await serviceController.refreshServices();
-      }
-    }
-
-    else if (providerType == "Restaurant") {
-      await Get.toNamed(Routes.addRestaurantService, arguments: {"isEdit": false});
-    }
-
-    else if (providerType == "Massage") {
-      await Get.toNamed(Routes.addMessageService, arguments: {"isEdit": false});
-    }
-
-    else {
+      if (result == true) await serviceController.refreshServices();
+    } else if (providerType == "Restaurant") {
+      final result = await Get.toNamed(Routes.addRestaurantService, arguments: {"isEdit": false});
+      if (result == true) await serviceController.refreshServices();
+    } else if (providerType == "Massage") {
+      final result = await Get.toNamed(Routes.addMessageService, arguments: {"isEdit": false});
+      if (result == true) await serviceController.refreshServices();
+    } else {
       Get.snackbar("Error", "Unsupported provider type: $providerType");
     }
   }
@@ -58,23 +48,17 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
   @override
   void initState() {
     super.initState();
-
     final providerType = authController.userModel?.providerType ?? "";
-
     String url;
     if (providerType == "Ski_Pass") {
       url = AppUrls.providerPassService;
-    }
-    else if (providerType == "Restaurant") {
+    } else if (providerType == "Restaurant") {
       url = AppUrls.providerRestaurantService;
-    }
-    else if (providerType == "Massage") {
+    } else if (providerType == "Massage") {
       url = AppUrls.providerMassageService;
-    }
-    else {
+    } else {
       url = AppUrls.providerServiceUrl;
     }
-
     serviceController.fetchServices(url);
   }
 
@@ -87,35 +71,20 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
       body: SafeArea(
         child: GetBuilder<AllServiceController>(
           builder: (controller) {
-            if (controller.isLoading) {
-              return const ProviderServiceShimmer();
-            }
+            if (controller.isLoading) return const ProviderServiceShimmer();
 
             final errorMessage = controller.errorMessage;
-
             if (errorMessage != null) {
-              return Center(
-                child: Text(errorMessage, style: AppTextStyle.sub_h3_medium_14()),
-              );
+              return Center(child: Text(errorMessage, style: AppTextStyle.sub_h3_medium_14()));
             }
 
-            /// ------------- Determine Active List -------------
             List<dynamic> activeList = [];
-
-            if (providerType == "Ski_Pass") {
-              activeList = controller.skiPassList;
-            }
-            else if (providerType == "Restaurant") {
-              activeList = controller.restaurantServiceList;
-            }
-            else if (providerType == "Massage") {
-              activeList = controller.massageServiceList;
-            }
+            if (providerType == "Ski_Pass") activeList = controller.skiPassList;
+            else if (providerType == "Restaurant") activeList = controller.restaurantServiceList;
+            else if (providerType == "Massage") activeList = controller.massageServiceList;
 
             if (activeList.isEmpty) {
-              return Center(
-                child: Text("No services found.", style: AppTextStyle.sub_h3_medium_14()),
-              );
+              return Center(child: Text("No services found.", style: AppTextStyle.sub_h3_medium_14()));
             }
 
             return Padding(
@@ -123,7 +92,6 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    /// ---------- Profile ----------
                     ProviderProfile(
                       imageUrl: authController.userModel?.profilePic ?? '',
                       role: "${authController.userModel?.providerType ?? ""} Provider",
@@ -132,15 +100,11 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                       icon: const Icon(Icons.notifications, color: Colors.red, size: 30),
                       onIconTap: () => print("Icon tapped!"),
                     ),
-
                     SizedBox(height: 24.h),
-
-                    /// ---------- Header Row ----------
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("My service (${controller.massageServiceList.length})", style: AppTextStyle.sub_h2_medium_16()),
-
+                        Text("My service (${activeList.length})", style: AppTextStyle.sub_h2_medium_16()),
                         InkWell(
                           borderRadius: BorderRadius.circular(8),
                           onTap: _createNewService,
@@ -161,18 +125,12 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                         ),
                       ],
                     ),
-
                     SizedBox(height: 17.h),
-
-                    /// -----------------------------
-                    /// MAIN LIST VIEW
-                    /// -----------------------------
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: activeList.length,
                       itemBuilder: (context, index) {
-                        /// ========= SKI PASS UI =========
                         if (providerType == "Ski_Pass") {
                           final pass = controller.skiPassList[index];
                           return Padding(
@@ -185,7 +143,6 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                               reviews: pass.reviews.length,
                               location: pass.serviceArea,
                               packageType: pass.skiPassType,
-
                               onDelete: () async {
                                 DeleteDialogService.show(
                                   context: context,
@@ -196,12 +153,11 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                     final result = await deleteController.deleteItem(
                                       url: AppUrls.providerPassServiceDelete(pass.id),
                                     );
-                                    if (result) await serviceController.refreshServices();
+                                    if (result) serviceController.removeItemFromList(pass.id, providerType);
                                     return result;
                                   },
                                 );
                               },
-
                               onEdit: () async {
                                 final result = await Get.to(() => const AddPassScreen(),
                                     arguments: {"pass": pass, "isEdit": true});
@@ -211,10 +167,8 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                           );
                         }
 
-                        /// ========= RESTAURANT UI =========
                         if (providerType == "Restaurant") {
                           final restaurant = controller.restaurantServiceList[index];
-
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: MyServiceCard(
@@ -224,7 +178,6 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                               rating: restaurant.averageRating ?? 0.0,
                               reviews: restaurant.reviews.length,
                               location: restaurant.serviceArea,
-
                               onDelete: () async {
                                 DeleteDialogService.show(
                                   context: context,
@@ -235,12 +188,11 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                     final result = await deleteController.deleteItem(
                                       url: AppUrls.deleteRestaurantUrl(restaurant.sId),
                                     );
-                                    if (result) await serviceController.refreshServices();
+                                    if (result) serviceController.removeItemFromList(restaurant.sId!, providerType);
                                     return result;
                                   },
                                 );
                               },
-
                               onEdit: () async {
                                 final result = await Get.toNamed(
                                   Routes.addRestaurantService,
@@ -252,10 +204,8 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                           );
                         }
 
-                        /// ========= MASSAGE UI =========
                         if (providerType == "Massage") {
                           final massage = controller.massageServiceList[index];
-
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: MyServiceCard(
@@ -265,23 +215,21 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                               rating: massage.averageRating ?? 0.0,
                               reviews: massage.reviews?.length ?? 0,
                               location: massage.serviceArea ?? "N/A",
-
                               onDelete: () async {
-                                // DeleteDialogService.show(
-                                //   context: context,
-                                //   title: "Delete Massage Service",
-                                //   message: "Are you sure?",
-                                //   onDelete: () async {
-                                //     final deleteController = Get.put(DeleteController());
-                                //     final result = await deleteController.deleteItem(
-                                //       url: AppUrls.deleteMassageUrl(massage.id),
-                                //     );
-                                //     if (result) await serviceController.refreshServices();
-                                //     return result;
-                                //   },
-                                // );
+                                DeleteDialogService.show(
+                                  context: context,
+                                  title: "Delete Massage Service",
+                                  message: "Are you sure?",
+                                  onDelete: () async {
+                                    final deleteController = Get.put(DeleteController());
+                                    final result = await deleteController.deleteItem(
+                                      url: AppUrls.deleteMassageServiceUrl(massage.sId!),
+                                    );
+                                    if (result) serviceController.removeItemFromList(massage.sId!, providerType);
+                                    return result;
+                                  },
+                                );
                               },
-
                               onEdit: () async {
                                 final result = await Get.toNamed(
                                   Routes.addMessageService,

@@ -179,6 +179,7 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
   ///================== massage provider========================
 
   static String providerMassageService="$baseUrl/massage/my-all";
+  static String  deleteMassageServiceUrl(String id)=>"$baseUrl/massage/delete/$id";
 
 
 
