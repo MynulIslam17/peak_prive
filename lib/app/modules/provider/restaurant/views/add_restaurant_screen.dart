@@ -371,6 +371,29 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
 
 
 
+  /// Helper method to check if a seat item has changed
+  bool _seatItemChanged(SeatItem item, Map<String, dynamic>? originalSeat, String seatType) {
+    if (originalSeat == null) {
+      // Create mode - always consider changed if we have data
+      return item.totalSeatController.text.isNotEmpty ||
+          item.pricePerSeatController.text.isNotEmpty ||
+          item.descriptionController.text.isNotEmpty ||
+          item.selectedSeatImage != null ||
+          item.seatImageUrl != null;
+    }
+
+    // Check each field for changes
+    bool totalQtyChanged = item.totalSeatController.text != originalSeat["totalSeat"];
+    bool priceChanged = item.pricePerSeatController.text != originalSeat["price"];
+    bool descriptionChanged = item.descriptionController.text != originalSeat["description"];
+
+    // Image changed only if a new file was selected (not just URL comparison)
+    bool photoChanged = item.selectedSeatImage != null; // New image picked
+
+    return totalQtyChanged || priceChanged || descriptionChanged || photoChanged;
+  }
+
+  /// Updated _saveRestaurant method with proper change detection
   void _saveRestaurant() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
@@ -385,91 +408,111 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       return;
     }
 
-    Map<String, dynamic> payload = {};
-
-    /// ----------------- MAIN RESTAURANT FIELDS -----------------
-    void addIfChanged(String key, dynamic value) {
-      if (!isFromEdit || value != originalData[key]) {
-        payload[key] = value;
-      }
-    }
-
-    addIfChanged("title", restaurantNameTEController.text.trim());
-    addIfChanged("categoryId", selectedCategoryId);
-    addIfChanged("openTime", openTime?.format(context) ?? "");
-    addIfChanged("closeTime", closeTime?.format(context) ?? "");
-    addIfChanged("serviceArea", locationTEController.text.trim());
-
-    // Thumbnail
-    if (!isFromEdit || selectedImage != null) {
-      payload["thumbnail"] = selectedImage ?? selectedImageUrl;
-    }
-
-    // Time Slots
-    if (!isFromEdit) {
-      payload["timeSlots"] = timeSlots;
-    } else {
-      final currentSlots = List<String>.from(timeSlots)..sort();
-      final originalSlots = List<String>.from(originalData["timeSlots"] ?? [])..sort();
-      if (currentSlots.join(',') != originalSlots.join(',')) {
-        payload["timeSlots"] = timeSlots;
-      }
-    }
-
-    /// ----------------- SEAT ITEMS -----------------
-    Map<String, dynamic> buildSeatPayload(SeatItem item, Map<String, dynamic>? original, String seatType) {
-      original ??= {}; // fallback for create mode
-      Map<String, dynamic> seatPayload = {};
-
-      void addSeatIfChanged(String key, String value) {
-        if (!isFromEdit || value != original![key]) {
-          seatPayload[key] = value;
-        }
-      }
-
-      addSeatIfChanged("totalQty", item.totalSeatController.text);
-      addSeatIfChanged("price", item.pricePerSeatController.text);
-      addSeatIfChanged("description", item.descriptionController.text);
-
-      // Photo
-      if (!isFromEdit) {
-        seatPayload["photo"] = item.selectedSeatImage ?? item.seatImageUrl;
-      } else if (item.selectedSeatImage != null) {
-        seatPayload["photo"] = item.selectedSeatImage;
-      }
-
-      // Always include seat type
-      seatPayload["seat"] = seatType;
-
-      // Ensure all fields included
-      seatPayload["totalQty"] ??= item.totalSeatController.text;
-      seatPayload["price"] ??= item.pricePerSeatController.text;
-      seatPayload["description"] ??= item.descriptionController.text;
-
-      return seatPayload;
-    }
-
-    payload["items"] = [
-      buildSeatPayload(vipSeatItem, isFromEdit ? originalData["vipSeat"] : null, "VIP"),
-      buildSeatPayload(normalSeatItem, isFromEdit ? originalData["normalSeat"] : null, "Normal"),
-    ];
-
-    /// ----------------- CHECK IF ANY CHANGE DETECTED -----------------
-    bool anyChangeDetected = payload.keys.any((key) =>
-    key != "items" && payload[key] != null
-    ) || (payload["items"] as List).any((seat) => seat.isNotEmpty);
-
-    if (isFromEdit && !anyChangeDetected) {
+    if (isFromEdit && restaurantModel == null) {
       Get.snackbar(
-        "No Changes",
-        "No fields were modified. Nothing to update.",
-        backgroundColor: Colors.blue.shade300,
+        "Error",
+        "Restaurant data not found",
+        backgroundColor: Colors.red,
         colorText: Colors.white,
       );
       return;
     }
 
-    /// ----------------- API CALL -----------------
+    /// ==================== CHECK FOR CHANGES ====================
+    bool hasChanges = false;
+
+    // Check basic fields
+    if (restaurantNameTEController.text.trim() != originalData["restaurantName"]) hasChanges = true;
+    if (selectedCategoryId != originalData["categoryId"]) hasChanges = true;
+    if (openTime?.format(context) != originalData["openTime"]) hasChanges = true;
+    if (closeTime?.format(context) != originalData["closeTime"]) hasChanges = true;
+    if (locationTEController.text.trim() != originalData["serviceArea"]) hasChanges = true;
+
+    // Check thumbnail (only if a new image was selected)
+    if (selectedImage != null) hasChanges = true;
+
+    // Check time slots
+    final currentSlots = List<String>.from(timeSlots)..sort();
+    final originalSlots = List<String>.from(originalData["timeSlots"] ?? [])..sort();
+    if (currentSlots.join(',') != originalSlots.join(',')) hasChanges = true;
+
+    // Check seat items
+    bool vipChanged = _seatItemChanged(vipSeatItem, originalData["vipSeat"], "VIP");
+    bool normalChanged = _seatItemChanged(normalSeatItem, originalData["normalSeat"], "Normal");
+    if (vipChanged || normalChanged) hasChanges = true;
+
+    // Early return if no changes detected
+    if (isFromEdit && !hasChanges) {
+      Get.snackbar(
+        "No Changes",
+        "No fields were modified. Nothing to update.",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    /// ==================== BUILD PAYLOAD ====================
+    Map<String, dynamic> payload = {};
+
+    // Add only changed fields for non-seat data
+    if (!isFromEdit || restaurantNameTEController.text.trim() != originalData["restaurantName"]) {
+      payload["title"] = restaurantNameTEController.text.trim();
+    }
+
+    if (!isFromEdit || selectedCategoryId != originalData["categoryId"]) {
+      payload["categoryId"] = selectedCategoryId;
+    }
+
+    if (!isFromEdit || openTime?.format(context) != originalData["openTime"]) {
+      payload["openTime"] = openTime?.format(context) ?? "";
+    }
+
+    if (!isFromEdit || closeTime?.format(context) != originalData["closeTime"]) {
+      payload["closeTime"] = closeTime?.format(context) ?? "";
+    }
+
+    if (!isFromEdit || locationTEController.text.trim() != originalData["serviceArea"]) {
+      payload["serviceArea"] = locationTEController.text.trim();
+    }
+
+    // Thumbnail - only if new image selected
+    if (!isFromEdit) {
+      payload["thumbnail"] = selectedImage ?? selectedImageUrl;
+    } else if (selectedImage != null) {
+      payload["thumbnail"] = selectedImage;
+    }
+
+    // Time slots - only if changed
+    if (!isFromEdit) {
+      payload["timeSlots"] = timeSlots;
+    } else if (currentSlots.join(',') != originalSlots.join(',')) {
+      payload["timeSlots"] = timeSlots;
+    }
+
+    /// ==================== BUILD SEAT ITEMS ====================
+    // IMPORTANT: Always send BOTH seat items with ALL their fields
+    // Don't do conditional inclusion - always include both VIP and Normal with complete data
+    List<Map<String, dynamic>> items = [
+      {
+        "seat": "VIP",
+        "totalQty": vipSeatItem.totalSeatController.text,
+        "price": vipSeatItem.pricePerSeatController.text,
+        "description": vipSeatItem.descriptionController.text,
+        "photo": vipSeatItem.selectedSeatImage ?? vipSeatItem.seatImageUrl,
+      },
+      {
+        "seat": "Normal",
+        "totalQty": normalSeatItem.totalSeatController.text,
+        "price": normalSeatItem.pricePerSeatController.text,
+        "description": normalSeatItem.descriptionController.text,
+        "photo": normalSeatItem.selectedSeatImage ?? normalSeatItem.seatImageUrl,
+      }
+    ];
+
+    payload["items"] = items;
+
+    /// ==================== API CALL ====================
     bool success;
     if (isFromEdit) {
       success = await _restaurantController.updateRestaurant(
@@ -492,9 +535,9 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       );
     }
 
-    // ----------------- RESULT -----------------
+    // Result
     if (success) {
-      Navigator.pop(context, true); /// return true so parent screen can refresh
+      Navigator.pop(context, true);
     } else {
       Get.snackbar(
         "Error",
@@ -504,7 +547,6 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       );
     }
   }
-
 
 
   /// Disposes of all TextEditingControllers and cleans up resources.

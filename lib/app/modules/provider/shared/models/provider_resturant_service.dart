@@ -1,3 +1,5 @@
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+
 class RestaurantServiceModel {
   int code;
   String message;
@@ -185,6 +187,70 @@ class Result {
     '__v': iV,
     'serviceFee': serviceFee,
   };
+  factory Result.fromRecentService(RecentService service) {
+    // 1. Map Category (ServiceCategory to Category)
+    final Category? targetCategory = service.category != null ? Category(
+      sId: service.category!.id,
+      name: service.category!.name,
+      categoryPhoto: service.category!.categoryPhoto,
+    ) : null;
+
+    // 2. Map Items (ServiceItem to Item)
+    final List<Item> targetItems = service.items.map((si) => Item(
+      sId: si.id ?? '',
+      seat: si.seat ?? '',
+      photo: si.photo ?? '',
+      // Use .toInt() for safety
+      totalQty: (si.totalQty ?? 0).toInt(),
+      availableQty: (si.availableQty ?? 0).toInt(),
+      price: (si.price ?? 0).toInt(),
+      description: si.description ?? '',
+    )).toList();
+
+    // 3. Map Refunds (List<dynamic> to List<Refund>)
+    final List<Refund> targetRefunds = service.refunds.whereType<Map<String, dynamic>>()
+        .map((json) => Refund.fromJson(json))
+        .toList();
+
+    // 4. Map Slots/Reviews (Assumes inner models are compatible via toJson/fromJson)
+    final List<Slot> targetSlots = service.slots.map((s) => Slot.fromJson(s.toJson())).toList();
+    final List<Slot> targetAvailableSlots = service.availableSlots.map((s) => Slot.fromJson(s.toJson())).toList();
+    final List<Review> targetReviews = service.reviews.map((r) => Review.fromJson(r.toJson())).toList();
+
+    return Result(
+      sId: service.id,
+      title: service.title,
+      thumbnail: service.thumbnail,
+      openTime: service.openTime,
+      closeTime: service.closeTime,
+      serviceArea: service.serviceArea,
+      foodType: service.foodType,
+      status: service.status,
+      createdAt: service.createdAt,
+      updatedAt: service.updatedAt,
+
+      // Type Conversions
+      serviceFee: service.serviceFee.toInt(),
+      averageRating: service.averageRating.toDouble(),
+      iV: service.v ?? 0,
+
+      // Mapped Objects/Lists
+      category: targetCategory,
+      items: targetItems,
+      refunds: targetRefunds,
+      slots: targetSlots,
+      availableSlots: targetAvailableSlots,
+      reviews: targetReviews,
+
+      // *** FINAL FIX FOR OWNER ***
+      // We explicitly set owner to null, as the source gives a String ID,
+      // and you confirmed you don't need the owner object.
+      owner: null,
+
+      // Special Cases
+      description: '', // Set default as field is missing in RecentService
+    );
+  }
 }
 
 class Category {

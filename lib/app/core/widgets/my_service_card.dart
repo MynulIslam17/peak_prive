@@ -117,24 +117,51 @@ class MyServiceCard extends StatelessWidget {
                     /// Rating + Location
                     Row(
                       children: [
-                        Assets.icons.star.svg(height: 12.h, width: 12.h),
-                        SizedBox(width: 4.w),
-                        Text(
-                          rating.toStringAsFixed(1),
-                          style: AppTextStyle.c_regular_12(),
+
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Assets.icons.star.svg(height: 12.h, width: 12.h),
+                              SizedBox(width: 4.w),
+                              Text(
+                                rating.toStringAsFixed(1),
+                                style: AppTextStyle.c_regular_12(),
+                              ),
+                              SizedBox(width: 4.w),
+                              Flexible( // Use Flexible/Expanded for the review count text
+                                child: Text(
+                                  "($reviews+)",
+                                  style: AppTextStyle.c_light_12(),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          "($reviews+)",
-                          style: AppTextStyle.c_light_12(),
-                        ),
-                        const Spacer(),
-                        Assets.icons.mapPinSimpleArea
-                            .svg(height: 14.h, width: 14.w),
-                        SizedBox(width: 5.w),
-                        Text(
-                          location,
-                          style: AppTextStyle.c_regular_12(),
+
+
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end, // Align location to the right
+                            mainAxisSize: MainAxisSize.min, // Keep the location section compact
+                            children: [
+                              Assets.icons.mapPinSimpleArea
+                                  .svg(height: 14.h, width: 14.w),
+                              SizedBox(width: 5.w),
+                              Flexible(
+                                child: Text(
+
+                                  location,
+                                  softWrap: true,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.c_regular_12(),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

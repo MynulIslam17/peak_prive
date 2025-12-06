@@ -162,17 +162,23 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 /// ==============pass create url=================
   static String providerPassCreateUrl="$baseUrl/ski-pass/create";
-  static String providerRestaurantService="$baseUrl/restaurant/my-all";
+
 
 
   ///=============restaurant provider=======================
 
   ///      create restaurant
+  static String providerRestaurantService="$baseUrl/restaurant/my-all";
   static String createRestaurantUrl="$baseUrl/restaurant/create";
   ///      update restaurant
   static String updateRestaurantUrl(String id)=>"$baseUrl/restaurant/update/${id}";
   ///      delete restaurant
   static String deleteRestaurantUrl(String id)=>"$baseUrl/restaurant/delete/${id}";
+
+
+  ///================== massage provider========================
+
+  static String providerMassageService="$baseUrl/massage/my-all";
 
 
 

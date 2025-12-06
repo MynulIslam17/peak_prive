@@ -1,5 +1,4 @@
-
- import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -22,13 +21,13 @@ import '../models/restaurant_bookin_model.dart';
 import '../models/ski_pass_booking_model.dart';
 
 class ProviderBookingRequestScreen extends StatefulWidget {
-   const ProviderBookingRequestScreen({super.key});
+  const ProviderBookingRequestScreen({super.key});
 
-   @override
-   State<ProviderBookingRequestScreen> createState() => _ProviderBookingRequestScreenState();
- }
+  @override
+  State<ProviderBookingRequestScreen> createState() => _ProviderBookingRequestScreenState();
+}
 
- class _ProviderBookingRequestScreenState extends State<ProviderBookingRequestScreen> {
+class _ProviderBookingRequestScreenState extends State<ProviderBookingRequestScreen> {
 
 
   final images=Assets.images;
@@ -39,14 +38,14 @@ class ProviderBookingRequestScreen extends StatefulWidget {
   /// finds controller
 
   final authController = Get.find<AuthController>();
- // final  bookingController=Get.put(ProviderBookingController());
+  // final  bookingController=Get.put(ProviderBookingController());
   final  allBookingController=Get.put(BookingController());
 
 
   @override
   void initState() {
     // TODO: implement initState
-     allBookingController.fetchBookings();
+    allBookingController.fetchBookings();
     super.initState();
   }
 
@@ -58,177 +57,194 @@ class ProviderBookingRequestScreen extends StatefulWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: GetBuilder<BookingController>(builder: (controller){
-        
-          if(controller.isLoading){
-            return BookingItemShimmer();
-          }
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: GetBuilder<BookingController>(builder: (controller){
+
+            if(controller.isLoading){
+              return BookingItemShimmer();
+            }
 
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Provider Profile
-                  ProviderProfile(
-                    imageUrl: authController.userModel!.profilePic ?? '',
-                    role: "${authController.userModel!.providerType ?? ""} Provider",
-                    name: authController.userModel!.fullName ?? "",
-                    onTap: () => Get.toNamed(Routes.providerProfileScreen),
-                    icon: const Icon(
-                      Icons.notifications,
-                      color: Colors.red,
-                      size: 30,
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// Provider Profile
+                    ProviderProfile(
+                      imageUrl: authController.userModel!.profilePic ?? '',
+                      role: "${authController.userModel!.providerType ?? ""} Provider",
+                      name: authController.userModel!.fullName ?? "",
+                      onTap: () => Get.toNamed(Routes.providerProfileScreen),
+                      icon: const Icon(
+                        Icons.notifications,
+                        color: Colors.red,
+                        size: 30,
+                      ),
+                      onIconTap: () => print("Icon tapped!"),
                     ),
-                    onIconTap: () => print("Icon tapped!"),
-                  ),
-          
-                  const SizedBox(height: 18),
-          
-                  /// All bookings title
-                  Text("All Bookings", style: AppTextStyle.sub_h2_medium_16()),
-                  const SizedBox(height: 15),
-          
-                  /// Booking list
-                  GetBuilder<BookingController>(
-                    builder: (controller) {
 
-                      // Determine which list to use based on provider type
-                      final isSkiPass = authController.userModel!.providerType == "Ski_Pass";
-                      final isRestaurant = authController.userModel!.providerType == "Restaurant";
+                    const SizedBox(height: 18),
 
-                      // final bookings = isSkiPass
-                      //     ? controller.bookingResultsList
-                      //     : isRestaurant
-                      //     ? controller.restaurantList
-                      //     : controller.bookingResultsList; // fallback
+                    /// All bookings title
+                    Text("All Bookings (${controller.bookings.length})", style: AppTextStyle.sub_h2_medium_16()),
+                    const SizedBox(height: 15),
 
-                      if (controller.bookings.isEmpty) {
-                        return Center(
-                          child: Text(controller.errorMessage ?? "No bookings found."),
-                        );
-                      }
+                    /// Booking list
+                    GetBuilder<BookingController>(
+                      builder: (controller) {
+
+                        // Determine which list to use based on provider type
+                        final isSkiPass = authController.userModel!.providerType == "Ski_Pass";
+                        final isRestaurant = authController.userModel!.providerType == "Restaurant";
+                        final isMassage = authController.userModel!.providerType == "Massage";
+
+                        if (controller.bookings.isEmpty) {
+                          return Center(
+                            child: Text(controller.errorMessage ?? "No bookings found."),
+                          );
+                        }
 
 
-                      if(isSkiPass){
+                        if(isSkiPass){
 
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: controller.bookings.length,
-                          itemBuilder: (context, index) {
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: controller.bookings.length,
+                            itemBuilder: (context, index) {
 
-                            final result=controller.bookings[index];
-                            final product=result.product;
-
-                            if (product == null) return const SizedBox.shrink();
-
-                            return ServiceInfoCard(
-                              imageUrl:product.thumbnail?? "",
-                              title1: "Title",
-                              value1: product.title ?? '',
-                              icon1Path: "assets/icons/info.svg",
-                              title2: "SkiPass Type",
-                              value2:  product.skiPassType?? '-',
-                              icon2Path: "assets/icons/badge.svg",
-                              title3: "Total Amount",
-                              value3: result.totalPrice.toString(),
-                              icon3Path: "assets/icons/amount.svg",
-                              title4: "Location",
-                              value4: product.serviceArea?? '-',
-                              icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                            );
-                          },
-                        );
-                      }
-                      else if (isRestaurant) {
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: controller.bookings.length,
-                          itemBuilder: (context, index) {
-                            final result = controller.bookings[index];
-                            final product = result.product;
-
-                            if (product == null || result.bookingItems.isEmpty || result.slots.isEmpty) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final bookingItem = result.bookingItems[0];
-                            final slot = result.slots[0];
-
-                            return ServiceInfoCard(
-                              imageUrl: product.thumbnail ?? '',
-                              title1: "SetType",
-                              value1: bookingItem.itemDetails?.seat ?? '-',
-                              icon1Path: "assets/icons/badge.svg",
-                              title2: "Seat Count",
-                              value2: bookingItem.quantity?.toString() ?? '0',
-                              icon2Path: "assets/icons/user3.svg",
-                              title3: "Slot",
-                              value3: "${slot.startTime ?? '-'}-${slot.endTime ?? '-'}",
-                              icon3Path: "assets/icons/time.svg",
-                              title4: "Total Price",
-                              value4: (result.totalPrice ?? 0).toString(),
-                              icon4Path: "assets/icons/CurrencyCircleDollar.svg",
-                            );
-                          },
-                        );
-                      }
-                      else{
-                        return Text("sa");
-                      }
+                              final result = controller.bookings[index];
+                              final product = result.product;
 
 
+                              if (product == null) {
 
-                      //else{
-                      //   return ListView.builder(
-                      //     shrinkWrap: true,
-                      //     physics: NeverScrollableScrollPhysics(),
-                      //     itemCount: controller.bookingResultsList.length,
-                      //     itemBuilder: (context, index) {
-                      //       final booking = controller.bookingResultsList[index];
-                      //       final user = controller.bookingResultsList[index].user;
-                      //       final product = booking.product;
-                      //
-                      //       if (product == null) return const SizedBox.shrink();
-                      //
-                      //       return ServiceInfoCard(
-                      //         imageUrl: product.thumbnail ?? '',
-                      //         title1: "Title",
-                      //         value1: product.title ?? '',
-                      //         icon1Path: "assets/icons/info.svg",
-                      //         title2: "SkiPass Type",
-                      //         value2:  product.skiPassType?? '-',
-                      //         icon2Path: "assets/icons/badge.svg",
-                      //         title3: "Total Amount",
-                      //         value3: (booking.totalPrice ?? 0).toString(),
-                      //         icon3Path: "assets/icons/amount.svg",
-                      //         title4: "Location",
-                      //         value4: user!.address?? '-',
-                      //         icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                      //       );
-                      //     },
-                      //   );
-                      // }
+                                return const SizedBox.shrink();
+                              }
+
+                              return ServiceInfoCard(
+                                imageUrl: product.thumbnail ?? "",
+                                title1: "Title",
+                                value1: product.title ?? 'N/A',
+                                icon1Path: "assets/icons/info.svg",
+                                title2: "SkiPass Type",
+                                value2:  product.skiPassType ?? 'N/A',
+                                icon2Path: "assets/icons/badge.svg",
+                                title3: "Total Amount",
+                                value3: (result.totalPrice ?? 0).toString(),
+                                icon3Path: "assets/icons/amount.svg",
+                                title4: "Location",
+                                value4: product.serviceArea ?? 'N/A',
+                                icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                              );
+                            },
+                          );
+                        }
+                        else if (isRestaurant) {
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: controller.bookings.length,
+                            itemBuilder: (context, index) {
+                              final result = controller.bookings[index];
+                              final product = result.product;
 
 
+                              if (product == null || result.bookingItems.isEmpty || result.slots.isEmpty) {
 
-                    },
-                  )
-          
-                ],
+                                return const SizedBox.shrink();
+                              }
+
+                              final bookingItem = result.bookingItems[0];
+                              final slot = result.slots[0];
+
+
+                              return ServiceInfoCard(
+                                imageUrl: product.thumbnail ?? 'assets/images/default_restaurant.png',
+                                title1: "Seat Type",
+                                value1: bookingItem.itemDetails?.seat ?? 'N/A',
+                                icon1Path: "assets/icons/badge.svg",
+                                title2: "Seat Count",
+                                value2: bookingItem.quantity?.toString() ?? '0',
+                                icon2Path: "assets/icons/user3.svg",
+                                title3: "Slot",
+                                // Null safety added for slot properties
+                                value3: "${slot.startTime ?? 'N/A'}-${slot.endTime ?? 'N/A'}",
+                                icon3Path: "assets/icons/time.svg",
+                                title4: "Total Price",
+                                value4: (result.totalPrice ?? 0).toString(),
+                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                              );
+                            },
+                          );
+                        }
+                        else if(isMassage){ // For Massage Provider
+                          return ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: controller.bookings.length,
+                            itemBuilder: (context, index) {
+
+                              final result = controller.bookings[index];
+                              final product = result.product;
+
+                              if (product == null) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final dateString = result.date;
+                              String formattedDate = 'N/A';
+                              try {
+                                if (dateString != null) {
+                                  // This attempts to parse the date like "2025-11-24T18:00:00.000Z"
+                                  final date = DateTime.parse(dateString);
+                                  formattedDate = "${date.day}/${date.month}/${date.year}";
+                                }
+                              } catch (_) {
+                                // Handle potential date format error
+                                formattedDate = 'Invalid Date';
+                              }
+
+                              return ServiceInfoCard(
+                                imageUrl: product.thumbnail ?? 'assets/images/default_massage.png',
+
+                                title1: "Title",
+                                value1: product.title ?? 'N/A',
+                                icon1Path: "assets/icons/User.svg",
+
+                                title2: "Duration",
+                                value2: result.duration?? 'N/A', // Time is directly available
+                                icon2Path: "assets/icons/time.svg",
+
+                                title3: "Date Time",
+                                value3: formattedDate ?? 'N/A', // Duration is available
+                                icon3Path: "assets/icons/CalendarDots.svg",
+
+                                title4: "Total Price",
+                                value4: (result.totalPrice ?? 0).toString(),
+                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                              );
+                            },
+                          );
+                        }
+                        else{
+                          return Center(child: Text("data"),);
+                        }
+
+                      },
+                    )
+
+                  ],
+                ),
               ),
-            ),
-          );
-        
-        }),
-      )
+            );
+
+          }),
+        )
     );
   }
 
- }
+}

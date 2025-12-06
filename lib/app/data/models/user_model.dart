@@ -7,7 +7,7 @@ class UserModel {
   final String address;
   final String profilePic;
   final String? providerType;
-  String? token; // Store accessToken here
+  String? token;
 
   UserModel({
     required this.id,

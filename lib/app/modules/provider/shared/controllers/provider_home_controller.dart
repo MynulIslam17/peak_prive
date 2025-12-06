@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
@@ -6,61 +5,46 @@ import 'package:harry_service_app/app/data/services/network_caller.dart';
 import '../models/provider_home_model.dart';
 
 class ProviderHomeController extends GetxController {
-  // -------------------------
-  // VARIABLES
-  // -------------------------
 
-  /// Stores the provider home data after successful API fetch
   ProviderHomeModel? providerHome;
-
-  /// Indicates whether the API request is in progress
   bool isLoading = false;
-
-  /// Stores any error messages from the API or exceptions
   String? errorMessage;
 
-  // -------------------------
-  // FETCH PROVIDER HOME DATA
-  // -------------------------
-
   /// Fetches provider home data from API.
-  /// Updates [providerHome], [isLoading], and [errorMessage].
+  /// Set [showLoader] to false to perform a silent background fetch.
   /// Returns true if the API call is successful, false otherwise.
-  Future<bool> fetchProviderHomeData() async {
+  Future<bool> fetchProviderHomeData({bool showLoader = true}) async {
     try {
-      isLoading = true; // Start loading
-      errorMessage = null; // Clear previous errors
-      update(); // Refresh UI
+      if (showLoader) {
+        isLoading = true;
+      }
+      errorMessage = null;
+      update();
 
-      // Make API call using NetworkCaller
       NetworkResponse response =
       await Get.find<NetworkCaller>().getRequest(url: AppUrls.providerHome);
 
-      // Check if API response is valid
       if (response.statusCode == 200) {
         final data = response.body!["data"]!;
-        providerHome = ProviderHomeModel.fromJson(data); // Parse JSON
+        providerHome = ProviderHomeModel.fromJson(data);
         return true;
       } else {
         errorMessage = "Failed to load data: ${response.statusCode}";
         return false;
       }
     } catch (e) {
-      // Catch exceptions and save error
       errorMessage = "Something went wrong: $e";
       return false;
     } finally {
-      isLoading = false; // Stop loading
-      update(); // Refresh UI
+      if (showLoader) {
+        isLoading = false;
+      }
+      update();
     }
   }
 
-  // -------------------------
-  // OPTIONAL: REFRESH DATA
-  // -------------------------
-
-  /// Refreshes provider home data manually
+  /// Refreshes provider home data manually without showing the full-screen loader.
   Future<void> refreshData() async {
-    await fetchProviderHomeData();
+    await fetchProviderHomeData(showLoader: false);
   }
 }

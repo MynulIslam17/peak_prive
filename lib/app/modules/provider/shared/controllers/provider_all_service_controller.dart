@@ -1,21 +1,22 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
-import '../../../user/shared/models/ski_pass_model.dart' hide SkiPass;
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
+import '../../../user/shared/models/ski_pass_model.dart';
 import '../models/provider_resturant_service.dart';
-import '../models/provider_pass_service.dart';
 
 class AllServiceController extends GetxController {
   /// Lists for different provider types
   List<SkiPass> skiPassList = [];
   List<Result> restaurantServiceList = [];
+  List<MassageResult> massageServiceList = [];
 
   final authController = Get.find<AuthController>();
 
   /// Loading state
   bool isLoading = false;
 
-  /// Error message (if any)
+  /// Error message
   String? errorMessage;
 
   /// Cache last URL for refresh
@@ -38,16 +39,24 @@ class AllServiceController extends GetxController {
         final providerType = authController.userModel?.providerType ?? '';
 
         switch (providerType) {
-          case 'ski_pass':
+          case 'Ski_Pass':
             skiPassList = resultList
                 .map((e) => SkiPass.fromJson(e as Map<String, dynamic>))
                 .toList();
             break;
+
           case 'Restaurant':
             restaurantServiceList = resultList
                 .map((e) => Result.fromJson(e as Map<String, dynamic>))
                 .toList();
             break;
+
+          case 'Massage':
+            massageServiceList = resultList
+                .map((e) => MassageResult.fromJson(e as Map<String, dynamic>))
+                .toList();
+            break;
+
           default:
             errorMessage = "Unknown provider type: $providerType";
             clearLists();
@@ -84,13 +93,14 @@ class AllServiceController extends GetxController {
   void clearLists() {
     skiPassList = [];
     restaurantServiceList = [];
+    massageServiceList = [];
   }
 
   /// ----------------------------
   /// Restaurant Category Helpers
   /// ----------------------------
 
-  /// Get unique restaurant categories (original casing)
+  /// Get unique restaurant categories
   List<String> getRestaurantCategories() {
     return restaurantServiceList
         .map((r) => r.category?.name ?? 'Unknown')
@@ -98,14 +108,16 @@ class AllServiceController extends GetxController {
         .toList();
   }
 
-  /// Group restaurants by category (original casing)
+  /// Group restaurants by category
   Map<String, List<Result>> getRestaurantByCategory() {
     final Map<String, List<Result>> map = {};
+
     for (var r in restaurantServiceList) {
       final name = r.category?.name ?? 'Unknown';
       map.putIfAbsent(name, () => []);
       map[name]!.add(r);
     }
+
     return map;
   }
 }

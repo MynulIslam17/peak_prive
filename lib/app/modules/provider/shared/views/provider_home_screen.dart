@@ -9,12 +9,17 @@ import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_home_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
 
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/constants/api_urls.dart';
+import '../../../../core/widgets/delete_dialog.dart';
 import '../../../../core/widgets/dynamic_booking_card.dart';
 import '../../../../core/widgets/my_service_card.dart';
 import '../../../../core/widgets/provider_profile.dart';
 import '../../../../routes/app_routes.dart';
+import '../../pass/controller/delete_controller.dart';
+import '../controllers/provider_all_service_controller.dart' show AllServiceController;
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({super.key});
@@ -173,6 +178,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                         itemCount: recentServices.length,
                         itemBuilder: (context, index) {
 
+                          String providerType=authController.userModel!.providerType!;
+
                           final service = recentServices[index];
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
@@ -185,16 +192,89 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 rating: service.averageRating.toDouble(), // rating
                                 reviews: service.reviews.length, // number of reviews
                                 location: service.serviceArea, // location/service area
-                                onDelete: () {},
+
+                                /// delete
+                                onDelete: () async {
+
+                                  if(providerType=="Ski_Pass"){
+                                    DeleteDialogService.show(
+                                      context: context,
+                                      title: "Delete Service",
+                                      message: "Are you sure you want to delete this service?",
+                                      onDelete: () async {
+                                        final deleteController = Get.put(DeleteController());
+                                        final result = await deleteController.deleteItem(
+                                            url: AppUrls.providerPassServiceDelete(service.id)
+                                        );
+
+                                        if (result) {
+
+                                          homeController.providerHome!.recentServices.removeAt(index);
+                                          homeController.update();
+
+
+                                          Future.microtask(() {
+
+                                            homeController.refreshData();
+                                          });
+
+                                          return true; // Closes the dialog quickly
+                                        } else {
+                                          Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                          return false;
+                                        }
+                                      },
+                                    );
+                                  }else{
+                                    DeleteDialogService.show(
+                                      context: context,
+                                      title: "Delete Seat",
+                                      message: "Are you sure you want to delete this service?",
+                                      onDelete: () async {
+                                        final deleteController = Get.put(DeleteController());
+                                        final result = await deleteController.deleteItem(
+                                            url: AppUrls.deleteRestaurantUrl(service.id)
+                                        );
+
+                                        if (result) {
+
+                                          homeController.providerHome!.recentServices.removeAt(index);
+                                          homeController.update();
+
+
+                                          Future.microtask(() {
+
+                                            homeController.refreshData();
+                                          });
+
+                                          return true; // Closes the dialog quickly
+                                        } else {
+                                          Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                          return false;
+                                        }
+                                      },
+                                    );
+                                  }
+
+
+                                },
+
+                                /// edit
                                 onEdit: () async {
+
+
+
+                                  final fullRestaurantModel = Result.fromRecentService(service);
+
                                   final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
-                                    "restaurant": service,
+                                    "restaurant": fullRestaurantModel, // Pass the converted model
                                     "isEdit": true,
                                   });
 
-                                  if (result == true) { /// only refresh if actual changes happened
-
+                                  if (result == true) { // only refresh if actual changes happened
+                                    homeController.refreshData();
                                   }
+
                                 },
                                 packageType: service.skiPassType,
                                 status: service.status,
@@ -217,64 +297,81 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                       },
                     ),
 
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: recentBookings.length,
-                  itemBuilder: (context, index) {
-                    final booking = recentBookings[index];
-                    final product = booking.product;
-                    final providerType=authController.userModel!.providerType;
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: recentBookings.length,
+                      itemBuilder: (context, index) {
+                        final booking = recentBookings[index];
+                        final product = booking.product;
+                        final providerType = authController.userModel?.providerType ?? '';
+
+                        if (product == null) return const SizedBox();
 
 
-                    if (product == null) return const SizedBox();
-
-                    if(providerType=="Ski_Pass"){
-                      return ServiceInfoCard(
-                        imageUrl: product.thumbnail ?? '',
-                        title1: "Title",
-                        value1: product.title ?? '',
-                        icon1Path: "assets/icons/info.svg",
-
-                        title2: "SkiPass Type",
-                        value2: product.skiPassType ?? '-',
-                        icon2Path: "assets/icons/badge.svg",
-
-                        title3: "Total Amount",
-                        value3: (booking.totalPrice ?? product.totalPrice ?? 0).toString(),
-                        icon3Path: "assets/icons/amount.svg",
-
-                        title4: "Location",
-                        value4: product.serviceArea ?? '-',
-                        icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                      );
-                    }else {
-                      return ServiceInfoCard(
-                        imageUrl: product.thumbnail ?? '',
-                        title1: "Title",
-                        value1: product.title ?? '',
-                        icon1Path: "assets/icons/info.svg",
-
-                        title2: "Duration",
-                        value2: booking.duration ?? '-',
-                        icon2Path: "assets/icons/time.svg",
-
-                        title3: "Total Amount",
-                        value3: (booking.totalPrice ?? product.totalPrice ?? 0).toString(),
-                        icon3Path: "assets/icons/amount.svg",
-
-                        title4: "Location",
-                        value4: product.serviceArea ?? '-',
-                        icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                      );
-                    }
+                        final item = booking.bookingItems.isNotEmpty ? booking.bookingItems[0] : null;
 
 
 
-                  },
-                )
 
-                ],
+                        if (providerType == "Ski_Pass") {
+                          return ServiceInfoCard(
+                            imageUrl: product.thumbnail ?? '',
+                            title1: "Title",
+                            value1: product.title ?? '-',
+                            icon1Path: "assets/icons/info.svg",
+
+                            title2: "SkiPass Type",
+                            value2: product.skiPassType ?? '-',
+                            icon2Path: "assets/icons/badge.svg",
+
+                            title3: "Total Amount",
+                            value3: (booking.totalPrice != 0 ? booking.totalPrice : product.totalPrice ?? 0).toString(),
+                            icon3Path: "assets/icons/amount.svg",
+
+                            title4: "Location",
+                            value4: product.serviceArea ?? '-',
+                            icon4Path: "assets/icons/MapPinSimpleArea.svg",
+                          );
+                        } else {///
+
+                          /// calculate slot time
+                          String slotTime = '-';
+                          if (booking.slots != null && booking.slots!.isNotEmpty) {
+                            final firstSlot = booking.slots!.first;
+                            if (firstSlot.startTime != null && firstSlot.endTime != null) {
+                              slotTime = "${firstSlot.startTime} - ${firstSlot.endTime}";
+                            } else if (firstSlot.startTime != null) {
+                              slotTime = firstSlot.startTime!;
+                            }
+                          }
+
+                          return ServiceInfoCard(
+                            imageUrl: product.thumbnail ?? '',
+                            title1: "SetType",
+                            value1: item?.itemDetails?.seat ?? '-',
+                            icon1Path: "assets/icons/badge.svg",
+
+                            title2: "Seat Count",
+                            value2: item?.quantity.toString() ?? '0',
+                            icon2Path: "assets/icons/user3.svg",
+
+                            title3: "Slot",
+                            // Pass the formatted slotTime string
+                            value3: slotTime,
+                            icon3Path: "assets/icons/time.svg",
+
+                            title4: "Total Price",
+                            value4: (booking.totalPrice ?? 0).toString(),
+                            icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                          );
+                        }
+                      },
+
+                    )
+
+
+                  ],
                 ),
               ),
             );

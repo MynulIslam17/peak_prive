@@ -10,7 +10,8 @@ import '../../../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/widgets/image_picker_dialog.dart';
 
-import '../../shared/models/provider_pass_service.dart';
+import '../../../user/shared/models/ski_pass_model.dart';
+
 import '../controller/create_ski_pass_controller.dart';
 import '../controller/update_pass_controller.dart';
 
