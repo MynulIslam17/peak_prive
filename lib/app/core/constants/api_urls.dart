@@ -184,6 +184,11 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
  static String   updateMassageServiceUrl(String id)=>"$baseUrl/massage/update/$id";
 
 
+ ///============================transport provider==========================
+
+  static String providerTransportService="$baseUrl/transport/my-all";
+
+
 
 
 

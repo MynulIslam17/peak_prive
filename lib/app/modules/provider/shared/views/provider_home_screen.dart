@@ -181,7 +181,18 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
                           String providerType=authController.userModel!.providerType!;
 
+
+
                           final service = recentServices[index];
+
+
+                          // Determine the price text
+                          String text = providerType == "Ski_Pass"
+                              ? "\$${service.amount}/Day"
+                              : (providerType == "Transport" || providerType == "Massage")
+                              ? "\$${service.amount}/Hr"
+                              : "\$${service.status}";
+
                           return Padding(
                             padding: const EdgeInsets.only(right: 10),
                             child: SizedBox(
@@ -193,6 +204,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 rating: service.averageRating.toDouble(), // rating
                                 reviews: service.reviews.length, // number of reviews
                                 location: service.serviceArea, // location/service area
+
 
                                 /// delete
                                 onDelete: () async {
@@ -338,8 +350,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
 
                                 packageType: service.skiPassType,
-                                status: service.status,
-                              ),
+                                status:text
+
+                            ),
                             ),
                           );
                         },

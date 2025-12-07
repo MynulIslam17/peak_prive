@@ -56,8 +56,10 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
       url = AppUrls.providerRestaurantService;
     } else if (providerType == "Massage") {
       url = AppUrls.providerMassageService;
-    } else {
-      url = AppUrls.providerServiceUrl;
+    } else if(providerType=="Transport") {
+      url = AppUrls.transportServiceUrl();
+    }else{
+      url = AppUrls.transportCategoryUrl;
     }
     serviceController.fetchServices(url);
   }
@@ -82,6 +84,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
             if (providerType == "Ski_Pass") activeList = controller.skiPassList;
             else if (providerType == "Restaurant") activeList = controller.restaurantServiceList;
             else if (providerType == "Massage") activeList = controller.massageServiceList;
+            else if (providerType == "Transport") activeList = controller.transportServiceList;
 
             if (activeList.isEmpty) {
               return Center(child: Text("No services found.", style: AppTextStyle.sub_h3_medium_14()));
@@ -240,6 +243,47 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                     "isEdit": true,
 
                                     },
+                                );
+                                if (result == true) await serviceController.refreshServices();
+                              },
+                            ),
+                          );
+                        }
+
+                        if(providerType=="Transport"){
+                          final transport=controller.transportServiceList[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: MyServiceCard(
+                              image: transport.thumbnail ?? "",
+                              title: transport.title ?? "",
+                              status: transport.amount.toString(),
+                              rating: transport.averageRating!.toDouble()  ,
+                              reviews: transport.reviews?.length ?? 0,
+                              location: transport.serviceArea ?? "N/A",
+                              onDelete: () async {
+                                DeleteDialogService.show(
+                                  context: context,
+                                  title: "Delete Massage Service",
+                                  message: "Are you sure?",
+                                  onDelete: () async {
+                                    final deleteController = Get.put(DeleteController());
+                                    final result = await deleteController.deleteItem(
+                                      url: AppUrls.deleteMassageServiceUrl(transport.sId!),
+                                    );
+                                    if (result) serviceController.removeItemFromList(transport.sId!, providerType);
+                                    return result;
+                                  },
+                                );
+                              },
+                              onEdit: () async {
+                                final result = await Get.toNamed(
+                                  Routes.addMessageService,
+                                  arguments: {
+                                    "massage": transport,
+                                    "isEdit": true,
+
+                                  },
                                 );
                                 if (result == true) await serviceController.refreshServices();
                               },

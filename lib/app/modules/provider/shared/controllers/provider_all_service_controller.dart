@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_transport_service_model.dart';
 import '../../../user/shared/models/ski_pass_model.dart';
 import '../models/provider_resturant_service.dart';
 
@@ -10,6 +11,7 @@ class AllServiceController extends GetxController {
   List<SkiPass> skiPassList = [];
   List<Result> restaurantServiceList = [];
   List<MassageResult> massageServiceList = [];
+  List<TransportResult> transportServiceList = [];
 
   final authController = Get.find<AuthController>();
 
@@ -57,6 +59,12 @@ class AllServiceController extends GetxController {
                 .toList();
             break;
 
+          case 'Transport':
+            transportServiceList = resultList
+                .map((e) => TransportResult.fromJson(e as Map<String, dynamic>))
+                .toList();
+            break;
+
           default:
             errorMessage = "Unknown provider type: $providerType";
             clearLists();
@@ -79,34 +87,33 @@ class AllServiceController extends GetxController {
     }
   }
 
-  /// Removes an item locally from the correct list after a successful delete API call,
-  /// avoiding a full data refresh (and the shimmer effect).
+  /// Removes an item locally from the correct list after a successful delete API call
   void removeItemFromList(String itemId, String providerType) {
     int initialLength;
 
     switch (providerType) {
       case 'Ski_Pass':
         initialLength = skiPassList.length;
-        // 1. PERFORM THE REMOVAL (This returns void)
         skiPassList.removeWhere((item) => item.id == itemId);
-        // 2. CHECK IF LIST LENGTH CHANGED
         if (skiPassList.length < initialLength) update();
         break;
 
       case 'Restaurant':
         initialLength = restaurantServiceList.length;
-        // 1. PERFORM THE REMOVAL
         restaurantServiceList.removeWhere((item) => item.sId == itemId);
-        // 2. CHECK IF LIST LENGTH CHANGED
         if (restaurantServiceList.length < initialLength) update();
         break;
 
       case 'Massage':
         initialLength = massageServiceList.length;
-        // 1. PERFORM THE REMOVAL
         massageServiceList.removeWhere((item) => item.sId == itemId);
-        // 2. CHECK IF LIST LENGTH CHANGED
         if (massageServiceList.length < initialLength) update();
+        break;
+
+      case 'Transport':
+        initialLength = transportServiceList.length;
+        transportServiceList.removeWhere((item) => item.sId == itemId);
+        if (transportServiceList.length < initialLength) update();
         break;
     }
   }
@@ -126,6 +133,7 @@ class AllServiceController extends GetxController {
     skiPassList = [];
     restaurantServiceList = [];
     massageServiceList = [];
+    transportServiceList = [];
   }
 
   /// ----------------------------
