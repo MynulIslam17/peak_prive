@@ -235,7 +235,11 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                               onEdit: () async {
                                 final result = await Get.toNamed(
                                   Routes.addMessageService,
-                                  arguments: {"massage": massage, "isEdit": true},
+                                  arguments: {
+                                    "massage": massage,
+                                    "isEdit": true,
+
+                                    },
                                 );
                                 if (result == true) await serviceController.refreshServices();
                               },

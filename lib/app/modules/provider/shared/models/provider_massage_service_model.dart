@@ -271,10 +271,7 @@ class PriceByDuration {
 
 class Reviews {
   String? sId;
-  // Note: The JSON uses 'userId' and not a nested object 'reviewer'.
-  // We'll keep the model close to your original structure,
-  // but if the JSON is accurate, this field might need adjustment.
-  // Using a dynamic or String for now based on the provided JSON:
+
   dynamic reviewer;
   // Using userId (present in the JSON)
   String? userId;

@@ -1,10 +1,10 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
+import 'package:harry_service_app/app/modules/user/shared/models/all_massage_model.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/api_urls.dart';
@@ -13,6 +13,7 @@ import '../../../../core/widgets/image_picker_dialog.dart';
 import '../controller/massage_controller.dart';
 import '../models/price_duration_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/category_controller.dart';
+
 
 /// 🟦 ADD MASSAGE SCREEN
 /// --------------------------------------------------
@@ -26,6 +27,13 @@ class AddMassageScreen extends StatefulWidget {
 class _AddMassageScreenState extends State<AddMassageScreen> {
   final images = Assets.images;
   final icons = Assets.icons;
+
+  /// gets value from other class variable
+  late bool isFromEdit;
+  MassageResult? massageResult;
+
+  /// 🟦 FORM KEY
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   /// 🟦 CONTROLLERS
   /// --------------------------------------------------
@@ -43,7 +51,19 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// 🟦 STATE VARIABLES
   /// --------------------------------------------------
   String? _selectedCategoryName;
-  File? _servicePhotoFile;
+  File? _servicePhotoFile; // Holds the newly picked file
+
+  // Tracks if all required fields are filled (used for both CREATE and UPDATE)
+  bool _isFormValid = false;
+
+  // Tracks if any value has changed from the initial state (only used for UPDATE)
+  bool _isDirty = false;
+
+  // Store initial values for dirty check in Edit mode
+  Map<String, dynamic> _initialValues = {};
+
+  // NOTE: Removed List<String> _deletedPriceDurationIds = [];
+  // We rely on the API to replace the entire list since we don't have IDs.
 
   final List<Map<String, TextEditingController>> priceDurationFields = [
     {"duration": TextEditingController(), "price": TextEditingController()}
@@ -54,7 +74,234 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   @override
   void initState() {
     super.initState();
-    categoryController.fetchCategories(AppUrls.massageCategoryUrl);
+    var argument = Get.arguments;
+    isFromEdit = argument?["isEdit"] ?? false;
+
+    if (argument != null && argument is Map<String, dynamic> && argument["massage"] != null) {
+      massageResult = argument["massage"] as MassageResult;
+    }
+
+    // Add listeners to text controllers to check form validity and dirty state dynamically
+    _addListenersToControllers();
+
+    // Fetch categories first, then retrieve fields if editing
+    categoryController.fetchCategories(AppUrls.massageCategoryUrl).then((_) {
+      if (isFromEdit && massageResult != null) {
+        setState(() {
+          _retrieveAllFiled();
+        });
+      }
+      // Check validity and dirty state once data is loaded/initialized
+      _checkFormValidity();
+    });
+  }
+
+  void _addListenersToControllers() {
+    titleTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    openTimeTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    closeTimeTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    locationTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    amountTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    descriptionTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    recommendationTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
+    // Add listeners to the initial price duration fields
+    for (var field in priceDurationFields) {
+      field["duration"]?.addListener(_checkIfDirty);
+      field["price"]?.addListener(_checkIfDirty);
+    }
+  }
+
+  /// 🟦 CORE VALIDITY CHECK
+  /// --------------------------------------------------
+  void _checkFormValidity() {
+    // 1. Check required fields for completeness
+    final bool textFieldsFilled = titleTEController.text.isNotEmpty &&
+        openTimeTEController.text.isNotEmpty &&
+        closeTimeTEController.text.isNotEmpty &&
+        locationTEController.text.isNotEmpty &&
+        amountTEController.text.isNotEmpty &&
+        descriptionTEController.text.isNotEmpty &&
+        recommendationTEController.text.isNotEmpty;
+
+    // 2. Check photo requirement
+    final bool photoValid = isFromEdit
+        ? (massageResult?.thumbnail != null || _servicePhotoFile != null)
+        : (_servicePhotoFile != null);
+
+    // 3. Check category selection
+    final bool categorySelected = _selectedCategoryName != null;
+
+    final bool overallValid = textFieldsFilled && photoValid && categorySelected;
+
+    if (_isFormValid != overallValid) {
+      if (mounted) {
+        setState(() {
+          _isFormValid = overallValid;
+        });
+      }
+    }
+  }
+
+  /// 🟦 DIRTY CHECK (CRITICAL FOR EDIT MODE)
+  /// --------------------------------------------------
+  void _checkIfDirty() {
+    if (!isFromEdit || massageResult == null || _initialValues.isEmpty) {
+      if (_isDirty) {
+        if (mounted) {
+          setState(() {
+            _isDirty = false;
+          });
+        }
+      }
+      return;
+    }
+
+    // 1. Check Text Fields
+    bool fieldsChanged = titleTEController.text.trim() != _initialValues['title'] ||
+        openTimeTEController.text.trim() != _initialValues['openTime'] ||
+        closeTimeTEController.text.trim() != _initialValues['closeTime'] ||
+        locationTEController.text.trim() != _initialValues['serviceArea'] ||
+        amountTEController.text.trim() != _initialValues['amount'] ||
+        descriptionTEController.text.trim() != _initialValues['benefits'] ||
+        recommendationTEController.text.trim() != _initialValues['ourRecommendations'];
+
+    // 2. Check Category
+    bool categoryChanged = _selectedCategoryName != _initialValues['categoryName'];
+
+    // 3. Check Photo
+    bool photoChanged = _servicePhotoFile != null;
+
+    // 4. Check Dynamic Price/Duration Fields
+    bool pricesChanged = _checkPriceDurationDirty();
+
+    // NOTE: Removed check for itemsDeleted as we don't track IDs
+
+    bool currentDirty = fieldsChanged || categoryChanged || photoChanged || pricesChanged;
+
+    if (_isDirty != currentDirty) {
+      if (mounted) {
+        setState(() {
+          _isDirty = currentDirty;
+        });
+      }
+    }
+  }
+
+  bool _checkPriceDurationDirty() {
+    // 1. Get the current clean list of *valid* (non-empty) price/duration items
+    final List<Map<String, String>> currentPrices = priceDurationFields
+    // 🎯 CRITICAL FIX: Filter to only include items where BOTH duration AND price are non-empty
+        .where((f) => f["duration"]!.text.trim().isNotEmpty && f["price"]!.text.trim().isNotEmpty)
+        .map((f) => {
+      "duration": f["duration"]!.text.trim(),
+      "amount": f["price"]!.text.trim(),
+    })
+        .toList();
+
+    final List<Map<String, String>> initialPrices = _initialValues['priceByDuration'] ?? [];
+
+    // 2. Check length change (item added or removed) - This is key for detecting removals
+    if (currentPrices.length != initialPrices.length) {
+      return true;
+    }
+
+    // 3. If lengths are the same, check content change.
+    final List<Map<String, String>> sortedCurrent = List.from(currentPrices);
+    final List<Map<String, String>> sortedInitial = List.from(initialPrices);
+
+    // Sort by composite key (duration + amount)
+    sortedCurrent.sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!));
+    sortedInitial.sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!));
+
+
+    for (int i = 0; i < sortedCurrent.length; i++) {
+      if (sortedCurrent[i]['duration'] != sortedInitial[i]['duration'] ||
+          sortedCurrent[i]['amount'] != sortedInitial[i]['amount']) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  /// 🟦 retrieve all value (COMPLETE IMPLEMENTATION)
+  /// --------------------------------------------------
+  void _retrieveAllFiled() {
+    if (massageResult == null) return;
+
+    // 1. Text Fields
+    titleTEController.text = massageResult!.title ?? "";
+    openTimeTEController.text = massageResult!.openTime ?? "";
+    closeTimeTEController.text = massageResult!.closeTime ?? "";
+    locationTEController.text = massageResult!.serviceArea ?? "";
+    amountTEController.text = massageResult!.amount?.toString() ?? "";
+    descriptionTEController.text = massageResult!.benefits ?? "";
+    recommendationTEController.text = massageResult!.ourRecommendations ?? "";
+
+    // 2. Dropdown (Category)
+    _selectedCategoryName = massageResult!.category?.name;
+
+    // 3. Dynamic Price By Duration Fields
+
+    // Dispose and clear existing controllers/listeners
+    for (var field in priceDurationFields) {
+      field["duration"]?.removeListener(_checkIfDirty);
+      field["price"]?.removeListener(_checkIfDirty);
+      field["duration"]?.dispose();
+      field["price"]?.dispose();
+    }
+    priceDurationFields.clear();
+
+    final List<Map<String, String>> initialPriceDurations = [];
+
+    if (massageResult!.priceByDuration?.isNotEmpty == true) {
+      for (var item in massageResult!.priceByDuration!) {
+        final String duration = item.duration ?? "";
+        final String amount = item.amount?.toString() ?? "";
+
+        final durationController = TextEditingController(text: duration);
+        final priceController = TextEditingController(text: amount);
+
+        // Re-add listener to new controllers
+        durationController.addListener(_checkIfDirty);
+        priceController.addListener(_checkIfDirty);
+
+        priceDurationFields.add({
+          "duration": durationController,
+          "price": priceController,
+        });
+        // Only track valid pairs for the initial list (Crucial for dirty check)
+        if (duration.isNotEmpty && amount.isNotEmpty) {
+          initialPriceDurations.add({"duration": duration, "amount": amount});
+        }
+      }
+    }
+
+    // Ensure there is at least one field, even if empty
+    if (priceDurationFields.isEmpty) {
+      final durationController = TextEditingController();
+      final priceController = TextEditingController();
+      durationController.addListener(_checkIfDirty);
+      priceController.addListener(_checkIfDirty);
+      priceDurationFields.add({
+        "duration": durationController,
+        "price": priceController,
+      });
+    }
+
+    // Store initial values for dirty check
+    _initialValues = {
+      'title': titleTEController.text.trim(),
+      'openTime': openTimeTEController.text.trim(),
+      'closeTime': closeTimeTEController.text.trim(),
+      'serviceArea': locationTEController.text.trim(),
+      'amount': amountTEController.text.trim(),
+      'benefits': descriptionTEController.text.trim(),
+      'ourRecommendations': recommendationTEController.text.trim(),
+      'categoryName': _selectedCategoryName,
+      // Store the sorted initial list for clean comparison later
+      'priceByDuration': initialPriceDurations..sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!)),
+    };
   }
 
   @override
@@ -67,6 +314,8 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     descriptionTEController.dispose();
     recommendationTEController.dispose();
     for (var field in priceDurationFields) {
+      field["duration"]?.removeListener(_checkIfDirty);
+      field["price"]?.removeListener(_checkIfDirty);
       field["duration"]?.dispose();
       field["price"]?.dispose();
     }
@@ -77,11 +326,31 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// --------------------------------------------------
   void _addMorePriceDurationField() {
     setState(() {
+      final newDurationController = TextEditingController();
+      final newPriceController = TextEditingController();
+
+      // Add listeners to new controllers to check dirty state
+      newDurationController.addListener(_checkIfDirty);
+      newPriceController.addListener(_checkIfDirty);
+
       priceDurationFields.add({
-        "duration": TextEditingController(),
-        "price": TextEditingController(),
+        "duration": newDurationController,
+        "price": newPriceController,
       });
     });
+    _checkIfDirty();
+  }
+
+  void _removePriceDurationField(int index) {
+    // 🎯 CRITICAL FIX: No ID tracking needed. Just dispose and remove the controllers.
+    setState(() {
+      priceDurationFields[index]["duration"]?.removeListener(_checkIfDirty);
+      priceDurationFields[index]["price"]?.removeListener(_checkIfDirty);
+      priceDurationFields[index]["duration"]?.dispose();
+      priceDurationFields[index]["price"]?.dispose();
+      priceDurationFields.removeAt(index);
+    });
+    _checkIfDirty(); // This will trigger dirty check, which detects the list length change
   }
 
   void _pickServicePhoto() async {
@@ -109,17 +378,34 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       setState(() {
         _servicePhotoFile = File(pickedFile.path);
       });
+      _checkFormValidity();
+      _checkIfDirty();
     }
   }
 
-  /// 🎯 FINAL SUBMISSION FUNCTION
+  /// 🎯 FINAL SUBMISSION FUNCTION (CLEANED UP VALIDATION)
   /// --------------------------------------------------
   void _saveMassage() async {
-    if (_selectedCategoryName == null ||
-        _servicePhotoFile == null ||
-        titleTEController.text.isEmpty ||
-        openTimeTEController.text.isEmpty) {
-      Get.snackbar("Error", "Please fill all required fields and select a photo.",
+    // 1. Final check before proceeding
+    if (!_isFormValid) {
+      Get.snackbar("Error", "Please fill all required fields.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withOpacity(0.8),
+          colorText: Colors.white);
+      return;
+    }
+
+    // For Edit Mode, ensure changes were made
+    if (isFromEdit && !_isDirty) {
+      Get.snackbar("Info", "No changes detected to update.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.blue.withOpacity(0.8),
+          colorText: Colors.white);
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      Get.snackbar("Error", "Please correct the highlighted errors.",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withOpacity(0.8),
           colorText: Colors.white);
@@ -129,9 +415,9 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     final selectedCategory = categoryController.categories.firstWhereOrNull(
           (cat) => cat.name == _selectedCategoryName,
     );
-
+    // Handle case if category is null before accessing id
     if (selectedCategory == null) {
-      Get.snackbar("Error", "Invalid category selected.",
+      Get.snackbar("Error", "Please select a valid category.",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withOpacity(0.8),
           colorText: Colors.white);
@@ -139,41 +425,70 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     }
     final categoryId = selectedCategory.id;
 
+
+    // 2. Prepare PriceByDuration List
     List<MassageDuration> priceByDurations = [];
     for (var field in priceDurationFields) {
       final amount = field["price"]!.text.trim();
       final duration = field["duration"]!.text.trim();
+
+      // 🎯 CRITICAL FIX: Only include the item if *BOTH* duration and price are non-empty.
+      // Since we rely on list replacement, we only send the list of remaining, valid items.
       if (amount.isNotEmpty && duration.isNotEmpty) {
         priceByDurations.add(MassageDuration(amount: amount, duration: duration));
       }
     }
 
+    final bool isSuccess;
 
+    // 3. Determine API Call
+    if (isFromEdit && massageResult != null) {
+      /// 🟦 PATCH (UPDATE) Logic
+      final String updateUrlWithId = AppUrls.updateMassageServiceUrl(massageResult!.sId ?? "");
 
+      isSuccess = await addMassageController.updateMassagePost(
+        apiUrl: updateUrlWithId,
+        categoryId: categoryId,
+        title: titleTEController.text.trim(),
+        openTime: openTimeTEController.text.trim(),
+        closeTime: closeTimeTEController.text.trim(),
+        description: descriptionTEController.text.trim(),
+        benefits: descriptionTEController.text.trim(),
+        serviceArea: locationTEController.text.trim(),
+        amount: amountTEController.text.trim(),
+        ourRecommendations: recommendationTEController.text.trim(),
+        priceByDurations: priceByDurations, // Sending the cleaned list, API should replace the old list
+        file: _servicePhotoFile,
+        // NOTE: Removed deletedPriceDurationIds argument
+      );
 
-    final isSuccess = await addMassageController.createMassagePost(
-      categoryId: categoryId,
-      title: titleTEController.text.trim(),
-      openTime: openTimeTEController.text.trim(),
-      closeTime: closeTimeTEController.text.trim(),
-      description: descriptionTEController.text.trim(),
-      serviceArea: locationTEController.text.trim(),
-      amount: amountTEController.text.trim(),
-      benefits: descriptionTEController.text.trim(),
-      ourRecommendations: recommendationTEController.text.trim(),
-      file: _servicePhotoFile!,
-      priceByDurations: priceByDurations,
-      apiUrl: AppUrls.createMassageServiceUrl,
-    );
+    } else {
+      // 🟦 POST (CREATE) Logic
+      isSuccess = await addMassageController.createMassagePost(
+        categoryId: categoryId,
+        title: titleTEController.text.trim(),
+        openTime: openTimeTEController.text.trim(),
+        closeTime: closeTimeTEController.text.trim(),
+        description: descriptionTEController.text.trim(),
+        serviceArea: locationTEController.text.trim(),
+        amount: amountTEController.text.trim(),
+        benefits: descriptionTEController.text.trim(),
+        ourRecommendations: recommendationTEController.text.trim(),
+        file: _servicePhotoFile!,
+        priceByDurations: priceByDurations,
+        apiUrl: AppUrls.createMassageServiceUrl,
+      );
+    }
 
+    // 4. Handle Response
     if (isSuccess) {
-
-      Get.snackbar("Success", "Massage Post created successfully!",
+      Get.snackbar("Success", "${isFromEdit ? 'Updated' : 'Created'} successfully!",
           snackPosition: SnackPosition.TOP,
           backgroundColor: AppColors.primary_1,
           colorText: Colors.white);
 
-      Navigator.of(context).pop();
+
+      Navigator.of(context).pop(isFromEdit?true : null);
     } else {
       Get.snackbar("Failed", addMassageController.errorMessage ?? "An unknown error occurred.",
           snackPosition: SnackPosition.BOTTOM,
@@ -186,6 +501,11 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// --------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    // Determine the final disabled state for the button
+    final bool isButtonDisabled = isFromEdit
+        ? (!_isFormValid || !_isDirty) // EDIT: Must be valid AND dirty
+        : (!_isFormValid); // CREATE: Must be valid
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
@@ -195,9 +515,9 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          "Add Massage",
-          style: TextStyle(
+        title: Text(
+          isFromEdit ? "Edit Massage" : "Add Massage",
+          style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -211,106 +531,46 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
         } else {
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// 🟦 MASSAGE CATEGORY DROPDOWN
-                Text("Massage Category", style: AppTextStyle.c_regular_12()),
-                SizedBox(height: 8.h),
-                _buildDropdownField(
-                    "Select Massage",
-                    categoryController.categories.map((e) => e.name).toList()),
-                SizedBox(height: 20.h),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// 🟦 MASSAGE CATEGORY DROPDOWN
+                  Text("Massage Category", style: AppTextStyle.c_regular_12()),
+                  SizedBox(height: 8.h),
+                  _buildDropdownField(
+                      "Select Massage",
+                      categoryController.categories.map((e) => e.name).toList()),
+                  SizedBox(height: 20.h),
 
-                /// 🟦 SERVICE PHOTO
-                Text("Add a Service Photo", style: AppTextStyle.c_light_12()),
-                SizedBox(height: 10.h),
-                _buildPhotoSelectionContainer(),
-                SizedBox(height: 12.h),
-                Text(
-                  "Clear, professional photos help customers trust your service",
-                  style: AppTextStyle.c_regular_12(),
-                ),
-                SizedBox(height: 24.h),
+                  /// 🟦 SERVICE PHOTO
+                  Text("Add a Service Photo", style: AppTextStyle.c_light_12()),
+                  SizedBox(height: 10.h),
+                  _buildPhotoSelectionContainer(),
+                  SizedBox(height: 12.h),
+                  Text(
+                    "Clear, professional photos help customers trust your service",
+                    style: AppTextStyle.c_regular_12(),
+                  ),
+                  SizedBox(height: 24.h),
 
-                /// 🟦 TITLE
-                Text("Title", style: AppTextStyle.c_regular_12()),
-                SizedBox(height: 8.h),
-                _buildTextField("Relaxing Massage", titleTEController),
-                SizedBox(height: 20.h),
+                  /// 🟦 TITLE
+                  Text("Title", style: AppTextStyle.c_regular_12()),
+                  SizedBox(height: 8.h),
+                  _buildValidatedTextField("Relaxing Massage", titleTEController),
+                  SizedBox(height: 20.h),
 
-                /// 🟦 OPEN & CLOSE TIME
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Open Time", style: AppTextStyle.c_regular_12()),
-                          SizedBox(height: 8.h),
-                          _buildTimeField("Select Time", openTimeTEController),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Close Time", style: AppTextStyle.c_regular_12()),
-                          SizedBox(height: 8.h),
-                          _buildTimeField("Select Time", closeTimeTEController),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20.h),
-
-                /// 🟦 LOCATION & AMOUNT
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Location", style: AppTextStyle.c_regular_12()),
-                          SizedBox(height: 8.h),
-                          _buildLocationField("Select Area", locationTEController),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Amount/hr", style: AppTextStyle.c_regular_12()),
-                          SizedBox(height: 8.h),
-                          _buildTextField("Amount", amountTEController, isNumber: true),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20.h),
-
-                /// 🟦 PRICE PER DURATION
-                Text("Set Price Per Duration", style: AppTextStyle.c_regular_12()),
-                SizedBox(height: 12.h),
-                for (int i = 0; i < priceDurationFields.length; i++) ...[
+                  /// 🟦 OPEN & CLOSE TIME
                   Row(
                     children: [
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (i == 0) ...[
-                              Text("Duration", style: AppTextStyle.c_regular_12()),
-                              SizedBox(height: 8.h),
-                            ],
-                            _buildDurationField(
-                                "Duration", priceDurationFields[i]["duration"]!),
+                            Text("Open Time", style: AppTextStyle.c_regular_12()),
+                            SizedBox(height: 8.h),
+                            _buildValidatedTimeField("Select Time", openTimeTEController),
                           ],
                         ),
                       ),
@@ -319,64 +579,149 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (i == 0) ...[
-                              Text("Set Price", style: AppTextStyle.c_regular_12()),
-                              SizedBox(height: 8.h),
-                            ],
-                            _buildTextField(
-                                "Set Price", priceDurationFields[i]["price"]!,
-                                isNumber: true),
+                            Text("Close Time", style: AppTextStyle.c_regular_12()),
+                            SizedBox(height: 8.h),
+                            _buildValidatedTimeField("Select Time", closeTimeTEController),
                           ],
                         ),
                       ),
                     ],
                   ),
+                  SizedBox(height: 20.h),
+
+                  /// 🟦 LOCATION & AMOUNT
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Location", style: AppTextStyle.c_regular_12()),
+                            SizedBox(height: 8.h),
+                            _buildValidatedTextField("Select Area", locationTEController),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Amount/hr", style: AppTextStyle.c_regular_12()),
+                            SizedBox(height: 8.h),
+                            _buildValidatedTextField("Amount", amountTEController, isNumber: true),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20.h),
+
+                  /// 🟦 PRICE PER DURATION
+                  Text("Set Price Per Duration", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 12.h),
+                  Column(
+                    children: List.generate(priceDurationFields.length, (i) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (i == 0) ...[
+                                    Text("Duration", style: AppTextStyle.c_regular_12()),
+                                    SizedBox(height: 8.h),
+                                  ],
+                                  // No need for explicit validation here since the list is dynamic and optional
+                                  _buildDurationField(
+                                      "Duration", priceDurationFields[i]["duration"]!),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (i == 0) ...[
+                                    Text("Set Price", style: AppTextStyle.c_regular_12()),
+                                    SizedBox(height: 8.h),
+                                  ],
+                                  _buildTextField(
+                                      "Set Price", priceDurationFields[i]["price"]!,
+                                      isNumber: true),
+                                ],
+                              ),
+                            ),
+                            if (priceDurationFields.length > 1) // Only show close button if there's more than one field
+                              Padding(
+                                padding: EdgeInsets.only(left: 8.w),
+                                child: InkWell(
+                                  onTap: () => _removePriceDurationField(i),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    padding: const EdgeInsets.all(6),
+                                    child: const Icon(Icons.close, size: 20, color: Colors.red),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ),
+                  _buildAddMoreButton(),
+                  SizedBox(height: 24.h),
+
+                  /// 🟦 BENEFITS
+                  Text("Benefits", style: AppTextStyle.c_regular_12()),
+                  SizedBox(height: 8.h),
+                  _buildValidatedLargeTextField("Write here...", descriptionTEController, validationMessage: "Benefits are required"),
+                  SizedBox(height: 20.h),
+
+                  /// 🟦 OUR RECOMMENDATION
+                  Text("Our recommendation", style: AppTextStyle.c_regular_12()),
+                  SizedBox(height: 8.h),
+                  _buildValidatedLargeTextField("Write here...", recommendationTEController, validationMessage: "Recommendation is required"),
+                  SizedBox(height: 30.h),
+
+                  /// 🟦 SAVE BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50.h,
+                    child: GetBuilder<AddNewMassageController>(builder: (controller){
+
+                      final bool finalDisabledState = isButtonDisabled || controller.isLoading;
+
+                      return ElevatedButton(
+                        onPressed: finalDisabledState ? null : _saveMassage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: finalDisabledState ? AppColors.primary_1.withOpacity(0.5) : AppColors.primary_1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: controller.isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text(
+                          isFromEdit ? "Update" : "Save", // Dynamic button text
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  SizedBox(height: 40.h),
                 ],
-                _buildAddMoreButton(),
-                SizedBox(height: 24.h),
-
-                /// 🟦 BENEFITS
-                Text("Benefits", style: AppTextStyle.c_regular_12()),
-                SizedBox(height: 8.h),
-                _buildLargeTextField("Write here...", descriptionTEController),
-                SizedBox(height: 20.h),
-
-                /// 🟦 OUR RECOMMENDATION
-                Text("Our recommendation", style: AppTextStyle.c_regular_12()),
-                SizedBox(height: 8.h),
-                _buildLargeTextField("Write here...", recommendationTEController),
-                SizedBox(height: 30.h),
-
-                /// 🟦 SAVE BUTTON
-                SizedBox(
-                  width: double.infinity,
-                  height: 50.h,
-                  child: GetBuilder<AddNewMassageController>(builder: (controller){
-                  return  ElevatedButton(
-                      onPressed: controller.isLoading ? null : _saveMassage,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary_1,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: controller.isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                        "Save",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    );
-
-                  })
-                ),
-                SizedBox(height: 40.h),
-              ],
+              ),
             ),
           );
         }
@@ -386,6 +731,70 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
 
   /// 🟦 REUSABLE WIDGETS
   /// --------------------------------------------------
+
+  Widget _buildPhotoSelectionContainer() {
+    final existingPhotoUrl = isFromEdit && _servicePhotoFile == null
+        ? massageResult?.thumbnail
+        : null;
+
+    return InkWell(
+      onTap: _pickServicePhoto,
+      child: Container(
+        height: 160.h,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: (_servicePhotoFile != null || existingPhotoUrl != null)
+              ? Border.all(color: AppColors.primary_1, width: 2)
+              : null,
+        ),
+        child: _servicePhotoFile != null
+            ? ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(
+            _servicePhotoFile!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        )
+            : existingPhotoUrl != null
+            ? ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            existingPhotoUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) => const Center(
+              child: Text("Image Load Failed", style: TextStyle(color: Colors.red)),
+            ),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              );
+            },
+          ),
+        )
+            : const Center(
+          child: Icon(
+            Icons.upload,
+            size: 28,
+            color: Colors.black54,
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // ----------------- UNVALIDATED TEXT FIELD (for optional fields like price/duration items) -----------------
   Widget _buildTextField(String hint, TextEditingController controller,
       {bool isNumber = false}) {
     return TextField(
@@ -393,74 +802,13 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       keyboardType: isNumber
           ? const TextInputType.numberWithOptions(decimal: true)
           : TextInputType.text,
+      onChanged: (value) => _checkIfDirty(), // Check dirty state on change
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeField(String hint, TextEditingController controller) {
-    return InkWell(
-      onTap: () async {
-        final TimeOfDay? picked = await showTimePicker(
-          context: context,
-          initialTime: TimeOfDay.now(),
-        );
-        if (picked != null) {
-          setState(() {
-            controller.text = picked.format(context);
-          });
-        }
-      },
-      child: AbsorbPointer(
-        child: TextField(
-          controller: controller,
-          readOnly: true,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            suffixIcon: const Icon(Icons.access_time, color: Color(0xFFD6B25E)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLocationField(String hint, TextEditingController controller) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-        suffixIcon:
-        const Icon(Icons.location_on_outlined, color: Color(0xFFD6B25E)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -491,14 +839,19 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
           setState(() {
             final hours = picked.hour;
             final minutes = picked.minute;
-            if (hours == 0) {
-              controller.text = "$minutes min";
+            String newText;
+            if (hours == 0 && minutes == 0) {
+              newText = ""; // Allow clearing if both are zero, though time picker usually prevents this.
+            } else if (hours == 0) {
+              newText = "$minutes min";
             } else if (minutes == 0) {
-              controller.text = "$hours hr";
+              newText = "$hours hr";
             } else {
-              controller.text = "$hours hr $minutes min";
+              newText = "$hours hr $minutes min";
             }
+            controller.text = newText;
           });
+          _checkIfDirty(); // Check dirty state after setting text
         }
       },
       child: AbsorbPointer(
@@ -527,10 +880,125 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     );
   }
 
-  Widget _buildLargeTextField(String hint, TextEditingController controller) {
-    return TextField(
+  // ----------------- VALIDATED TEXT FORM FIELDS (for required fields) -----------------
+
+  Widget _buildValidatedTextField(String hint, TextEditingController controller,
+      {bool isNumber = false, String? validationMessage = "This field is required"}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return validationMessage;
+        }
+        return null;
+      },
+      onChanged: (value) {
+        _checkFormValidity();
+        _checkIfDirty();
+      },
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidatedTimeField(String hint, TextEditingController controller) {
+    return InkWell(
+      onTap: () async {
+        final TimeOfDay? picked = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.now(),
+        );
+        if (picked != null) {
+          setState(() {
+            controller.text = picked.format(context);
+          });
+          _checkFormValidity();
+          _checkIfDirty();
+        }
+      },
+      child: AbsorbPointer(
+        child: TextFormField(
+          controller: controller,
+          readOnly: true,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return "Time is required";
+            }
+            return null;
+          },
+          onChanged: (value) {
+            // This is primarily for validation checks, actual text change is via onTap
+            _checkFormValidity();
+            _checkIfDirty();
+          },
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            suffixIcon: const Icon(Icons.access_time, color: Color(0xFFD6B25E)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValidatedLargeTextField(String hint, TextEditingController controller, {String? validationMessage}) {
+    return TextFormField(
       controller: controller,
       maxLines: 5,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return validationMessage ?? "This field is required";
+        }
+        return null;
+      },
+      onChanged: (value) {
+        _checkFormValidity();
+        _checkIfDirty();
+      },
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
@@ -541,6 +1009,14 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
       ),
     );
   }
@@ -549,6 +1025,19 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     return DropdownButtonFormField<String>(
       value: _selectedCategoryName,
       dropdownColor: Colors.white,
+      validator: (value) {
+        if (value == null) {
+          return "Please select a category";
+        }
+        return null;
+      },
+      onChanged: (value) {
+        setState(() {
+          _selectedCategoryName = value;
+          _checkFormValidity(); // Check validity after selecting category
+          _checkIfDirty(); // Check dirty state after selecting category
+        });
+      },
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
@@ -567,6 +1056,14 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFD6B25E), width: 1.2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
       ),
       items: items
           .map((item) => DropdownMenuItem(
@@ -578,49 +1075,8 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
         ]),
       ))
           .toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCategoryName = value;
-        });
-      },
     );
   }
-
-  /// 🟦 SERVICE PHOTO SELECTION
-  Widget _buildPhotoSelectionContainer() {
-    return InkWell(
-      onTap: _pickServicePhoto,
-      child: Container(
-        height: 160.h,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(12),
-          border: _servicePhotoFile != null
-              ? Border.all(color: AppColors.primary_1, width: 2)
-              : null,
-        ),
-        child: _servicePhotoFile != null
-            ? ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            _servicePhotoFile!,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
-        )
-            : const Center(
-          child: Icon(
-            Icons.upload,
-            size: 28,
-            color: Colors.black54,
-          ),
-        ),
-      ),
-    );
-  }
-
 
   Widget _buildAddMoreButton() {
     return InkWell(
