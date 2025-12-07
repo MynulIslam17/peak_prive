@@ -149,14 +149,20 @@ class AddNewRestaurantController extends GetxController {
       }
 
       // -----------------------------
-      // 2. Map Time Slots
+      // 2. Map Time Slots (Now handles List<Map<String, dynamic>>)
       // -----------------------------
-      if (payload.containsKey("timeSlots")) {
-        List<String> timeSlots = payload["timeSlots"] as List<String>;
-        for (int i = 0; i < timeSlots.length; i++) {
-          final slot = timeSlots[i].split(' - ');
-          fields["slots[$i][startTime]"] = slot[0].trim();
-          fields["slots[$i][endTime]"] = slot.length > 1 ? slot[1].trim() : slot[0].trim();
+      if (payload.containsKey("slots")) { // The key is 'slots' not 'timeSlots' in the final payload
+        List<Map<String, dynamic>> slots = (payload["slots"] as List).cast<Map<String, dynamic>>();
+
+        for (int i = 0; i < slots.length; i++) {
+          final slot = slots[i];
+
+          // Include ID for existing slots
+          if (slot.containsKey("_id")) fields["slots[$i][_id]"] = slot["_id"].toString();
+
+          // Include time parts
+          if (slot.containsKey("startTime")) fields["slots[$i][startTime]"] = slot["startTime"].toString();
+          if (slot.containsKey("endTime")) fields["slots[$i][endTime]"] = slot["endTime"].toString();
         }
       }
 
@@ -171,6 +177,9 @@ class AddNewRestaurantController extends GetxController {
           final seatType = item["seat"].toString(); // Ensure seatType is string
 
           fields["items[$i][seat]"] = seatType;
+
+          // Include ID for existing items
+          if (item.containsKey("_id")) fields["items[$i][_id]"] = item["_id"].toString(); // 👈 Added
 
           // CRITICAL FIX: Convert numeric fields to String for multipart request
           if (item.containsKey("totalQty")) fields["items[$i][totalQty]"] = item["totalQty"].toString();

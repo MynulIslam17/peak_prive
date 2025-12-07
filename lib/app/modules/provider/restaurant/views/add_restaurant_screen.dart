@@ -14,8 +14,13 @@ import '../../../../core/widgets/image_picker_dialog.dart';
 import '../../shared/controllers/category_controller.dart';
 import '../controller/create_restaurant_controller.dart';
 
+// ----------------------------------------------------
+// MODIFIED/NEW MODELS TO SUPPORT ID PASSING
+// ----------------------------------------------------
+
 /// Model class for handling individual seat type data (VIP/Normal).
 class SeatItem {
+  String? sId; // ADDED: To store the existing item ID
   String? selectedSeatType;
   TextEditingController totalSeatController = TextEditingController();
   TextEditingController pricePerSeatController = TextEditingController();
@@ -24,8 +29,17 @@ class SeatItem {
   File? selectedSeatImage; // for new image picked
   String? seatImageUrl;    // for existing network image
 
-  SeatItem({this.selectedSeatType, this.seatImageUrl});
+  SeatItem({this.selectedSeatType, this.seatImageUrl, this.sId}); // UPDATED constructor
 }
+
+/// Model class for handling individual time slots (Time and ID).
+class TimeSlotItem {
+  String? sId; // ADDED: To store the existing slot ID
+  String timeString;
+
+  TimeSlotItem({required this.timeString, this.sId});
+}
+
 
 /// Main screen widget for adding or editing a restaurant.
 class AddRestaurantScreen extends StatefulWidget {
@@ -43,6 +57,9 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
   void _storeOriginalData() {
     if (!isFromEdit || restaurantModel == null) return;
 
+    // Use time slots from the model which now holds IDs
+    final List<String> originalTimeSlotStrings = restaurantModel!.slots.map((e) => "${e.startTime} - ${e.endTime}").toList()..sort();
+
     originalData = {
       "restaurantName": restaurantModel!.title,
       "categoryId": restaurantModel!.category!.sId,
@@ -51,7 +68,7 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       "serviceArea": restaurantModel!.serviceArea,
       "thumbnail": restaurantModel!.thumbnail,
       // Store sorted list for robust comparison later
-      "timeSlots": restaurantModel!.slots.map((e) => "${e.startTime} - ${e.endTime}").toList()..sort(),
+      "timeSlots": originalTimeSlotStrings, // Store strings for comparison
       "vipSeat": {
         "totalSeat": vipSeatItem.totalSeatController.text,
         "price": vipSeatItem.pricePerSeatController.text,
@@ -90,7 +107,8 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
   TimeOfDay? startSlotTime;
   TimeOfDay? endSlotTime;
 
-  final List<String> timeSlots = [];
+  // CHANGED: Use the new TimeSlotItem model
+  final List<TimeSlotItem> timeSlots = [];
 
   /// main image thumbnail
   File? selectedImage; // for add
@@ -157,22 +175,25 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
     closeTime = parseTime(restaurantModel!.closeTime);
 
 
-    // Populate time slots
+    // Populate time slots (NOW stores IDs in TimeSlotItem)
     timeSlots.clear();
     for (var slot in restaurantModel!.slots) {
       String startTime = slot.startTime;
       String endTime = slot.endTime;
-      timeSlots.add("$startTime - $endTime");
+      // Storing the time string and the ID
+      timeSlots.add(TimeSlotItem(timeString: "$startTime - $endTime", sId: slot.sId));
     }
 
 
     for (var item in restaurantModel!.items) {
       if (item.seat == "VIP") {
+        vipSeatItem.sId = item.sId; // ADDED: Store Item ID
         vipSeatItem.descriptionController.text = item.description;
         vipSeatItem.pricePerSeatController.text = item.price.toString();
         vipSeatItem.totalSeatController.text = item.totalQty.toString();
         vipSeatItem.seatImageUrl = item.photo;
       } else if (item.seat == "Normal") {
+        normalSeatItem.sId = item.sId; // ADDED: Store Item ID
         normalSeatItem.descriptionController.text = item.description;
         normalSeatItem.pricePerSeatController.text = item.price.toString();
         normalSeatItem.totalSeatController.text = item.totalQty.toString();
@@ -353,7 +374,8 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       final end = endSlotTime!.format(context);
 
       setState(() {
-        timeSlots.add("$start - $end");
+        // CHANGED: Add new slot as TimeSlotItem without ID
+        timeSlots.add(TimeSlotItem(timeString: "$start - $end", sId: null));
         startSlotTime = null;
         endSlotTime = null;
       });
@@ -394,6 +416,7 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
   }
 
   /// Updated _saveRestaurant method with proper change detection
+  /// Updated _saveRestaurant method with proper change detection
   void _saveRestaurant() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
@@ -432,9 +455,9 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
     if (selectedImage != null) hasChanges = true;
 
     // Check time slots
-    final currentSlots = List<String>.from(timeSlots)..sort();
+    final currentSlotStrings = timeSlots.map((e) => e.timeString).toList()..sort();
     final originalSlots = List<String>.from(originalData["timeSlots"] ?? [])..sort();
-    if (currentSlots.join(',') != originalSlots.join(',')) hasChanges = true;
+    if (currentSlotStrings.join(',') != originalSlots.join(',')) hasChanges = true;
 
     // Check seat items
     bool vipChanged = _seatItemChanged(vipSeatItem, originalData["vipSeat"], "VIP");
@@ -483,19 +506,40 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       payload["thumbnail"] = selectedImage;
     }
 
-    // Time slots - only if changed
-    if (!isFromEdit) {
-      payload["timeSlots"] = timeSlots;
-    } else if (currentSlots.join(',') != originalSlots.join(',')) {
-      payload["timeSlots"] = timeSlots;
+    /// Time slots logic - build list of maps including ID if present
+    List<Map<String, dynamic>> finalSlots = [];
+    for (var slotItem in timeSlots) {
+      final parts = slotItem.timeString.split(' - ');
+      final slotMap = {
+        "startTime": parts[0],
+        "endTime": parts[1],
+      };
+
+      // Pass the ID only if editing and the ID exists
+      if (isFromEdit && slotItem.sId != null) {
+        slotMap["_id"] = slotItem.sId!;
+      }
+      finalSlots.add(slotMap);
     }
+
+    // ⭐ FIX: Always send the slots array in EDIT mode if changes are detected,
+    // as the backend seems to require it to be present to avoid conflicts/omissions.
+    // In Create mode, it's always included.
+    if (!isFromEdit) {
+      payload["slots"] = finalSlots;
+    } else { // isFromEdit == true
+      // Send slots if they changed OR if other fields changed, ensuring the full,
+      // current list (with IDs) is submitted for the update.
+      payload["slots"] = finalSlots;
+    }
+
 
     /// ==================== BUILD SEAT ITEMS ====================
     // IMPORTANT: Always send BOTH seat items with ALL their fields
-    // Don't do conditional inclusion - always include both VIP and Normal with complete data
     List<Map<String, dynamic>> items = [
       {
         "seat": "VIP",
+        if (isFromEdit && vipSeatItem.sId != null) "_id": vipSeatItem.sId, // ADDED: Pass Item ID
         "totalQty": vipSeatItem.totalSeatController.text,
         "price": vipSeatItem.pricePerSeatController.text,
         "description": vipSeatItem.descriptionController.text,
@@ -503,6 +547,7 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       },
       {
         "seat": "Normal",
+        if (isFromEdit && normalSeatItem.sId != null) "_id": normalSeatItem.sId, // ADDED: Pass Item ID
         "totalQty": normalSeatItem.totalSeatController.text,
         "price": normalSeatItem.pricePerSeatController.text,
         "description": normalSeatItem.descriptionController.text,
@@ -529,7 +574,7 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
         closeTime: closeTime?.format(context) ?? "",
         serviceArea: locationTEController.text,
         thumbnailImage: selectedImage ?? File(''),
-        timeSlots: timeSlots,
+        timeSlots: currentSlotStrings, // For create, pass the list of strings
         seatItems: [vipSeatItem, normalSeatItem],
         apiUrl: AppUrls.createRestaurantUrl,
       );
@@ -716,7 +761,7 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
                   spacing: 8.w,
                   runSpacing: 8.h,
                   children: List.generate(timeSlots.length, (index) {
-                    return _buildTimeSlotChip(timeSlots[index], index);
+                    return _buildTimeSlotChip(timeSlots[index], index); // CHANGED: Pass TimeSlotItem
                   }),
                 ),
                 SizedBox(height: 30.h),
@@ -859,80 +904,161 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade300)
+        color: Colors.white, // Fill color for the dropdown container
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
       ),
-      child: DropdownButton<String>(
-        isExpanded: true,
-        hint: Text(hint),
+      child: DropdownButtonFormField<String>(
+        decoration: const InputDecoration(
+          border: InputBorder.none, // Remove the default underline
+          contentPadding: EdgeInsets.zero,
+        ),
+        hint: Text(
+          hint,
+          style: AppTextStyle.c_regular_12().copyWith(color: Colors.grey.shade600),
+        ),
         value: selectedValue,
-        items: items.map((e) => DropdownMenuItem<String>(
-          value: e,
-          child: Text(e),
-        )).toList(),
-        onChanged: onChanged,
-        underline: const SizedBox(),
+        items: items.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+        onChanged: (String? newValue) {
+          onChanged(newValue);
+        },
+        validator: (value) => value == null ? 'Please select a category' : null,
       ),
     );
   }
 
-  /// Builds a clickable field for selecting open/close time.
+  /// Builds a time selection field.
   Widget _buildTimePickerField(String label, TimeOfDay? time, bool isOpening) {
-    return GestureDetector(
-      onTap: () => _selectTime(context, isOpening),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
-        decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyle.c_regular_12()),
+        SizedBox(height: 8.h),
+        GestureDetector(
+          onTap: () => _selectTime(context, isOpening),
+          child: Container(
+            height: 45.h,
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            alignment: Alignment.centerLeft,
+            child: Text(
+              time?.format(context) ?? "Select Time",
+              style: AppTextStyle.c_regular_12().copyWith(
+                color: time == null ? Colors.grey.shade600 : Colors.black,
+              ),
+            ),
+          ),
         ),
-        child: Text(time != null ? time.format(context) : label, style: AppTextStyle.c_regular_12()),
-      ),
+      ],
     );
   }
 
-  /// Builds a clickable field for selecting time slot start/end time.
+  /// Builds a time selection field for a time slot.
   Widget _buildSlotTimePickerField(String label, TimeOfDay? time, bool isStart) {
-    return GestureDetector(
-      onTap: () => _selectSlotTime(context, isStart),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
-        decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade300)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyle.c_regular_12()),
+        SizedBox(height: 8.h),
+        GestureDetector(
+          onTap: () => _selectSlotTime(context, isStart),
+          child: Container(
+            height: 45.h,
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            alignment: Alignment.centerLeft,
+            child: Text(
+              time?.format(context) ?? "Select Time",
+              style: AppTextStyle.c_regular_12().copyWith(
+                color: time == null ? Colors.grey.shade600 : Colors.black,
+              ),
+            ),
+          ),
         ),
-        child: Text(time != null ? time.format(context) : label, style: AppTextStyle.c_regular_12()),
+      ],
+    );
+  }
+
+  /// Builds the 'Add Slot' button.
+  Widget _buildAddButton() {
+    return SizedBox(
+      height: 45.h,
+      width: 100.w,
+      child: ElevatedButton(
+        onPressed: (startSlotTime != null && endSlotTime != null) ? _addSlotTime : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary_1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          "Add Slot",
+          style: AppTextStyle.c_regular_12().copyWith(color: Colors.white),
+        ),
       ),
     );
   }
 
-  /// Builds the 'Add Slot Time' button.
-  Widget _buildAddButton() {
-    return ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary_1),
-        onPressed: _addSlotTime,
-        child: const Text("Add Slot Time"));
-  }
-
-  /// Builds a chip for displaying and deleting a time slot.
-  Widget _buildTimeSlotChip(String text, int index) {
+  /// Builds a time slot chip with a close button.
+  Widget _buildTimeSlotChip(TimeSlotItem slotItem, int index) { // CHANGED: parameter type to TimeSlotItem
     return Chip(
-      label: Text(text),
-      deleteIcon: const Icon(Icons.close, size: 16),
+      label: Text(
+        slotItem.timeString, // Use timeString from the model
+        style: AppTextStyle.c_regular_12().copyWith(color: AppColors.primary_1),
+      ),
+      backgroundColor: AppColors.primary_1.withOpacity(0.1),
+      deleteIcon: const Icon(Icons.close, size: 16, color: AppColors.primary_1),
       onDeleted: () => _removeSlotTime(index),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: AppColors.primary_1.withOpacity(0.5)),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
     );
   }
 
-  /// Builds the primary 'Save/Update' button at the bottom of the form.
-  Widget _buildSubmitButton({required String label, required bool isEnabled, required bool isLoading, required VoidCallback onPressed}) {
+  /// Builds the main submit/save/update button.
+  Widget _buildSubmitButton({
+    required String label,
+    required bool isEnabled,
+    required bool isLoading,
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: double.infinity,
+      height: 50.h,
       child: ElevatedButton(
+        onPressed: isEnabled ? onPressed : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isEnabled ? AppColors.primary_1 : Colors.grey.shade300,
-          padding: EdgeInsets.symmetric(vertical: 14.h),
+          backgroundColor: isEnabled ? AppColors.primary_1 : AppColors.primary_1.withOpacity(0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
-        onPressed: isEnabled && !isLoading ? onPressed : null,
-        child: isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(label),
+        child: isLoading
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

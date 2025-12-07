@@ -51,19 +51,12 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// 🟦 STATE VARIABLES
   /// --------------------------------------------------
   String? _selectedCategoryName;
-  File? _servicePhotoFile; // Holds the newly picked file
+  File? _servicePhotoFile;
 
-  // Tracks if all required fields are filled (used for both CREATE and UPDATE)
   bool _isFormValid = false;
-
-  // Tracks if any value has changed from the initial state (only used for UPDATE)
   bool _isDirty = false;
 
-  // Store initial values for dirty check in Edit mode
   Map<String, dynamic> _initialValues = {};
-
-  // NOTE: Removed List<String> _deletedPriceDurationIds = [];
-  // We rely on the API to replace the entire list since we don't have IDs.
 
   final List<Map<String, TextEditingController>> priceDurationFields = [
     {"duration": TextEditingController(), "price": TextEditingController()}
@@ -81,17 +74,14 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       massageResult = argument["massage"] as MassageResult;
     }
 
-    // Add listeners to text controllers to check form validity and dirty state dynamically
     _addListenersToControllers();
 
-    // Fetch categories first, then retrieve fields if editing
     categoryController.fetchCategories(AppUrls.massageCategoryUrl).then((_) {
       if (isFromEdit && massageResult != null) {
         setState(() {
           _retrieveAllFiled();
         });
       }
-      // Check validity and dirty state once data is loaded/initialized
       _checkFormValidity();
     });
   }
@@ -104,7 +94,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     amountTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
     descriptionTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
     recommendationTEController.addListener(() { _checkFormValidity(); _checkIfDirty(); });
-    // Add listeners to the initial price duration fields
+
     for (var field in priceDurationFields) {
       field["duration"]?.addListener(_checkIfDirty);
       field["price"]?.addListener(_checkIfDirty);
@@ -114,7 +104,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// 🟦 CORE VALIDITY CHECK
   /// --------------------------------------------------
   void _checkFormValidity() {
-    // 1. Check required fields for completeness
     final bool textFieldsFilled = titleTEController.text.isNotEmpty &&
         openTimeTEController.text.isNotEmpty &&
         closeTimeTEController.text.isNotEmpty &&
@@ -123,12 +112,10 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
         descriptionTEController.text.isNotEmpty &&
         recommendationTEController.text.isNotEmpty;
 
-    // 2. Check photo requirement
     final bool photoValid = isFromEdit
         ? (massageResult?.thumbnail != null || _servicePhotoFile != null)
         : (_servicePhotoFile != null);
 
-    // 3. Check category selection
     final bool categorySelected = _selectedCategoryName != null;
 
     final bool overallValid = textFieldsFilled && photoValid && categorySelected;
@@ -174,8 +161,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     // 4. Check Dynamic Price/Duration Fields
     bool pricesChanged = _checkPriceDurationDirty();
 
-    // NOTE: Removed check for itemsDeleted as we don't track IDs
-
     bool currentDirty = fieldsChanged || categoryChanged || photoChanged || pricesChanged;
 
     if (_isDirty != currentDirty) {
@@ -188,9 +173,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   }
 
   bool _checkPriceDurationDirty() {
-    // 1. Get the current clean list of *valid* (non-empty) price/duration items
     final List<Map<String, String>> currentPrices = priceDurationFields
-    // 🎯 CRITICAL FIX: Filter to only include items where BOTH duration AND price are non-empty
         .where((f) => f["duration"]!.text.trim().isNotEmpty && f["price"]!.text.trim().isNotEmpty)
         .map((f) => {
       "duration": f["duration"]!.text.trim(),
@@ -200,19 +183,15 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
 
     final List<Map<String, String>> initialPrices = _initialValues['priceByDuration'] ?? [];
 
-    // 2. Check length change (item added or removed) - This is key for detecting removals
     if (currentPrices.length != initialPrices.length) {
       return true;
     }
 
-    // 3. If lengths are the same, check content change.
     final List<Map<String, String>> sortedCurrent = List.from(currentPrices);
     final List<Map<String, String>> sortedInitial = List.from(initialPrices);
 
-    // Sort by composite key (duration + amount)
     sortedCurrent.sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!));
     sortedInitial.sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!));
-
 
     for (int i = 0; i < sortedCurrent.length; i++) {
       if (sortedCurrent[i]['duration'] != sortedInitial[i]['duration'] ||
@@ -223,13 +202,12 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     return false;
   }
 
-
   /// 🟦 retrieve all value (COMPLETE IMPLEMENTATION)
   /// --------------------------------------------------
   void _retrieveAllFiled() {
     if (massageResult == null) return;
 
-    // 1. Text Fields
+    // 1. Text Fields - Handle null values properly
     titleTEController.text = massageResult!.title ?? "";
     openTimeTEController.text = massageResult!.openTime ?? "";
     closeTimeTEController.text = massageResult!.closeTime ?? "";
@@ -242,8 +220,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     _selectedCategoryName = massageResult!.category?.name;
 
     // 3. Dynamic Price By Duration Fields
-
-    // Dispose and clear existing controllers/listeners
     for (var field in priceDurationFields) {
       field["duration"]?.removeListener(_checkIfDirty);
       field["price"]?.removeListener(_checkIfDirty);
@@ -254,7 +230,8 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
 
     final List<Map<String, String>> initialPriceDurations = [];
 
-    if (massageResult!.priceByDuration?.isNotEmpty == true) {
+    // Only populate if priceByDuration exists and has items
+    if (massageResult!.priceByDuration != null && massageResult!.priceByDuration!.isNotEmpty) {
       for (var item in massageResult!.priceByDuration!) {
         final String duration = item.duration ?? "";
         final String amount = item.amount?.toString() ?? "";
@@ -262,7 +239,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
         final durationController = TextEditingController(text: duration);
         final priceController = TextEditingController(text: amount);
 
-        // Re-add listener to new controllers
         durationController.addListener(_checkIfDirty);
         priceController.addListener(_checkIfDirty);
 
@@ -270,14 +246,14 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
           "duration": durationController,
           "price": priceController,
         });
-        // Only track valid pairs for the initial list (Crucial for dirty check)
+
         if (duration.isNotEmpty && amount.isNotEmpty) {
           initialPriceDurations.add({"duration": duration, "amount": amount});
         }
       }
     }
 
-    // Ensure there is at least one field, even if empty
+    // Ensure at least one field exists
     if (priceDurationFields.isEmpty) {
       final durationController = TextEditingController();
       final priceController = TextEditingController();
@@ -289,7 +265,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       });
     }
 
-    // Store initial values for dirty check
+    // Store initial values - normalize empty strings and nulls
     _initialValues = {
       'title': titleTEController.text.trim(),
       'openTime': openTimeTEController.text.trim(),
@@ -299,8 +275,8 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       'benefits': descriptionTEController.text.trim(),
       'ourRecommendations': recommendationTEController.text.trim(),
       'categoryName': _selectedCategoryName,
-      // Store the sorted initial list for clean comparison later
-      'priceByDuration': initialPriceDurations..sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!)),
+      'priceByDuration': initialPriceDurations
+        ..sort((a, b) => (a['duration']! + a['amount']!).compareTo(b['duration']! + b['amount']!)),
     };
   }
 
@@ -329,7 +305,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       final newDurationController = TextEditingController();
       final newPriceController = TextEditingController();
 
-      // Add listeners to new controllers to check dirty state
       newDurationController.addListener(_checkIfDirty);
       newPriceController.addListener(_checkIfDirty);
 
@@ -342,7 +317,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   }
 
   void _removePriceDurationField(int index) {
-    // 🎯 CRITICAL FIX: No ID tracking needed. Just dispose and remove the controllers.
     setState(() {
       priceDurationFields[index]["duration"]?.removeListener(_checkIfDirty);
       priceDurationFields[index]["price"]?.removeListener(_checkIfDirty);
@@ -350,7 +324,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       priceDurationFields[index]["price"]?.dispose();
       priceDurationFields.removeAt(index);
     });
-    _checkIfDirty(); // This will trigger dirty check, which detects the list length change
+    _checkIfDirty();
   }
 
   void _pickServicePhoto() async {
@@ -383,10 +357,9 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     }
   }
 
-  /// 🎯 FINAL SUBMISSION FUNCTION (CLEANED UP VALIDATION)
+  /// 🎯 FINAL SUBMISSION FUNCTION
   /// --------------------------------------------------
   void _saveMassage() async {
-    // 1. Final check before proceeding
     if (!_isFormValid) {
       Get.snackbar("Error", "Please fill all required fields.",
           snackPosition: SnackPosition.BOTTOM,
@@ -395,7 +368,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       return;
     }
 
-    // For Edit Mode, ensure changes were made
     if (isFromEdit && !_isDirty) {
       Get.snackbar("Info", "No changes detected to update.",
           snackPosition: SnackPosition.BOTTOM,
@@ -415,7 +387,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     final selectedCategory = categoryController.categories.firstWhereOrNull(
           (cat) => cat.name == _selectedCategoryName,
     );
-    // Handle case if category is null before accessing id
     if (selectedCategory == null) {
       Get.snackbar("Error", "Please select a valid category.",
           snackPosition: SnackPosition.BOTTOM,
@@ -425,15 +396,11 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
     }
     final categoryId = selectedCategory.id;
 
-
-    // 2. Prepare PriceByDuration List
     List<MassageDuration> priceByDurations = [];
     for (var field in priceDurationFields) {
       final amount = field["price"]!.text.trim();
       final duration = field["duration"]!.text.trim();
 
-      // 🎯 CRITICAL FIX: Only include the item if *BOTH* duration and price are non-empty.
-      // Since we rely on list replacement, we only send the list of remaining, valid items.
       if (amount.isNotEmpty && duration.isNotEmpty) {
         priceByDurations.add(MassageDuration(amount: amount, duration: duration));
       }
@@ -441,9 +408,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
 
     final bool isSuccess;
 
-    // 3. Determine API Call
     if (isFromEdit && massageResult != null) {
-      /// 🟦 PATCH (UPDATE) Logic
       final String updateUrlWithId = AppUrls.updateMassageServiceUrl(massageResult!.sId ?? "");
 
       isSuccess = await addMassageController.updateMassagePost(
@@ -457,13 +422,10 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
         serviceArea: locationTEController.text.trim(),
         amount: amountTEController.text.trim(),
         ourRecommendations: recommendationTEController.text.trim(),
-        priceByDurations: priceByDurations, // Sending the cleaned list, API should replace the old list
+        priceByDurations: priceByDurations,
         file: _servicePhotoFile,
-        // NOTE: Removed deletedPriceDurationIds argument
       );
-
     } else {
-      // 🟦 POST (CREATE) Logic
       isSuccess = await addMassageController.createMassagePost(
         categoryId: categoryId,
         title: titleTEController.text.trim(),
@@ -480,15 +442,13 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
       );
     }
 
-    // 4. Handle Response
     if (isSuccess) {
       Get.snackbar("Success", "${isFromEdit ? 'Updated' : 'Created'} successfully!",
           snackPosition: SnackPosition.TOP,
           backgroundColor: AppColors.primary_1,
           colorText: Colors.white);
 
-
-      Navigator.of(context).pop(isFromEdit?true : null);
+      Navigator.of(context).pop(true);
     } else {
       Get.snackbar("Failed", addMassageController.errorMessage ?? "An unknown error occurred.",
           snackPosition: SnackPosition.BOTTOM,
@@ -501,10 +461,9 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
   /// --------------------------------------------------
   @override
   Widget build(BuildContext context) {
-    // Determine the final disabled state for the button
     final bool isButtonDisabled = isFromEdit
-        ? (!_isFormValid || !_isDirty) // EDIT: Must be valid AND dirty
-        : (!_isFormValid); // CREATE: Must be valid
+        ? (!_isFormValid || !_isDirty)
+        : (!_isFormValid);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
@@ -536,7 +495,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// 🟦 MASSAGE CATEGORY DROPDOWN
                   Text("Massage Category", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 8.h),
                   _buildDropdownField(
@@ -544,7 +502,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                       categoryController.categories.map((e) => e.name).toList()),
                   SizedBox(height: 20.h),
 
-                  /// 🟦 SERVICE PHOTO
                   Text("Add a Service Photo", style: AppTextStyle.c_light_12()),
                   SizedBox(height: 10.h),
                   _buildPhotoSelectionContainer(),
@@ -555,13 +512,11 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                   ),
                   SizedBox(height: 24.h),
 
-                  /// 🟦 TITLE
                   Text("Title", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 8.h),
                   _buildValidatedTextField("Relaxing Massage", titleTEController),
                   SizedBox(height: 20.h),
 
-                  /// 🟦 OPEN & CLOSE TIME
                   Row(
                     children: [
                       Expanded(
@@ -589,7 +544,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                   ),
                   SizedBox(height: 20.h),
 
-                  /// 🟦 LOCATION & AMOUNT
                   Row(
                     children: [
                       Expanded(
@@ -617,7 +571,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                   ),
                   SizedBox(height: 20.h),
 
-                  /// 🟦 PRICE PER DURATION
                   Text("Set Price Per Duration", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 12.h),
                   Column(
@@ -634,7 +587,6 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                                     Text("Duration", style: AppTextStyle.c_regular_12()),
                                     SizedBox(height: 8.h),
                                   ],
-                                  // No need for explicit validation here since the list is dynamic and optional
                                   _buildDurationField(
                                       "Duration", priceDurationFields[i]["duration"]!),
                                 ],
@@ -655,7 +607,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                                 ],
                               ),
                             ),
-                            if (priceDurationFields.length > 1) // Only show close button if there's more than one field
+                            if (priceDurationFields.length > 1)
                               Padding(
                                 padding: EdgeInsets.only(left: 8.w),
                                 child: InkWell(
@@ -678,24 +630,20 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                   _buildAddMoreButton(),
                   SizedBox(height: 24.h),
 
-                  /// 🟦 BENEFITS
                   Text("Benefits", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 8.h),
                   _buildValidatedLargeTextField("Write here...", descriptionTEController, validationMessage: "Benefits are required"),
                   SizedBox(height: 20.h),
 
-                  /// 🟦 OUR RECOMMENDATION
                   Text("Our recommendation", style: AppTextStyle.c_regular_12()),
                   SizedBox(height: 8.h),
                   _buildValidatedLargeTextField("Write here...", recommendationTEController, validationMessage: "Recommendation is required"),
                   SizedBox(height: 30.h),
 
-                  /// 🟦 SAVE BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 50.h,
                     child: GetBuilder<AddNewMassageController>(builder: (controller){
-
                       final bool finalDisabledState = isButtonDisabled || controller.isLoading;
 
                       return ElevatedButton(
@@ -709,7 +657,7 @@ class _AddMassageScreenState extends State<AddMassageScreen> {
                         child: controller.isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : Text(
-                          isFromEdit ? "Update" : "Save", // Dynamic button text
+                          isFromEdit ? "Update" : "Save",
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

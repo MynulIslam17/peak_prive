@@ -2,6 +2,8 @@
 // All Models for Massage Service List in a Single File
 // ==========================================================
 
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+
 class MassageServiceModel {
   int? code;
   String? message;
@@ -116,6 +118,61 @@ class MassageResult {
     this.updatedAt,
     this.iV,
   });
+
+  factory MassageResult.fromRecentService(RecentService rs) => MassageResult(
+    sId: rs.id,
+    category: rs.category != null
+        ? Category(
+      sId: rs.category!.id,
+      name: rs.category!.name,
+      categoryPhoto: rs.category!.categoryPhoto,
+    )
+        : null,
+    owner: Owner(
+      sId: rs.owner,
+      fullName: null,
+      email: null,
+      phone: null,
+      providerType: null,
+      status: null,
+      role: null,
+      profileUrl: null,
+    ),
+    thumbnail: rs.thumbnail,
+    title: rs.title,
+    openTime: rs.openTime,
+    closeTime: rs.closeTime,
+    priceByDuration: rs.priceByDuration.isNotEmpty
+        ? rs.priceByDuration
+        .map((p) => PriceByDuration(
+      duration: p.duration,
+      amount: p.amount.toInt(),
+      sId: p.id,
+    ))
+        .toList()
+        : null,
+    serviceArea: rs.serviceArea,
+    amount: rs.amount.toInt(),
+    benefits: rs.benefits,
+    ourRecommendations: rs.ourRecommendations,
+    averageRating: rs.averageRating.toDouble(),
+    reviews: rs.reviews.isNotEmpty
+        ? rs.reviews
+        .map((r) => Reviews(
+      sId: r.userId,
+      userId: r.userId,
+      comment: r.comment,
+      rating: r.rating,
+      createdAt: r.createdAt,
+    ))
+        .toList()
+        : null,
+    refunds: rs.refunds.isNotEmpty ? rs.refunds : null,
+    createdAt: rs.createdAt,
+    updatedAt: rs.updatedAt,
+    iV: rs.v,
+  );
+
 
   factory MassageResult.fromJson(Map<String, dynamic> json) => MassageResult(
     sId: json['_id'] as String?,

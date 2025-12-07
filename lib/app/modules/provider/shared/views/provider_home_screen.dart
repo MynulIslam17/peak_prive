@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_home_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
 
 import '../../../../../gen/assets.gen.dart';
@@ -88,7 +89,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                       "${authController.userModel!.providerType ?? ""} Provider",
                       name: authController.userModel!.fullName ?? "",
                       onTap: () {
-                        Get.toNamed(Routes.providerProfileScreen);
+                        Get.toNamed(Routes.providerInfoScreen);
                       },
                       icon: Icon(
                         Icons.notifications,
@@ -295,19 +296,47 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 onEdit: () async {
 
 
+                                  if(providerType=="Restaurant"){
+                                    final fullRestaurantModel = Result.fromRecentService(service);
 
-                                  final fullRestaurantModel = Result.fromRecentService(service);
+                                    final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
+                                      "restaurant": fullRestaurantModel, // Pass the converted model
+                                      "isEdit": true,
+                                    });
 
-                                  final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
-                                    "restaurant": fullRestaurantModel, // Pass the converted model
-                                    "isEdit": true,
-                                  });
+                                    if (result == true) { // only refresh if actual changes happened
+                                      homeController.refreshData();
+                                    }
 
-                                  if (result == true) { // only refresh if actual changes happened
-                                    homeController.refreshData();
+                                  }else if(providerType=="Massage"){
+
+
+                                     final fullMassageModel = MassageResult.fromRecentService(service);
+
+                                     final result = await Get.toNamed(Routes.addMessageService, arguments: {
+                                       "massage": fullMassageModel, // Pass the converted model
+                                       "isEdit": true,
+                                     });
+
+                                     if (result == true) { // only refresh if actual changes happened
+                                       homeController.refreshData();
+                                     }
+
+
+
+
                                   }
 
+
+
+
+
+
                                 },
+
+
+
+
                                 packageType: service.skiPassType,
                                 status: service.status,
                               ),
