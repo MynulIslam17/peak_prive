@@ -87,7 +87,9 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
               return Center(child: Text("No services found.", style: AppTextStyle.sub_h3_medium_14()));
             }
 
-            return Padding(
+            return RefreshIndicator(
+                color: AppColors.primary_1,
+                child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: SingleChildScrollView(
                 child: Column(
@@ -247,6 +249,13 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                   ],
                 ),
               ),
+            ), onRefresh: ()async{
+              await serviceController.refreshServices(
+
+              );
+
+
+            }
             );
           },
         ),
