@@ -280,14 +280,12 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                 );
                               },
                               onEdit: () async {
-                                final result = await Get.toNamed(
-                                  Routes.addMessageService,
-                                  arguments: {
-                                    "massage": transport,
-                                    "isEdit": true,
 
-                                  },
-                                );
+                                final result = await Get.toNamed(Routes.addTransportService, arguments: {
+
+                                  "transport": transport,
+                                  "isEdit": true,
+                                });
                                 if (result == true) await serviceController.refreshServices();
                               },
                             ),
