@@ -40,8 +40,11 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     } else if (providerType == "Massage") {
       final result = await Get.toNamed(Routes.addMessageService, arguments: {"isEdit": false});
       if (result == true) await serviceController.refreshServices();
-    } else {
-      Get.snackbar("Error", "Unsupported provider type: $providerType");
+    } else if(providerType=="Transport") {
+      final result = await Get.toNamed(Routes.addTransportService, arguments: {"isEdit": false});
+      if (result == true) await serviceController.refreshServices();
+    }else{
+
     }
   }
 
