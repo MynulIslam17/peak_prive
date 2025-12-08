@@ -14,11 +14,11 @@ class AppBindings extends Bindings{
   void dependencies() {
 
 
-    /// nav controller
+    /// nav controllers
     Get.put<NavController>(NavController());
 
 
-    /// role controller
+    /// role controllers
    // Get.lazyPut<RoleController>(()=>RoleController());
 
 

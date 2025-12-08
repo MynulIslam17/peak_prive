@@ -22,7 +22,7 @@ class _PassResetScreenState extends State<PassResetScreen> {
   final icons = Assets.icons;
   final images = Assets.images;
 
-  /// TextEditing controller
+  /// TextEditing controllers
   final passTEController = TextEditingController();
   final confirmPassTEController = TextEditingController();
   
@@ -30,7 +30,7 @@ class _PassResetScreenState extends State<PassResetScreen> {
    late final String email;
 
 
-  /// GETx controller
+  /// GETx controllers
 
    final resetController=Get.find<PassResetController>();
 

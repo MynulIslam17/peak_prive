@@ -24,7 +24,7 @@ class SetInformation extends StatefulWidget {
 class _SetInformationState extends State<SetInformation> {
   late final prodoductId;
 
-  /// Find booking controller
+  /// Find booking controllers
   final bookingController = Get.find<CreateBookingController>();
 
   /// Find current user from authcontroller

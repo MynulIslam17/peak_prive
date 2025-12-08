@@ -11,7 +11,7 @@ import '../../../../data/models/user_model.dart';
 class GetProfileController extends GetxController {
   bool _fetchProgress = false;
   String? _errorMessage;
-  UserModel? _userModel; /// Store the profile data in the controller
+  UserModel? _userModel; /// Store the profile data in the controllers
 
   bool get fetchProgress => _fetchProgress;
   String? get errorMessage => _errorMessage;

@@ -26,7 +26,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
 
   final emailTEController=TextEditingController();
 
-  ///getx controller
+  ///getx controllers
   final emailController=Get.find<EmailVerifyController>();
 
   @override

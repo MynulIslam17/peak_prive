@@ -24,7 +24,7 @@ class _ProviderAccountInformationScreenState
   final icons = Assets.icons;
   final images = Assets.images;
 
-  /// finds controller
+  /// finds controllers
   final authController = Get.find<AuthController>();
   final profileController = Get.find<GetProfileController>();
   final updateProfileController = Get.find<UpdateProfileController>();

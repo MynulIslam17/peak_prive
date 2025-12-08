@@ -29,14 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final roleController = Get.find<RoleController>();
 
 
-  /// text editing controller
+  /// text editing controllers
   final emailTEController = TextEditingController();
   final passwordTEController = TextEditingController();
 
   /// getx loginController
 
   final loginController = Get.find<LoginController>();
-  /// getx auth controller
+  /// getx auth controllers
 
     final authController=Get.find<AuthController>();
 

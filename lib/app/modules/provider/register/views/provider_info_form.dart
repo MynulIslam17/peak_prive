@@ -25,7 +25,7 @@ class ProviderSignUp extends StatefulWidget {
 class _ProviderSignUpState extends State<ProviderSignUp> {
   final icons = Assets.icons;
 
-  /// finds controller
+  /// finds controllers
   final signUpController = Get.find<UserSignupController>();
 
   /// by default role for

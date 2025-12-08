@@ -219,7 +219,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                             child: MyServiceCard(
                               image: massage.thumbnail ?? "",
                               title: massage.title ?? "",
-                              status: massage.amount.toString(),
+                              status: "\$${massage.amount.toString()}",
                               rating: massage.averageRating ?? 0.0,
                               reviews: massage.reviews?.length ?? 0,
                               location: massage.serviceArea ?? "N/A",
@@ -260,7 +260,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                             child: MyServiceCard(
                               image: transport.thumbnail ?? "",
                               title: transport.title ?? "",
-                              status: transport.amount.toString(),
+                              status: "\$${transport.amount.toString()}",
                               rating: transport.averageRating!.toDouble()  ,
                               reviews: transport.reviews?.length ?? 0,
                               location: transport.serviceArea ?? "N/A",
@@ -272,7 +272,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                   onDelete: () async {
                                     final deleteController = Get.put(DeleteController());
                                     final result = await deleteController.deleteItem(
-                                      url: AppUrls.deleteMassageServiceUrl(transport.sId!),
+                                      url: AppUrls.deleteTransportUrl(transport.sId!),
                                     );
                                     if (result) serviceController.removeItemFromList(transport.sId!, providerType);
                                     return result;

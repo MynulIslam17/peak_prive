@@ -25,7 +25,7 @@ class _BookingScreenState extends State<BookingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  ///finds controller
+  ///finds controllers
   final _navController = Get.find<NavController>();
   final GetMyBookingController _bookingController = Get.find();
   final ratingController = Get.find<HireRatingController>();

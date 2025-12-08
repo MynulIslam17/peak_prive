@@ -218,7 +218,7 @@ class AddNewMassageController extends GetxController {
     }
   }
 
-  /// Resets the controller state variables.
+  /// Resets the controllers state variables.
   void reset() {
     isLoading = false;
     errorMessage = null;

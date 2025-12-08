@@ -26,7 +26,7 @@ class TransportDetailsScreen extends StatefulWidget {
 class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
   late final String productId;
 
-  /// find controller
+  /// find controllers
   final transportController = Get.find<TransportDetailsController>();
   final createBookingController = Get.find<CreateBookingController>();
   final authController = Get.find<AuthController>();

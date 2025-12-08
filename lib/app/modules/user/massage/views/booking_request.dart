@@ -21,7 +21,7 @@ class BookingRequest extends StatefulWidget {
 class _BookingRequestState extends State<BookingRequest> {
   final images = Assets.images;
   final icons = Assets.icons;
-  /// finds controller
+  /// finds controllers
   final authController=Get.find<AuthController>();
   final createBookingController=Get.find<CreateBookingController>();
 
