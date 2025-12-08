@@ -168,14 +168,32 @@ class _ProviderBookingRequestScreenState
                               );
 
                             case "Transport":
-                              final formattedStart =
-                              formatDateTime(result.startDateAndTime);
-                              final formattedEnd =
-                              formatDateTime(result.endDateAndTime);
+                              String formatSmart(String? dateTime) {
+                                if (dateTime == null) return 'N/A';
+                                try {
+                                  final dt = DateTime.parse(dateTime);
+                                  final months = [
+                                    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                  ];
+
+                                  final month = months[dt.month - 1];
+                                  final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+                                  final period = dt.hour >= 12 ? "PM" : "AM";
+
+                                  return "${dt.day.toString().padLeft(2, '0')} $month, ${dt.year} – "
+                                      "${hour.toString().padLeft(2, '0')}:"
+                                      "${dt.minute.toString().padLeft(2, '0')} $period";
+                                } catch (_) {
+                                  return 'Invalid';
+                                }
+                              }
+
+                              final formattedStart = formatSmart(result.startDateAndTime);
+                              final formattedEnd = formatSmart(result.endDateAndTime);
 
                               return ServiceInfoCard(
-                                imageUrl: product.thumbnail ??
-                                    'assets/images/default_transport.png',
+                                imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
                                 title1: "Title",
                                 value1: product.title ?? 'N/A',
                                 icon1Path: "assets/icons/badge.svg",
@@ -183,13 +201,13 @@ class _ProviderBookingRequestScreenState
                                 value2: result.productModel ?? 'N/A',
                                 icon2Path: "assets/icons/user3.svg",
                                 title3: "Time",
-                                value3: "$formattedStart - $formattedEnd",
+                                value3: "$formattedStart → $formattedEnd",
                                 icon3Path: "assets/icons/time.svg",
                                 title4: "Total Price",
                                 value4: (result.totalPrice ?? 0).toString(),
-                                icon4Path:
-                                "assets/icons/CurrencyCircleDollar.svg",
+                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
+
 
                             default:
                               return const SizedBox.shrink();

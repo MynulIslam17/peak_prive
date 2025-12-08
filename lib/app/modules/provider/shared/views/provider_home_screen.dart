@@ -44,6 +44,18 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     _fetchData();
   }
 
+  /// Helper function to format date-time strings
+  String formatDateTime(String? dateTime) {
+    if (dateTime == null) return 'N/A';
+    try {
+      final dt = DateTime.parse(dateTime);
+      return "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} "
+          "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (_) {
+      return 'Invalid';
+    }
+  }
+
   Future<void> _fetchData() async {
     await homeController.fetchProviderHomeData();
 
@@ -407,7 +419,80 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             value4: product.serviceArea ?? '-',
                             icon4Path: "assets/icons/MapPinSimpleArea.svg",
                           );
-                        } else {///
+                        }
+                        else if(providerType=="Massage"){
+
+                          final formattedDate =
+                          formatDateTime(booking.date.toString());
+
+                          return ServiceInfoCard(
+                            imageUrl: product.thumbnail ?? '',
+                            title1: "Title",
+                            value1:  product.title ?? '-',
+                            icon1Path: "assets/icons/badge.svg",
+
+                            title2: "Duration",
+                            value2:  booking.duration ?? '0',
+                            icon2Path: "assets/icons/time.svg",
+
+                            title3: "Date-Time",
+                            // Pass the formatted slotTime string
+                            value3:formattedDate,
+                            icon3Path: "assets/icons/CalendarDots.svg",
+
+                            title4: "Total Price",
+                            value4: (booking.totalPrice ?? 0).toString(),
+                            icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                          );
+
+                        }else if(providerType=="Transport"){
+
+                          String formatSmart(String? dateTime) {
+                            if (dateTime == null) return 'N/A';
+                            try {
+                              final dt = DateTime.parse(dateTime);
+                              final months = [
+                                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                              ];
+
+                              final month = months[dt.month - 1];
+                              final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+                              final period = dt.hour >= 12 ? "PM" : "AM";
+
+                              return "${dt.day.toString().padLeft(2, '0')} $month, ${dt.year} – "
+                                  "${hour.toString().padLeft(2, '0')}:"
+                                  "${dt.minute.toString().padLeft(2, '0')} $period";
+                            } catch (_) {
+                              return 'Invalid';
+                            }
+                          }
+
+                          final formattedStart = formatSmart(booking.startDateAndTime.toString());
+                          final formattedEnd = formatSmart(booking.endDateAndTime.toString());
+
+                          return ServiceInfoCard(
+                            imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
+                            title1: "Title",
+                            value1: product.title ?? 'N/A',
+                            icon1Path: "assets/icons/badge.svg",
+                            title2: "Product Model",
+                            value2: booking.productModel ?? 'N/A',
+                            icon2Path: "assets/icons/user3.svg",
+                            title3: "Time",
+                            value3: "$formattedStart → $formattedEnd",
+                            icon3Path: "assets/icons/time.svg",
+                            title4: "Total Price",
+                            value4: (booking.totalPrice ?? 0).toString(),
+                            icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                          );
+
+
+                        }
+
+
+
+                        else {///
 
                           /// calculate slot time
                           String slotTime = '-';
