@@ -11,6 +11,7 @@ import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_hom
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_transport_service_model.dart';
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/api_urls.dart';
@@ -20,7 +21,8 @@ import '../../../../core/widgets/my_service_card.dart';
 import '../../../../core/widgets/provider_profile.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/controller/delete_controller.dart';
-import '../controllers/provider_all_service_controller.dart' show AllServiceController;
+import '../controllers/provider_all_service_controller.dart'
+    show AllServiceController;
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({super.key});
@@ -58,7 +60,6 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
   Future<void> _fetchData() async {
     await homeController.fetchProviderHomeData();
-
   }
 
   @override
@@ -73,7 +74,6 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             }
 
             if (controller.providerHome == null) {
-
               return const Center(child: Text("No Data Found"));
             }
 
@@ -98,7 +98,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                     ProviderProfile(
                       imageUrl: authController.userModel!.profilePic ?? '',
                       role:
-                      "${authController.userModel!.providerType ?? ""} Provider",
+                          "${authController.userModel!.providerType ?? ""} Provider",
                       name: authController.userModel!.fullName ?? "",
                       onTap: () {
                         Get.toNamed(Routes.providerInfoScreen);
@@ -109,10 +109,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                         size: 30,
                       ),
                       onIconTap: () {
-
                         print("Icon tapped!");
                       },
-
                     ),
 
                     const SizedBox(height: 20),
@@ -149,17 +147,16 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     textAlign: TextAlign.center,
                                     style: AppTextStyle.sub_h2_medium_16()
                                         .copyWith(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade700,
-                                    ),
+                                          fontSize: 11,
+                                          color: Colors.grey.shade700,
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   "$value",
                                   textAlign: TextAlign.center,
-                                  style: AppTextStyle.h3_semibold_20()
-                                      .copyWith(
+                                  style: AppTextStyle.h3_semibold_20().copyWith(
                                     color: AppColors.primary_1,
                                     fontSize: 17,
                                   ),
@@ -190,18 +187,16 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                         scrollDirection: Axis.horizontal,
                         itemCount: recentServices.length,
                         itemBuilder: (context, index) {
-
-                          String providerType=authController.userModel!.providerType!;
-
-
+                          String providerType =
+                              authController.userModel!.providerType!;
 
                           final service = recentServices[index];
-
 
                           // Determine the price text
                           String text = providerType == "Ski_Pass"
                               ? "\$${service.amount}/Day"
-                              : (providerType == "Transport" || providerType == "Massage")
+                              : (providerType == "Transport" ||
+                                    providerType == "Massage"|| providerType=="Ski_Hire")
                               ? "\$${service.amount}/Hr"
                               : "\$${service.status}";
 
@@ -213,163 +208,210 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 image: service.thumbnail, // service thumbnail
                                 title: service.title, // service title
 
-                                rating: service.averageRating.toDouble(), // rating
-                                reviews: service.reviews.length, // number of reviews
-                                location: service.serviceArea, // location/service area
-
-
+                                rating: service.averageRating
+                                    .toDouble(), // rating
+                                reviews:
+                                    service.reviews.length, // number of reviews
+                                location: service
+                                    .serviceArea, // location/service area
                                 /// delete
                                 onDelete: () async {
-
-                                  if(providerType=="Ski_Pass"){
+                                  if (providerType == "Ski_Pass") {
                                     DeleteDialogService.show(
                                       context: context,
                                       title: "Delete Service",
-                                      message: "Are you sure you want to delete this service?",
+                                      message:
+                                          "Are you sure you want to delete this service?",
                                       onDelete: () async {
-                                        final deleteController = Get.put(DeleteController());
-                                        final result = await deleteController.deleteItem(
-                                            url: AppUrls.providerPassServiceDelete(service.id)
+                                        final deleteController = Get.put(
+                                          DeleteController(),
                                         );
+                                        final result = await deleteController
+                                            .deleteItem(
+                                              url:
+                                                  AppUrls.providerPassServiceDelete(
+                                                    service.id,
+                                                  ),
+                                            );
 
                                         if (result) {
-
-                                          homeController.providerHome!.recentServices.removeAt(index);
+                                          homeController
+                                              .providerHome!
+                                              .recentServices
+                                              .removeAt(index);
                                           homeController.update();
 
-
                                           Future.microtask(() {
-
                                             homeController.refreshData();
                                           });
 
                                           return true; // Closes the dialog quickly
                                         } else {
-                                          Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                          Get.snackbar(
+                                            "Error",
+                                            deleteController.errorMessage ??
+                                                "Delete failed",
+                                          );
                                           return false;
                                         }
                                       },
                                     );
-                                  }else if(providerType=="Massage"){
+                                  } else if (providerType == "Massage") {
                                     DeleteDialogService.show(
                                       context: context,
                                       title: "Delete Service",
-                                      message: "Are you sure you want to delete this service?",
+                                      message:
+                                          "Are you sure you want to delete this service?",
                                       onDelete: () async {
-                                        final deleteController = Get.put(DeleteController());
-                                        final result = await deleteController.deleteItem(
-                                            url: AppUrls.deleteMassageServiceUrl(service.id)
+                                        final deleteController = Get.put(
+                                          DeleteController(),
                                         );
+                                        final result = await deleteController
+                                            .deleteItem(
+                                              url:
+                                                  AppUrls.deleteMassageServiceUrl(
+                                                    service.id,
+                                                  ),
+                                            );
 
                                         if (result) {
-
-                                          homeController.providerHome!.recentServices.removeAt(index);
+                                          homeController
+                                              .providerHome!
+                                              .recentServices
+                                              .removeAt(index);
                                           homeController.update();
 
-
                                           Future.microtask(() {
-
                                             homeController.refreshData();
                                           });
 
                                           return true; // Closes the dialog quickly
                                         } else {
-                                          Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                          Get.snackbar(
+                                            "Error",
+                                            deleteController.errorMessage ??
+                                                "Delete failed",
+                                          );
                                           return false;
                                         }
                                       },
                                     );
+                                  }else if(providerType=="Ski_Hire"){ // for delete
+
+
                                   }
 
 
-                                  else{
+                                  else {
                                     DeleteDialogService.show(
                                       context: context,
                                       title: "Delete Seat",
-                                      message: "Are you sure you want to delete this service?",
+                                      message:
+                                          "Are you sure you want to delete this service?",
                                       onDelete: () async {
-                                        final deleteController = Get.put(DeleteController());
-                                        final result = await deleteController.deleteItem(
-                                            url: AppUrls.deleteRestaurantUrl(service.id)
+                                        final deleteController = Get.put(
+                                          DeleteController(),
                                         );
+                                        final result = await deleteController
+                                            .deleteItem(
+                                              url: AppUrls.deleteRestaurantUrl(
+                                                service.id,
+                                              ),
+                                            );
 
                                         if (result) {
-
-                                          homeController.providerHome!.recentServices.removeAt(index);
+                                          homeController
+                                              .providerHome!
+                                              .recentServices
+                                              .removeAt(index);
                                           homeController.update();
 
-
                                           Future.microtask(() {
-
                                             homeController.refreshData();
                                           });
 
                                           return true; // Closes the dialog quickly
                                         } else {
-                                          Get.snackbar("Error", deleteController.errorMessage ?? "Delete failed");
+                                          Get.snackbar(
+                                            "Error",
+                                            deleteController.errorMessage ??
+                                                "Delete failed",
+                                          );
                                           return false;
                                         }
                                       },
                                     );
                                   }
-
-
                                 },
 
                                 /// edit
                                 onEdit: () async {
+                                  if (providerType == "Restaurant") {
+                                    final fullRestaurantModel =
+                                        Result.fromRecentService(service);
 
+                                    final result = await Get.toNamed(
+                                      Routes.addRestaurantService,
+                                      arguments: {
+                                        "restaurant":
+                                            fullRestaurantModel, // Pass the converted model
+                                        "isEdit": true,
+                                      },
+                                    );
 
-                                  if(providerType=="Restaurant"){
-                                    final fullRestaurantModel = Result.fromRecentService(service);
-
-                                    final result = await Get.toNamed(Routes.addRestaurantService, arguments: {
-                                      "restaurant": fullRestaurantModel, // Pass the converted model
-                                      "isEdit": true,
-                                    });
-
-                                    if (result == true) { // only refresh if actual changes happened
+                                    if (result == true) {
+                                      // only refresh if actual changes happened
                                       homeController.refreshData();
                                     }
+                                  } else if (providerType == "Massage") {
+                                    final fullMassageModel =
+                                        MassageResult.fromRecentService(
+                                          service,
+                                        );
 
-                                  }else if(providerType=="Massage"){
+                                    final result = await Get.toNamed(
+                                      Routes.addMessageService,
+                                      arguments: {
+                                        "massage":
+                                            fullMassageModel, // Pass the converted model
+                                        "isEdit": true,
+                                      },
+                                    );
 
+                                    if (result == true) {
+                                      // only refresh if actual changes happened
+                                      homeController.refreshData();
+                                    }
+                                  } else if (providerType == "Transport") {
+                                    // Convert RecentService to TransportResult
+                                    final fullTransportModel =
+                                        TransportResult.fromRecentService(
+                                          service,
+                                        );
 
-                                     final fullMassageModel = MassageResult.fromRecentService(service);
+                                    // Navigate to Add Transport Service screen
+                                    final result = await Get.toNamed(
+                                      Routes.addTransportService,
+                                      arguments: {
+                                        "transport": fullTransportModel,
+                                        "isEdit": true,
+                                      },
+                                    );
 
-                                     final result = await Get.toNamed(Routes.addMessageService, arguments: {
-                                       "massage": fullMassageModel, // Pass the converted model
-                                       "isEdit": true,
-                                     });
-
-                                     if (result == true) { // only refresh if actual changes happened
-                                       homeController.refreshData();
-                                     }
-
-
-
-
+                                    // Only refresh if actual changes happened
+                                    if (result == true) {
+                                      homeController.refreshData();
+                                    }
                                   }
-
-
-
-
-
-
                                 },
 
-
-
-
                                 packageType: service.skiPassType,
-                                status:text
-
-                            ),
+                                status: text,
+                              ),
                             ),
                           );
                         },
                       ),
-
                     ),
 
                     const SizedBox(height: 20),
@@ -390,15 +432,14 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                       itemBuilder: (context, index) {
                         final booking = recentBookings[index];
                         final product = booking.product;
-                        final providerType = authController.userModel?.providerType ?? '';
+                        final providerType =
+                            authController.userModel?.providerType ?? '';
 
                         if (product == null) return const SizedBox();
 
-
-                        final item = booking.bookingItems.isNotEmpty ? booking.bookingItems[0] : null;
-
-
-
+                        final item = booking.bookingItems.isNotEmpty
+                            ? booking.bookingItems[0]
+                            : null;
 
                         if (providerType == "Ski_Pass") {
                           return ServiceInfoCard(
@@ -412,52 +453,65 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             icon2Path: "assets/icons/badge.svg",
 
                             title3: "Total Amount",
-                            value3: (booking.totalPrice != 0 ? booking.totalPrice : product.totalPrice ?? 0).toString(),
+                            value3:
+                                (booking.totalPrice != 0
+                                        ? booking.totalPrice
+                                        : product.totalPrice ?? 0)
+                                    .toString(),
                             icon3Path: "assets/icons/amount.svg",
 
                             title4: "Location",
                             value4: product.serviceArea ?? '-',
                             icon4Path: "assets/icons/MapPinSimpleArea.svg",
                           );
-                        }
-                        else if(providerType=="Massage"){
-
-                          final formattedDate =
-                          formatDateTime(booking.date.toString());
+                        } else if (providerType == "Massage") {
+                          final formattedDate = formatDateTime(
+                            booking.date.toString(),
+                          );
 
                           return ServiceInfoCard(
                             imageUrl: product.thumbnail ?? '',
                             title1: "Title",
-                            value1:  product.title ?? '-',
+                            value1: product.title ?? '-',
                             icon1Path: "assets/icons/badge.svg",
 
                             title2: "Duration",
-                            value2:  booking.duration ?? '0',
+                            value2: booking.duration ?? '0',
                             icon2Path: "assets/icons/time.svg",
 
                             title3: "Date-Time",
                             // Pass the formatted slotTime string
-                            value3:formattedDate,
+                            value3: formattedDate,
                             icon3Path: "assets/icons/CalendarDots.svg",
 
                             title4: "Total Price",
                             value4: (booking.totalPrice ?? 0).toString(),
                             icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                           );
-
-                        }else if(providerType=="Transport"){
-
+                        } else if (providerType == "Transport") {
                           String formatSmart(String? dateTime) {
                             if (dateTime == null) return 'N/A';
                             try {
                               final dt = DateTime.parse(dateTime);
                               final months = [
-                                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                "Jan",
+                                "Feb",
+                                "Mar",
+                                "Apr",
+                                "May",
+                                "Jun",
+                                "Jul",
+                                "Aug",
+                                "Sep",
+                                "Oct",
+                                "Nov",
+                                "Dec",
                               ];
 
                               final month = months[dt.month - 1];
-                              final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+                              final hour = dt.hour % 12 == 0
+                                  ? 12
+                                  : dt.hour % 12;
                               final period = dt.hour >= 12 ? "PM" : "AM";
 
                               return "${dt.day.toString().padLeft(2, '0')} $month, ${dt.year} – "
@@ -468,11 +522,17 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             }
                           }
 
-                          final formattedStart = formatSmart(booking.startDateAndTime.toString());
-                          final formattedEnd = formatSmart(booking.endDateAndTime.toString());
+                          final formattedStart = formatSmart(
+                            booking.startDateAndTime.toString(),
+                          );
+                          final formattedEnd = formatSmart(
+                            booking.endDateAndTime.toString(),
+                          );
 
                           return ServiceInfoCard(
-                            imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
+                            imageUrl:
+                                product.thumbnail ??
+                                'assets/images/default_transport.png',
                             title1: "Title",
                             value1: product.title ?? 'N/A',
                             icon1Path: "assets/icons/badge.svg",
@@ -486,50 +546,62 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             value4: (booking.totalPrice ?? 0).toString(),
                             icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                           );
+                        } else {
 
+                          /// duration converter
+                          String formatDuration(String start, String end) {
+                            try {
+                              final startDt = DateTime.parse(start);
+                              final endDt = DateTime.parse(end);
 
-                        }
+                              final difference = endDt.difference(startDt);
 
+                              if (difference.inMinutes <= 0) {
+                                return "0 hour";
+                              }
 
+                              final totalHours = difference.inHours;
+                              final days = totalHours ~/ 24;
+                              final hours = totalHours % 24;
 
-                        else {///
+                              // If more than 24 hours → show day + hour
+                              if (totalHours >= 24) {
+                                return "$days day $hours hour";
+                              }
 
-                          /// calculate slot time
-                          String slotTime = '-';
-                          if (booking.slots != null && booking.slots!.isNotEmpty) {
-                            final firstSlot = booking.slots!.first;
-                            if (firstSlot.startTime != null && firstSlot.endTime != null) {
-                              slotTime = "${firstSlot.startTime} - ${firstSlot.endTime}";
-                            } else if (firstSlot.startTime != null) {
-                              slotTime = firstSlot.startTime!;
+                              // Less than 24 hours → show hours only
+                              return "$totalHours hour(s)";
+                            } catch (e) {
+                              return "N/A";
                             }
                           }
 
+
+
+
+
                           return ServiceInfoCard(
                             imageUrl: product.thumbnail ?? '',
-                            title1: "SetType",
-                            value1: item?.itemDetails?.seat ?? '-',
+                            title1: "Ski Title",
+                            value1: product.title ?? 'N/A',
                             icon1Path: "assets/icons/badge.svg",
 
-                            title2: "Seat Count",
-                            value2: item?.quantity.toString() ?? '0',
+                            title2: "Duration",
+                            value2: formatDuration(booking.startDateAndTime.toString(), booking.endDateAndTime.toString()) ?? "N/A",
                             icon2Path: "assets/icons/user3.svg",
 
-                            title3: "Slot",
-                            // Pass the formatted slotTime string
-                            value3: slotTime,
-                            icon3Path: "assets/icons/time.svg",
+                            title3: "Total Amount",
 
-                            title4: "Total Price",
-                            value4: (booking.totalPrice ?? 0).toString(),
+                            value3: booking.totalPrice.toString(),
+                            icon3Path: "assets/icons/CurrencyCircleDollar.svg",
+
+                            title4: "Location",
+                            value4: product.serviceArea?? "N/A",
                             icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                           );
                         }
                       },
-
-                    )
-
-
+                    ),
                   ],
                 ),
               ),

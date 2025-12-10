@@ -1,11 +1,14 @@
 import 'dart:convert';
 
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/models/user_model.dart';
+import '../../routes/app_routes.dart';
 
 class AuthController  extends GetxController{
+
   // -------------------------
   // KEYS
   // -------------------------
@@ -88,6 +91,36 @@ class AuthController  extends GetxController{
     await prefs.setString(_roleKey, newRole);
     role = newRole;
   }
+
+
+
+  /// this use for logout
+
+  Future<void> logout() async {
+
+    final navController=Get.put(NavController());
+    final prefs = await SharedPreferences.getInstance();
+
+    ///Remove only login-related keys
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userDataKey);
+    await prefs.remove(_roleKey);
+    await prefs.remove(_providerTypeKey);
+
+
+    /// reset navController
+    navController.changeIndex(0);
+
+
+
+    accessToken = null;
+    userModel = null;
+    role = null;
+
+    // Redirect to login
+    Get.offAllNamed(Routes.login);
+  }
+
 
   // -------------------------
   // GETTERS

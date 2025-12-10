@@ -103,6 +103,8 @@ class MyServiceCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+
+                        SizedBox(width: 15,),
                         Text(
                           status,
                           style: AppTextStyle.sub_h3_medium_14(

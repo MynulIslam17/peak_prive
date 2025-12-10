@@ -1,3 +1,5 @@
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+
 class TransportServiceModel {
   int? code;
   String? message;
@@ -117,6 +119,53 @@ class TransportResult {
     this.iV,
   });
 
+  /// Convert RecentService to TransportResult
+  /// Convert RecentService to TransportResult with proper null safety
+  factory TransportResult.fromRecentService(RecentService recentService) {
+    try {
+      return TransportResult(
+        sId: recentService.id,
+        owner: recentService.owner,
+        category: recentService.category != null
+            ? Category(
+          name: recentService.category!.name,
+          categoryPhoto: recentService.category!.categoryPhoto,
+          sId: recentService.category!.id,
+        )
+            : null,
+        thumbnail: recentService.thumbnail,
+        title: recentService.title,
+
+        // ✅ Fields are now nullable - no need to check isNotEmpty
+        personCount: recentService.personCount,
+        milage: recentService.milage,
+        power: recentService.power,
+        extraChargePerHours: recentService.extraChargePerHours,
+
+        // Convert numerics safely
+        insuranceFee: (recentService.insuranceFee ?? 0).toInt(),
+        maintainCharge: (recentService.maintainCharge ?? 0).toInt(),
+
+        serviceArea: recentService.serviceArea,
+        amount: (recentService.amount ?? 0).toInt(),
+        description: recentService.description,
+        averageRating: (recentService.averageRating ?? 0).toInt(),
+
+        // Safe list handling
+        reviews: recentService.reviews.isNotEmpty ? recentService.reviews : [],
+        refunds: recentService.refunds.isNotEmpty ? recentService.refunds : [],
+
+        createdAt: recentService.createdAt,
+        updatedAt: recentService.updatedAt,
+        iV: recentService.v,
+      );
+    } catch (e) {
+      print('Error converting RecentService to TransportResult: $e');
+      rethrow;
+    }
+  }
+
+  /// Parse from JSON API response
   factory TransportResult.fromJson(Map<String, dynamic> json) {
     return TransportResult(
       sId: json['_id'],
@@ -142,6 +191,7 @@ class TransportResult {
     );
   }
 
+  /// Convert to JSON for API requests
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
     data['_id'] = sId;

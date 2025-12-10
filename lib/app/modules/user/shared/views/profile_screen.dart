@@ -267,8 +267,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            // Handle Log Out logic
+          onTap: () async{
+
+            authController.logout();
+
+
           },
           borderRadius: BorderRadius.circular(10.r),
           child: Center(

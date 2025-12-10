@@ -162,12 +162,12 @@ class _AddTransportScreenState extends State<AddTransportScreen> {
 
     bool result;
     if (isFromEdit && transportModel != null) {
-      // result = await createTransportController.updateTransportService(
-      //   data: data,
-      //   file: selectedImage,
-      //   apiUrl: AppUrls.updateTransportService(transportModel!.sId!),
-      //);
-      result=false;
+      result = await createTransportController.updateTransportService(
+        serviceId: transportModel!.sId!, // Existing service ID
+        data: data,
+        file: selectedImage, // Can be null if no new image is selected
+        apiUrl: AppUrls.updateTransportUrl(transportModel!.sId!),
+      );
     } else {
       result = await createTransportController.createTransportService(
         data: data,
@@ -176,15 +176,41 @@ class _AddTransportScreenState extends State<AddTransportScreen> {
       );
     }
 
+
     if (result) {
-      Get.snackbar('Success', isFromEdit ? 'Transport updated' : 'Transport added',
-          backgroundColor: Colors.green, colorText: Colors.white);
-      Get.back(result: true);
+
+      isFromEdit?
+      Navigator.of(context).pop(true):
+      Navigator.of(context).pop();
+
+
     } else {
       Get.snackbar('Failed', createTransportController.errorMessage ?? 'Something went wrong',
           backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
+
+
+  /// this filed check if any filed changes during edit or not
+
+  bool get _hasChanges {
+    if (!isFromEdit || transportModel == null) return true; // For create, always true
+
+    final category = categoryController.categories.firstWhereOrNull((c) => c.name == selectedBrandName);
+
+    return carTitleTEController.text.trim() != (transportModel!.title ?? "") ||
+        mileageTEController.text.trim() != (transportModel!.milage ?? "") ||
+        powerTEController.text.trim() != (transportModel!.power ?? "") ||
+        locationTEController.text.trim() != (transportModel!.serviceArea ?? "") ||
+        amountTEController.text.trim() != (transportModel!.amount?.toString() ?? "") ||
+        descriptionTEController.text.trim() != (transportModel!.description ?? "") ||
+        extraChargeTEController.text.trim() != (transportModel!.extraChargePerHours ?? "") ||
+        insuranceTEController.text.trim() != (transportModel!.insuranceFee?.toString() ?? "") ||
+        selectedSeatPerson != (transportModel!.personCount != null ? int.tryParse(transportModel!.personCount!) : null) ||
+        selectedBrandName != transportModel!.category?.name ||
+        selectedImage != null; // if new image selected
+  }
+
 
   @override
   void dispose() {
@@ -297,18 +323,18 @@ class _AddTransportScreenState extends State<AddTransportScreen> {
               SizedBox(height: 8.h),
               _buildLargeTextField("Write description here...", descriptionTEController),
               SizedBox(height: 30.h),
-              GetBuilder<AddNewTransportServiceController>(builder: (ctrl) {
+              GetBuilder<AddNewTransportServiceController>(builder: (controller) {
                 return SizedBox(
                   width: double.infinity,
                   height: 50.h,
                   child: ElevatedButton(
-                    onPressed: _isFormValid && !ctrl.isLoading ? _saveRequest : null,
+                    onPressed: _isFormValid && !controller.isLoading && _hasChanges ? _saveRequest : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary_1,
                       disabledBackgroundColor: Colors.grey.shade400,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: ctrl.isLoading
+                    child: controller.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : Text(isFromEdit ? "Update" : "Save", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
                   ),

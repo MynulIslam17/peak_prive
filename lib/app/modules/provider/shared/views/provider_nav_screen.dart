@@ -32,7 +32,7 @@ class _ProviderNavScreenState extends State<ProviderNavScreen> {
     ProviderServiceScreen(),
     ProviderBookingRequestScreen(),
     ProviderChatScreen(),
-    ProviderProfileScreen(),
+    ProfileScreen(),
   ];
 
   @override

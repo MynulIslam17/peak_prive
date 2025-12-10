@@ -189,6 +189,7 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
   static String providerTransportService="$baseUrl/transport/my-all";
   static String createTransportService="$baseUrl/transport/create";
   static String deleteTransportUrl(String id)=>"$baseUrl/transport/delete/$id";
+  static String updateTransportUrl(String id)=>"$baseUrl/transport/update/$id";
 
 
 

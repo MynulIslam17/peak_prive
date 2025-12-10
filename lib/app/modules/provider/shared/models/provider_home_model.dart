@@ -570,12 +570,202 @@ class ServiceItem {
 // }  working one
 
 
+// class RecentService {
+//   final String id;
+//   final String title;
+//   final String thumbnail;
+//   final ServiceCategory? category;
+//   final String owner;
+//   final String openTime;
+//   final String closeTime;
+//   final String serviceArea;
+//   final num serviceFee;
+//   final String foodType;
+//   final String status;
+//   final List<ServiceItem> items;
+//   final List<Slot> slots;
+//   final num averageRating;
+//   final List<Slot> availableSlots;
+//   final List<Review> reviews;
+//   final List<dynamic> refunds;
+//   final String createdAt;
+//   final String updatedAt;
+//   final String model;
+//   final int reviewCount;
+//   final String? skiPassType;
+//   final List<ProductService>? services;
+//   final int? v;
+//
+//   // ⭐ New fields from response
+//   final List<PriceByDuration> priceByDuration;
+//   final num amount;
+//   final String benefits;
+//   final String ourRecommendations;
+//
+//   RecentService({
+//     required this.id,
+//     required this.title,
+//     required this.thumbnail,
+//     this.category,
+//     required this.owner,
+//     required this.openTime,
+//     required this.closeTime,
+//     required this.serviceArea,
+//     this.serviceFee = 0,
+//     required this.foodType,
+//     required this.status,
+//     this.items = const [],
+//     this.slots = const [],
+//     this.averageRating = 0,
+//     this.availableSlots = const [],
+//     this.reviews = const [],
+//     this.refunds = const [],
+//     required this.createdAt,
+//     required this.updatedAt,
+//     required this.model,
+//     this.reviewCount = 0,
+//     this.skiPassType,
+//     this.services,
+//     this.v,
+//
+//     // ⭐ Newly added
+//     this.priceByDuration = const [],
+//     this.amount = 0,
+//     this.benefits = '',
+//     this.ourRecommendations = '',
+//   });
+//
+//   factory RecentService.fromJson(Map<String, dynamic> json) {
+//     return RecentService(
+//       id: json["_id"] ?? '',
+//       title: json["title"] ?? '',
+//       thumbnail: json["thumbnail"] ?? '',
+//       category: json["category"] != null
+//           ? ServiceCategory.fromJson(json["category"])
+//           : null,
+//       owner: json["owner"] ?? '',
+//       openTime: json["openTime"] ?? '',
+//       closeTime: json["closeTime"] ?? '',
+//       serviceArea: json["serviceArea"] ?? '',
+//       serviceFee: json["serviceFee"] ?? 0,
+//       foodType: json["foodType"] ?? '',
+//       status: json["status"] ?? '',
+//       items: (json["items"] as List? ?? [])
+//           .map((e) => ServiceItem.fromJson(e))
+//           .toList(),
+//       slots: (json["slots"] as List? ?? [])
+//           .map((e) => Slot.fromJson(e))
+//           .toList(),
+//       averageRating: json["averageRating"] ?? 0,
+//       availableSlots: (json["availableSlots"] as List? ?? [])
+//           .map((e) => Slot.fromJson(e))
+//           .toList(),
+//       reviews: (json["reviews"] as List? ?? [])
+//           .map((e) => Review.fromJson(e))
+//           .toList(),
+//       refunds: json["refunds"] ?? [],
+//       createdAt: json["createdAt"] ?? '',
+//       updatedAt: json["updatedAt"] ?? '',
+//       model: json["model"] ?? '',
+//       reviewCount: json["reviewCount"] ?? 0,
+//       skiPassType: json['skiPassType'],
+//       services: json['services'] != null
+//           ? List<ProductService>.from(
+//           json['services'].map((x) => ProductService.fromJson(x)))
+//           : [],
+//       v: json["__v"],
+//
+//       // ⭐ Newly added field parsing
+//       priceByDuration: (json["priceByDuration"] as List? ?? [])
+//           .map((e) => PriceByDuration.fromJson(e))
+//           .toList(),
+//       amount: json["amount"] ?? 0,
+//       benefits: json["benefits"] ?? '',
+//       ourRecommendations: json["ourRecommendations"] ?? '',
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       "_id": id,
+//       "title": title,
+//       "thumbnail": thumbnail,
+//       "category": category?.toJson(),
+//       "owner": owner,
+//       "openTime": openTime,
+//       "closeTime": closeTime,
+//       "serviceArea": serviceArea,
+//       "serviceFee": serviceFee,
+//       "foodType": foodType,
+//       "status": status,
+//       "items": items.map((e) => e.toJson()).toList(),
+//       "slots": slots.map((e) => e.toJson()).toList(),
+//       "averageRating": averageRating,
+//       "availableSlots": availableSlots.map((e) => e.toJson()).toList(),
+//       "reviews": reviews.map((e) => e.toJson()).toList(),
+//       "refunds": refunds,
+//       "createdAt": createdAt,
+//       "updatedAt": updatedAt,
+//       "model": model,
+//       "reviewCount": reviewCount,
+//       "skiPassType": skiPassType,
+//       "services": services?.map((e) => e.toJson()).toList(),
+//       "__v": v,
+//
+//       // ⭐ Newly added fields
+//       "priceByDuration": priceByDuration.map((e) => e.toJson()).toList(),
+//       "amount": amount,
+//       "benefits": benefits,
+//       "ourRecommendations": ourRecommendations,
+//     };
+//   }
+// } // work 2
+
+
+/// Review model (for completeness, ensuring it's not removed)
+class Review {
+  final String userId;
+  final double rating;
+  final String comment;
+  final String createdAt;
+
+  Review({
+    required this.userId,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      userId: json["userId"] ?? "",
+      rating: (json["rating"] ?? 0).toDouble(),
+      comment: json["comment"] ?? "",
+      createdAt: json["createdAt"] ?? "",
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "userId": userId,
+      "rating": rating,
+      "comment": comment,
+      "createdAt": createdAt,
+    };
+  }
+}
+
+// =========================================================================
+// ⭐ UPDATED RecentService MODEL
+// =========================================================================
+
 class RecentService {
   final String id;
   final String title;
   final String thumbnail;
   final ServiceCategory? category;
   final String owner;
+  // Fields related to open/close time/foodType are for other service models
   final String openTime;
   final String closeTime;
   final String serviceArea;
@@ -596,11 +786,23 @@ class RecentService {
   final List<ProductService>? services;
   final int? v;
 
-  // ⭐ New fields from response
+  // Existing fields from the provided model structure:
   final List<PriceByDuration> priceByDuration;
   final num amount;
   final String benefits;
   final String ourRecommendations;
+
+  // ⭐ NEW FIELDS ADDED FROM JSON (Transport specifics)
+  final String? personCount;
+  final String milage;
+  final String power;
+  final String extraChargePerHours; // JSON has this as a String
+  final num insuranceFee;
+  final num maintainCharge;
+
+  // Note: The description field was previously missing initialization in fromJson.
+  final String description;
+
 
   RecentService({
     required this.id,
@@ -608,12 +810,12 @@ class RecentService {
     required this.thumbnail,
     this.category,
     required this.owner,
-    required this.openTime,
-    required this.closeTime,
+    this.openTime = '', // Set defaults for non-transport fields if needed
+    this.closeTime = '',
     required this.serviceArea,
     this.serviceFee = 0,
-    required this.foodType,
-    required this.status,
+    this.foodType = '',
+    this.status = '',
     this.items = const [],
     this.slots = const [],
     this.averageRating = 0,
@@ -628,11 +830,20 @@ class RecentService {
     this.services,
     this.v,
 
-    // ⭐ Newly added
+    // Existing fields from the provided model structure:
     this.priceByDuration = const [],
     this.amount = 0,
     this.benefits = '',
     this.ourRecommendations = '',
+    this.description = '', // Ensuring description is initialized
+
+    // ⭐ NEW FIELDS ADDED
+    this.personCount = '',
+    this.milage = '',
+    this.power = '',
+    this.extraChargePerHours = '',
+    this.insuranceFee = 0,
+    this.maintainCharge = 0,
   });
 
   factory RecentService.fromJson(Map<String, dynamic> json) {
@@ -644,6 +855,7 @@ class RecentService {
           ? ServiceCategory.fromJson(json["category"])
           : null,
       owner: json["owner"] ?? '',
+      // Defaulting fields not present in Transport model (like openTime, foodType)
       openTime: json["openTime"] ?? '',
       closeTime: json["closeTime"] ?? '',
       serviceArea: json["serviceArea"] ?? '',
@@ -675,13 +887,22 @@ class RecentService {
           : [],
       v: json["__v"],
 
-      // ⭐ Newly added field parsing
+      // Existing fields from the provided model structure:
       priceByDuration: (json["priceByDuration"] as List? ?? [])
           .map((e) => PriceByDuration.fromJson(e))
           .toList(),
       amount: json["amount"] ?? 0,
       benefits: json["benefits"] ?? '',
       ourRecommendations: json["ourRecommendations"] ?? '',
+
+      // ⭐ NEW FIELDS PARSING - Using null-coalescing for safety
+      personCount: json["personCount"]?.toString() ?? '',
+      milage: json["milage"]?.toString() ?? '',
+      power: json["power"]?.toString() ?? '',
+      extraChargePerHours: json["extraChargePerHours"]?.toString() ?? '',
+      insuranceFee: json["insuranceFee"] ?? 0,
+      maintainCharge: json["maintainCharge"] ?? 0,
+      description: json["description"] ?? '', // Ensuring description is initialized
     );
   }
 
@@ -712,11 +933,20 @@ class RecentService {
       "services": services?.map((e) => e.toJson()).toList(),
       "__v": v,
 
-      // ⭐ Newly added fields
+      // Existing fields from the provided model structure:
       "priceByDuration": priceByDuration.map((e) => e.toJson()).toList(),
       "amount": amount,
       "benefits": benefits,
       "ourRecommendations": ourRecommendations,
+
+      // ⭐ NEW FIELDS TO JSON
+      "personCount": personCount,
+      "milage": milage,
+      "power": power,
+      "extraChargePerHours": extraChargePerHours,
+      "insuranceFee": insuranceFee,
+      "maintainCharge": maintainCharge,
+      "description": description,
     };
   }
 }
@@ -753,35 +983,3 @@ class PriceByDuration {
 
 
 
-/// Review model
-class Review {
-  final String userId;
-  final double rating;
-  final String comment;
-  final String createdAt;
-
-  Review({
-    required this.userId,
-    required this.rating,
-    required this.comment,
-    required this.createdAt,
-  });
-
-  factory Review.fromJson(Map<String, dynamic> json) {
-    return Review(
-      userId: json["userId"] ?? "",
-      rating: (json["rating"] ?? 0).toDouble(),
-      comment: json["comment"] ?? "",
-      createdAt: json["createdAt"] ?? "",
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      "userId": userId,
-      "rating": rating,
-      "comment": comment,
-      "createdAt": createdAt,
-    };
-  }
-}
