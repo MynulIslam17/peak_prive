@@ -1,36 +1,30 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/modules/provider/shared/controllers/category_controller.dart';
-import 'package:harry_service_app/app/modules/provider/ski_hire/controller/hire_controller.dart';
-import 'package:harry_service_app/app/modules/user/shared/models/category_model.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/image_picker_dialog.dart';
+import '../../../provider/shared/controllers/category_controller.dart';
+import '../../../provider/shared/models/hire_service_model.dart';
+import '../../../provider/ski_hire/controller/hire_controller.dart';
+import '../../../user/shared/models/category_model.dart';
+import '../../../../core/constants/api_urls.dart';
 
-/// Model class for handling individual repeatable hire items (Ski Item).
+/// Model for individual hire items
 class HireItemDetail {
   TextEditingController titleController = TextEditingController();
   TextEditingController priceController = TextEditingController();
   TextEditingController quantityController = TextEditingController();
 
-  // Image handling
-  File? pickedImage; // If user selects a new image
-  String? imageUrl;  // If there is an existing image from API
+  File? pickedImage;
+  String? imageUrl;
+  String? id;
+  int? availableQty;
 
-  // Existing API data
-  String? id;        // _id from API
-  int? availableQty; // Optional
-
-  // Constructor for new items
   HireItemDetail();
-
-  // Initialize from API JSON
   HireItemDetail.fromJson(Map<String, dynamic> json) {
     titleController.text = json['productName'] ?? '';
     priceController.text = (json['price'] ?? 0).toString();
@@ -40,7 +34,6 @@ class HireItemDetail {
     availableQty = json['availableQty'];
   }
 
-  // Convert to JSON for saving/updating
   Map<String, dynamic> toJson() {
     return {
       "_id": id,
@@ -53,36 +46,74 @@ class HireItemDetail {
   }
 }
 
-
-
-
-class AddHIreScreen extends StatefulWidget {
-  const AddHIreScreen({super.key});
+/// Add/Edit Hire Screen
+class AddHireScreen extends StatefulWidget {
+  const AddHireScreen({super.key});
 
   @override
-  State<AddHIreScreen> createState() => _AddHIreScreenState();
+  State<AddHireScreen> createState() => _AddHireScreenState();
 }
 
-class _AddHIreScreenState extends State<AddHIreScreen> {
-
-  /// find/put controller
-  final categoryController=Get.put(CategoryController());
-  final hireController=Get.put(HireController());
+class _AddHireScreenState extends State<AddHireScreen> {
+  final categoryController = Get.put(CategoryController());
+  final hireController = Get.put(HireController());
 
   final serviceTitleController = TextEditingController();
   final selectAreaController = TextEditingController();
   final extraChargeController = TextEditingController();
 
-  String? selectedCategoryName;
+  HireResult? hire; // existing hire (edit mode)
+  bool isEdit = false;
 
-  File? mainPickedImage; // New image picked for service
-  String? mainImageUrl;  // Existing image from API
+  String? selectedCategoryName;
+  File? mainPickedImage;
+  String? mainImageUrl;
 
   final List<HireItemDetail> hireItems = [HireItemDetail()];
+  bool isValid = true;
 
-  bool isValid = true; // For enabling save button
+  @override
+  void initState() {
+    super.initState();
 
-  /// Add a new item to the list
+    // Fetch categories
+    categoryController.fetchCategories(AppUrls.hireCategory);
+
+    // Check for edit mode arguments
+    final args = Get.arguments as Map<String, dynamic>?;
+    if (args != null) {
+      hire = args['hire'] as HireResult?;
+      isEdit = args['isEdit'] == true;
+      if (hire != null) {
+        _populateFieldsForEdit(hire!);
+      }
+    }
+  }
+
+  /// Populate fields if editing existing hire
+  void _populateFieldsForEdit(HireResult hireData) {
+    serviceTitleController.text = hireData.title ?? '';
+    selectAreaController.text = hireData.serviceArea ?? '';
+    extraChargeController.text = hireData.extraChargePerHour?.toString() ?? '';
+    mainImageUrl = hireData.thumbnail;
+    selectedCategoryName = hireData.category?.name;
+
+    if (hireData.items != null && hireData.items!.isNotEmpty) {
+      hireItems.clear();
+      for (var item in hireData.items!) {
+        hireItems.add(HireItemDetail.fromJson({
+          "_id": item.id,
+          "productName": item.name,
+          "productPhoto": item.productPhoto,
+          "price": item.price,
+          "totalQty": item.quantity,
+          "availableQty": item.availableQty,
+        }));
+      }
+    }
+  }
+
+  /// Add more items
   void _addMoreItem() {
     setState(() {
       hireItems.add(HireItemDetail());
@@ -90,34 +121,63 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
   }
 
 
+  /// Check if the list of hire items has been modified (added, removed, or content changed)
+  bool _checkItemModification() {
+    // 1. Check for change in total count (added/removed items)
+    if (hire?.items?.length != hireItems.length) {
+      return true;
+    }
 
-  @override
-  void initState() {
-    // TODO: implement initState
+    // 2. Check for content modification in existing items
+    if (hire != null) {
+      for (int i = 0; i < hireItems.length; i++) {
+        final currentItem = hireItems[i];
+        final originalItem = hire!.items![i]; // Safe due to length check
 
-    categoryController.fetchCategories(AppUrls.hireCategory);
+        // Check if any field has changed for this item
+        if (currentItem.titleController.text.trim() != originalItem.name ||
+            currentItem.priceController.text.trim() != originalItem.price.toString() ||
+            currentItem.quantityController.text.trim() != originalItem.quantity.toString() ||
+            currentItem.pickedImage != null // A new image was picked
+        ) {
+          return true;
+        }
+        // Note: We don't need to check item.imageUrl since that's the original URL.
+      }
+    }
 
-    super.initState();
+    // If we are here, the list size is the same and no fields/images changed.
+    return false;
   }
 
 
-
-  /// Save action button
+  /// Save or update hire
   void _saveHire() async {
-    // Validate required fields
-    if (mainPickedImage == null) {
-      Get.snackbar("Error", "Please select a thumbnail image");
+    // --- 0. Validation for Top-Level Fields ---
+    if (mainPickedImage == null && (mainImageUrl == null || mainImageUrl!.isEmpty)) {
+      Get.snackbar("Error", "Please select a main Service Photo");
       return;
     }
-
     if (selectedCategoryName == null) {
-      Get.snackbar("Error", "Please select a category");
+      Get.snackbar("Error", "Please select a Category");
+      return;
+    }
+    if (serviceTitleController.text.trim().isEmpty) {
+      Get.snackbar("Error", "Please enter a Title");
+      return;
+    }
+    if (selectAreaController.text.trim().isEmpty) {
+      Get.snackbar("Error", "Please enter a Service Area");
+      return;
+    }
+    if (extraChargeController.text.trim().isEmpty ||
+        int.tryParse(extraChargeController.text.trim()) == null) {
+      Get.snackbar("Error", "Please enter a valid Extra Charge");
       return;
     }
 
-    // ------------------ Extract Category ------------------
     final selectedCategory = categoryController.categories.firstWhere(
-          (category) => category.name == selectedCategoryName,
+          (cat) => cat.name == selectedCategoryName,
       orElse: () => ServiceCategory(id: "", name: "", categoryPhoto: ""),
     );
 
@@ -126,76 +186,139 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
       return;
     }
 
-    // -------------------------------------------------------
-    // BUILD DATA MAP
-    // This matches EXACT API format
-    // -------------------------------------------------------
-    final Map<String, dynamic> data = {
-      "category": selectedCategory.id,
-      "title": serviceTitleController.text.trim(),
-      "extraChargePerHour": extraChargeController.text.trim(),
-      "serviceArea": selectAreaController.text.trim(),
-    };
-
-    // ------------------ PRODUCT ITEMS ------------------
+    // --- FINAL DATA MAP & FILE LIST PREPARATION ---
+    Map<String, dynamic> finalData = {};
     List<File> itemImages = [];
+    bool isUpdate = isEdit && hire != null;
 
-    for (int i = 0; i < hireItems.length; i++) {
-      final item = hireItems[i];
+    // --- 1. Prepare Item Data (Conditional for Update) ---
+    bool areItemsChanged = isUpdate ? _checkItemModification() : true;
 
-      data["productItems[$i][productName]"] = item.titleController.text.trim();
-      data["productItems[$i][price]"] = item.priceController.text.trim();
-      data["productItems[$i][quantity]"] = item.quantityController.text.trim();
+    if (!isUpdate || areItemsChanged) {
+      // If we are creating OR items have changed in update mode, validate and compile all items
+      for (int i = 0; i < hireItems.length; i++) {
+        final item = hireItems[i];
+        final itemNumber = i + 1;
 
-      // add item image
-      if (item.pickedImage != null) {
-        itemImages.add(item.pickedImage!);
-      } else {
-        // If user did not pick a new image, fail
-        Get.snackbar("Error", "Please select an image for item ${i + 1}");
-        return;
+        // Item Validation (Must ensure all item data is valid if being sent)
+        if (item.titleController.text.trim().isEmpty) {
+          Get.snackbar("Error", "Item $itemNumber: Please enter a Title");
+          return;
+        }
+        if (item.priceController.text.trim().isEmpty ||
+            int.tryParse(item.priceController.text.trim()) == null) {
+          Get.snackbar("Error", "Item $itemNumber: Please enter a valid Price");
+          return;
+        }
+        if (item.quantityController.text.trim().isEmpty ||
+            int.tryParse(item.quantityController.text.trim()) == null) {
+          Get.snackbar("Error", "Item $itemNumber: Please enter a valid Quantity");
+          return;
+        }
+        if (item.pickedImage == null && (item.imageUrl == null || item.imageUrl!.isEmpty)) {
+          Get.snackbar("Error", "Item $itemNumber: Please select an Image");
+          return;
+        }
+
+        // Item Data Compilation (Flattening)
+        finalData["productItems[$i][productName]"] = item.titleController.text.trim();
+        finalData["productItems[$i][price]"] = item.priceController.text.trim();
+        finalData["productItems[$i][quantity]"] = item.quantityController.text.trim();
+
+        // IMPORTANT: Include the item ID for existing items during an update
+        if (item.id != null) {
+          finalData["productItems[$i][_id]"] = item.id;
+        }
+
+        // Collect new images
+        if (item.pickedImage != null) {
+          itemImages.add(item.pickedImage!);
+        }
       }
     }
 
-    // -------------------------------------------------------
-    // CALL HIRE CONTROLLER API
-    // -------------------------------------------------------
-    final HireController hireController = Get.find<HireController>();
+    // --- 2. Prepare Top-Level Fields ---
+    if (isUpdate) {
+      // Only include fields that have changed by comparing to original 'hire' model
 
-    bool success = await hireController.createHireService(
-      apiUrl: AppUrls.createHireUrl,
-      thumbnail: mainPickedImage!,   // required
-      itemImages: itemImages,        // files[x]
-      data: data,                    // all text fields + productItems[…]
-    );
+      if (serviceTitleController.text.trim() != hire!.title) {
+        finalData['title'] = serviceTitleController.text.trim();
+      }
+      if (selectAreaController.text.trim() != hire!.serviceArea) {
+        finalData['serviceArea'] = selectAreaController.text.trim();
+      }
+      if (extraChargeController.text.trim() != hire!.extraChargePerHour.toString()) {
+        finalData['extraChargePerHour'] = extraChargeController.text.trim();
+      }
+      // Category ID comparison
+      final originalCategoryId = hire!.category?.id ?? '';
+      if (selectedCategory.id != originalCategoryId) {
+        finalData['category'] = selectedCategory.id;
+      }
+      // Add ID for routing (required by your controller's update logic, typically)
+      finalData["_id"] = hire!.id;
 
-    // -------------------------------------------------------
-    // RESULT HANDLING
-    // -------------------------------------------------------
-    if (success) {
-
-      Navigator.pop(context);
     } else {
-      Get.snackbar("Error", hireController.errorMessage ?? "Something went wrong",
-          backgroundColor: Colors.red, colorText: Colors.white);
+      // For CREATE, include ALL required fields
+      finalData['title'] = serviceTitleController.text.trim();
+      finalData['serviceArea'] = selectAreaController.text.trim();
+      finalData['extraChargePerHour'] = extraChargeController.text.trim();
+      finalData['category'] = selectedCategory.id;
+    }
+
+    // --- 3. API Call ---
+    bool success = false;
+    if (isUpdate) {
+      // Ensure we have at least one change (a file or a field) before calling update
+      if (finalData.length <= 1 && mainPickedImage == null && itemImages.isEmpty && !areItemsChanged) {
+        Get.snackbar("Info", "No changes detected.", backgroundColor: Colors.yellow);
+        return;
+      }
+
+      success = await hireController.updateHireService(
+        apiUrl: AppUrls.updateHireServiceUrl(hire!.id!),
+        thumbnail: mainPickedImage,
+        itemImages: itemImages,
+        data: finalData, // Final map contains only changed fields/items
+      );
+    } else {
+      success = await hireController.createHireService(
+        apiUrl: AppUrls.createHireUrl,
+        thumbnail: mainPickedImage!,
+        itemImages: itemImages,
+        data: finalData, // Final map contains all fields
+      );
+    }
+
+    if (success) {
+      Navigator.pop(context, true);
+    } else {
+      Get.snackbar(
+        "Error",
+        hireController.errorMessage ?? "Something went wrong",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
-
-
-  /// Pick image for main service photo
-  void _pickMainServicePhoto() async {
-    final source = await _showImagePickerDialog();
-    if (source != null) _pickImageForMain(source);
+  /// Image picker helpers
+  Future<void> _pickImageForMain(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(source: source);
+    if (picked != null) setState(() {
+      mainPickedImage = File(picked.path);
+      mainImageUrl = null;
+    });
   }
 
-  /// Pick image for an individual hire item
-  void _pickItemImage(HireItemDetail item) async {
-    final source = await _showImagePickerDialog();
-    if (source != null) _pickImageForItem(item, source);
+  Future<void> _pickImageForItem(HireItemDetail item, ImageSource source) async {
+    final picked = await ImagePicker().pickImage(source: source);
+    if (picked != null) setState(() {
+      item.pickedImage = File(picked.path);
+      item.imageUrl = null;
+    });
   }
 
-  /// Show Image Picker Dialog and return source
   Future<ImageSource?> _showImagePickerDialog() async {
     ImageSource? pickedSource;
     await ImagePickerDialogService.show(
@@ -209,41 +332,26 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
       primaryColor: AppColors.primary_1,
       galleryIconColor: Colors.blue,
       cameraIconColor: Colors.orange,
-      onImageSourceSelected: (source) {
-        pickedSource = source;
-      },
+      onImageSourceSelected: (source) => pickedSource = source,
     );
     return pickedSource;
   }
 
-  /// Pick main service image
-  Future<void> _pickImageForMain(ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
-    if (picked != null) {
-      setState(() {
-        mainPickedImage = File(picked.path);
-        mainImageUrl = null;
-      });
-    }
+  void _pickMainServicePhoto() async {
+    final source = await _showImagePickerDialog();
+    if (source != null) _pickImageForMain(source);
   }
 
-  /// Pick image for a hire item
-  Future<void> _pickImageForItem(HireItemDetail item, ImageSource source) async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: source);
-    if (picked != null) {
-      setState(() {
-        item.pickedImage = File(picked.path);
-        item.imageUrl = null;
-      });
-    }
+  void _pickItemImage(HireItemDetail item) async {
+    final source = await _showImagePickerDialog();
+    if (source != null) _pickImageForItem(item, source);
   }
 
   @override
   void dispose() {
     serviceTitleController.dispose();
     selectAreaController.dispose();
+    extraChargeController.dispose();
     for (var item in hireItems) {
       item.titleController.dispose();
       item.priceController.dispose();
@@ -252,8 +360,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
     super.dispose();
   }
 
-  // -------------------- UI Helpers --------------------
-
+  // ----------------- UI -----------------
   Widget _buildTextField(String hint, TextEditingController controller,
       {bool isLocation = false, TextInputType keyboardType = TextInputType.text}) {
     return Container(
@@ -261,7 +368,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: Row(
@@ -269,7 +376,6 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
           Expanded(
             child: TextField(
               controller: controller,
-              maxLines: 1,
               keyboardType: keyboardType,
               style: AppTextStyle.c_regular_12(),
               decoration: InputDecoration(
@@ -309,9 +415,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
         value: selectedValue,
         style: AppTextStyle.c_regular_12().copyWith(color: Colors.black),
         icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87),
-        items: items.map((String value) {
-          return DropdownMenuItem<String>(value: value, child: Text(value));
-        }).toList(),
+        items: items.map((value) => DropdownMenuItem<String>(value: value, child: Text(value))).toList(),
         onChanged: (value) => setState(() => selectedCategoryName = value),
       ),
     );
@@ -319,7 +423,6 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
 
   Widget _buildPhotoUploadArea() {
     bool hasImage = mainPickedImage != null || (mainImageUrl != null && mainImageUrl!.isNotEmpty);
-
     return GestureDetector(
       onTap: _pickMainServicePhoto,
       child: Container(
@@ -338,19 +441,13 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Image if available
               if (hasImage)
                 mainPickedImage != null
                     ? Image.file(mainPickedImage!, fit: BoxFit.cover)
                     : Image.network(mainImageUrl!, fit: BoxFit.cover),
-
-              // Centered upload icon
               Center(
                 child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black38, // semi-transparent overlay
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
                   padding: EdgeInsets.all(8),
                   child: const Icon(Icons.upload, size: 28, color: Colors.white),
                 ),
@@ -362,9 +459,6 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
     );
   }
 
-
-
-  /// Individual hire item image
   Widget _buildItemImageField(HireItemDetail item) {
     return GestureDetector(
       onTap: () => _pickItemImage(item),
@@ -392,84 +486,80 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
     );
   }
 
-  Widget _buildSkiItemBlock(HireItemDetail item) {
+  Widget _buildSkiItemBlock(HireItemDetail item, int index) {
     return Column(
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Title", style: AppTextStyle.c_regular_12()),
-                  const SizedBox(height: 8),
-                  _buildTextField("Item Title", item.titleController),
-                ],
-              ),
-            ),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Title", style: AppTextStyle.c_regular_12()),
+                const SizedBox(height: 8),
+                _buildTextField("Item Title", item.titleController),
+              ],
+            )),
             const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Image", style: AppTextStyle.c_regular_12()),
-                  const SizedBox(height: 8),
-                  _buildItemImageField(item),
-                ],
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Image", style: AppTextStyle.c_regular_12()),
+                const SizedBox(height: 8),
+                _buildItemImageField(item),
+              ],
+            )),
+            if (hireItems.length > 1)
+              IconButton(
+                onPressed: () => setState(() => hireItems.removeAt(index)),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Price", style: AppTextStyle.c_regular_12()),
-                  const SizedBox(height: 8),
-                  _buildTextField("\$ price", item.priceController, keyboardType: TextInputType.number),
-                ],
-              ),
-            ),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Price", style: AppTextStyle.c_regular_12()),
+                const SizedBox(height: 8),
+                _buildTextField("\$ price", item.priceController, keyboardType: TextInputType.number),
+              ],
+            )),
             const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Quantity", style: AppTextStyle.c_regular_12()),
-                  const SizedBox(height: 8),
-                  _buildTextField("10", item.quantityController, keyboardType: TextInputType.number),
-                ],
-              ),
-            ),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Quantity", style: AppTextStyle.c_regular_12()),
+                const SizedBox(height: 8),
+                _buildTextField("10", item.quantityController, keyboardType: TextInputType.number),
+              ],
+            )),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildAddMoreButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50.h,
-      child: OutlinedButton.icon(
-        onPressed: _addMoreItem,
-        icon: const Icon(Icons.add, color: Colors.black87),
-        label: Text("Add More",
-            style: AppTextStyle.p_medium_12().copyWith(color: Colors.black87, fontWeight: FontWeight.bold)),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.grey, width: 1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          backgroundColor: Colors.white,
-        ),
+  Widget _buildAddMoreButton() => SizedBox(
+    width: double.infinity,
+    height: 50.h,
+    child: OutlinedButton.icon(
+      onPressed: _addMoreItem,
+      icon: const Icon(Icons.add, color: Colors.black87),
+      label: Text("Add More",
+          style: AppTextStyle.p_medium_12().copyWith(color: Colors.black87, fontWeight: FontWeight.bold)),
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: Colors.grey, width: 1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: Colors.white,
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildSaveButton() {
+  Widget _buildSaveButton() => GetBuilder<HireController>(builder: (controller){
+
     return SizedBox(
       width: double.infinity,
       height: 50.h,
@@ -480,11 +570,11 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
-        child: Text("Save",
+        child: controller.isLoading? Center(child: CircularProgressIndicator(color: Colors.white,),): Text(isEdit? "Update": "Save",
             style: AppTextStyle.p_medium_12().copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -497,7 +587,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Add Hire",
+        title:  Text(isEdit? "Update Ski_Hire" : "Create Ski_Hire",
             style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 18)),
         centerTitle: true,
       ),
@@ -548,7 +638,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
               const SizedBox(height: 24),
               Text("Select Area", style: AppTextStyle.c_regular_12()),
               const SizedBox(height: 24),
-              _buildTextField("Area", selectAreaController,),
+              _buildTextField("Area", selectAreaController,isLocation: true),
               const SizedBox(height: 24),
               Text("Select Area", style: AppTextStyle.c_regular_12()),
               const SizedBox(height: 24),
@@ -556,10 +646,15 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
               const SizedBox(height: 24),
               Text("Ski Item", style: AppTextStyle.p_medium_12().copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              ...hireItems.map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildSkiItemBlock(item),
-              )),
+              ...hireItems.asMap().entries.map((entry) {
+                int index = entry.key;
+                HireItemDetail item = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildSkiItemBlock(item, index),
+                );
+              }),
+
               _buildAddMoreButton(),
               const SizedBox(height: 30),
               _buildSaveButton(),

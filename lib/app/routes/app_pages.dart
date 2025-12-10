@@ -287,7 +287,7 @@ abstract class AppPages {
 
 /// add  hire service
     GetPage(name: Routes.addHireService,
-        page: ()=>AddHIreScreen()
+        page: ()=>AddHireScreen()
      ),
 
 

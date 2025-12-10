@@ -1,17 +1,17 @@
-class BookingDetailsResponse {
+class HireServiceModel {
   int? code;
   String? message;
   List<HireResult>? result;
   Pagination? pagination;
 
-  BookingDetailsResponse({
+  HireServiceModel({
     this.code,
     this.message,
     this.result,
     this.pagination,
   });
 
-  BookingDetailsResponse.fromJson(Map<String, dynamic> json) {
+  HireServiceModel.fromJson(Map<String, dynamic> json) {
     code = json['code'];
     message = json['message'];
     if (json['data'] != null) {
