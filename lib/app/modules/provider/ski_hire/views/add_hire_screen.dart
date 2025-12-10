@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/category_controller.dart';
+import 'package:harry_service_app/app/modules/provider/ski_hire/controller/hire_controller.dart';
+import 'package:harry_service_app/app/modules/user/shared/models/category_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -65,11 +67,13 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
 
   /// find/put controller
   final categoryController=Get.put(CategoryController());
+  final hireController=Get.put(HireController());
 
   final serviceTitleController = TextEditingController();
   final selectAreaController = TextEditingController();
+  final extraChargeController = TextEditingController();
 
-  String? selectedHireName;
+  String? selectedCategoryName;
 
   File? mainPickedImage; // New image picked for service
   String? mainImageUrl;  // Existing image from API
@@ -99,39 +103,84 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
 
 
   /// Save action button
-  void _saveHire() {
-    /// 1. Service Info
-    final String serviceTitle = serviceTitleController.text;
-    final String area = selectAreaController.text;
-    final String? category = selectedHireName;
+  void _saveHire() async {
+    // Validate required fields
+    if (mainPickedImage == null) {
+      Get.snackbar("Error", "Please select a thumbnail image");
+      return;
+    }
 
-    /// 2. Main Service Image
-    final File? mainImageFile = mainPickedImage;
-    final String? mainImageUrlFromApi = mainImageUrl;
+    if (selectedCategoryName == null) {
+      Get.snackbar("Error", "Please select a category");
+      return;
+    }
 
-    ///3. Hire Items
-    List<Map<String, dynamic>> hireItemData = hireItems.map((item) {
-      return {
-        "title": item.titleController.text,
-        "price": int.tryParse(item.priceController.text) ?? 0,
-        "quantity": int.tryParse(item.quantityController.text) ?? 0,
-        "imageFile": item.pickedImage,
-        "imageUrl": item.imageUrl,
-        "id": item.id,
-        "availableQty": item.availableQty,
-      };
-    }).toList();
+    // ------------------ Extract Category ------------------
+    final selectedCategory = categoryController.categories.firstWhere(
+          (category) => category.name == selectedCategoryName,
+      orElse: () => ServiceCategory(id: "", name: "", categoryPhoto: ""),
+    );
 
-    // Now you have all data in variables
-    print("Service Title=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>: $serviceTitle");
-    print("Area: $area");
-    print("Category: $category");
-    print("Main Image File: $mainImageFile");
-    print("Main Image URL: $mainImageUrlFromApi");
-    print("Hire Items=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>: $hireItemData");
+    if (selectedCategory.id.isEmpty) {
+      Get.snackbar("Error", "Invalid category selected");
+      return;
+    }
 
-    // TODO: You can now send this data to your API or save locally
+    // -------------------------------------------------------
+    // BUILD DATA MAP
+    // This matches EXACT API format
+    // -------------------------------------------------------
+    final Map<String, dynamic> data = {
+      "category": selectedCategory.id,
+      "title": serviceTitleController.text.trim(),
+      "extraChargePerHour": extraChargeController.text.trim(),
+      "serviceArea": selectAreaController.text.trim(),
+    };
+
+    // ------------------ PRODUCT ITEMS ------------------
+    List<File> itemImages = [];
+
+    for (int i = 0; i < hireItems.length; i++) {
+      final item = hireItems[i];
+
+      data["productItems[$i][productName]"] = item.titleController.text.trim();
+      data["productItems[$i][price]"] = item.priceController.text.trim();
+      data["productItems[$i][quantity]"] = item.quantityController.text.trim();
+
+      // add item image
+      if (item.pickedImage != null) {
+        itemImages.add(item.pickedImage!);
+      } else {
+        // If user did not pick a new image, fail
+        Get.snackbar("Error", "Please select an image for item ${i + 1}");
+        return;
+      }
+    }
+
+    // -------------------------------------------------------
+    // CALL HIRE CONTROLLER API
+    // -------------------------------------------------------
+    final HireController hireController = Get.find<HireController>();
+
+    bool success = await hireController.createHireService(
+      apiUrl: AppUrls.createHireUrl,
+      thumbnail: mainPickedImage!,   // required
+      itemImages: itemImages,        // files[x]
+      data: data,                    // all text fields + productItems[…]
+    );
+
+    // -------------------------------------------------------
+    // RESULT HANDLING
+    // -------------------------------------------------------
+    if (success) {
+
+      Navigator.pop(context);
+    } else {
+      Get.snackbar("Error", hireController.errorMessage ?? "Something went wrong",
+          backgroundColor: Colors.red, colorText: Colors.white);
+    }
   }
+
 
 
   /// Pick image for main service photo
@@ -263,7 +312,7 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
         items: items.map((String value) {
           return DropdownMenuItem<String>(value: value, child: Text(value));
         }).toList(),
-        onChanged: (value) => setState(() => selectedHireName = value),
+        onChanged: (value) => setState(() => selectedCategoryName = value),
       ),
     );
   }
@@ -467,8 +516,8 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
               const SizedBox(height: 8),
               _buildDropdownField(
                 hint: "Select...",
-                items: const ["Ski Gear", "Snowboard", "Safety Equipment"],
-                selectedValue: selectedHireName,
+                items: controller.categoryNames ,
+                selectedValue: selectedCategoryName,
               ),
               const SizedBox(height: 24),
               Text("Add a Service Photo", style: AppTextStyle.c_regular_12()),
@@ -493,12 +542,17 @@ class _AddHIreScreenState extends State<AddHIreScreen> {
 
               const SizedBox(height: 24),
               Text("Title", style: AppTextStyle.c_regular_12()),
-              const SizedBox(height: 8),
+              const SizedBox(height: 24),
               _buildTextField("Ski Safety", serviceTitleController),
+
               const SizedBox(height: 24),
               Text("Select Area", style: AppTextStyle.c_regular_12()),
-              const SizedBox(height: 8),
-              _buildTextField("Select Area", selectAreaController, isLocation: true),
+              const SizedBox(height: 24),
+              _buildTextField("Area", selectAreaController,),
+              const SizedBox(height: 24),
+              Text("Select Area", style: AppTextStyle.c_regular_12()),
+              const SizedBox(height: 24),
+              _buildTextField("Extra Charge/hr", extraChargeController,keyboardType: TextInputType.number),
               const SizedBox(height: 24),
               Text("Ski Item", style: AppTextStyle.p_medium_12().copyWith(fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
