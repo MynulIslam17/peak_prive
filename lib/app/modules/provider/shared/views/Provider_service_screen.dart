@@ -315,7 +315,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                   onDelete: () async {
                                     final deleteController = Get.put(DeleteController());
                                     final result = await deleteController.deleteItem(
-                                      url: AppUrls.deleteTransportUrl(hire.id!),
+                                      url: AppUrls.deleteHireServiceUrl(hire.id!),
                                     );
                                     if (result) serviceController.removeItemFromList(hire.id!, providerType);
                                     return result;
