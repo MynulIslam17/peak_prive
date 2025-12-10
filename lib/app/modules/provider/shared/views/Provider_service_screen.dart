@@ -44,7 +44,8 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
       final result = await Get.toNamed(Routes.addTransportService, arguments: {"isEdit": false});
       if (result == true) await serviceController.refreshServices();
     }else{
-
+      final result = await Get.toNamed(Routes.addHireService, arguments: {"isEdit": false});
+      if (result == true) await serviceController.refreshServices();
     }
   }
 
@@ -341,11 +342,8 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                 ),
               ),
             ), onRefresh: ()async{
-              await serviceController.refreshServices(
-
-              );
-
-
+              ///Disable loader during pull-to-refresh
+              await serviceController.refreshServices();
             }
             );
           },

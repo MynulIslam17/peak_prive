@@ -23,6 +23,7 @@ import 'package:harry_service_app/app/modules/provider/shared/views/provider_boo
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_nav_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_profile_secreen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_settings_screen.dart';
+import 'package:harry_service_app/app/modules/provider/ski_hire/views/add_hire_screen.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
@@ -282,6 +283,11 @@ abstract class AppPages {
 /// add  restaurant service
     GetPage(name: Routes.addRestaurantService,
         page: ()=>AddRestaurantScreen()
+     ),
+
+/// add  hire service
+    GetPage(name: Routes.addHireService,
+        page: ()=>AddHIreScreen()
      ),
 
 

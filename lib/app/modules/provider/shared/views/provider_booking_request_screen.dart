@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_booking_shimmer.dart';
@@ -51,7 +52,7 @@ class _ProviderBookingRequestScreenState
               return const BookingItemShimmer();
             }
 
-            return SingleChildScrollView(
+            return RefreshIndicator(child: SingleChildScrollView(
               child: Padding(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
@@ -208,6 +209,57 @@ class _ProviderBookingRequestScreenState
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
+                            case  "Ski_Hire" :
+
+                            /// duration converter
+                              String formatDuration(String start, String end) {
+                                try {
+                                  final startDt = DateTime.parse(start);
+                                  final endDt = DateTime.parse(end);
+
+                                  final difference = endDt.difference(startDt);
+
+                                  if (difference.inMinutes <= 0) {
+                                    return "0 hour";
+                                  }
+
+                                  final totalHours = difference.inHours;
+                                  final days = totalHours ~/ 24;
+                                  final hours = totalHours % 24;
+
+                                  // If more than 24 hours → show day + hour
+                                  if (totalHours >= 24) {
+                                    return "$days day $hours hour";
+                                  }
+
+                                  // Less than 24 hours → show hours only
+                                  return "$totalHours hour(s)";
+                                } catch (e) {
+                                  return "N/A";
+                                }
+                              }
+
+
+
+                              return ServiceInfoCard(
+                                imageUrl: product.thumbnail ?? '',
+                                title1: "Ski Title",
+                                value1: product.title ?? 'N/A',
+                                icon1Path: "assets/icons/badge.svg",
+
+                                title2: "Duration",
+                                value2: formatDuration(result.startDateAndTime.toString(), result.endDateAndTime.toString()) ?? "N/A",
+                                icon2Path: "assets/icons/user3.svg",
+
+                                title3: "Total Amount",
+
+                                value3: result.totalPrice.toString(),
+                                icon3Path: "assets/icons/CurrencyCircleDollar.svg",
+
+                                title4: "Location",
+                                value4: product.serviceArea?? "N/A",
+                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                              );
 
                             default:
                               return const SizedBox.shrink();
@@ -218,7 +270,11 @@ class _ProviderBookingRequestScreenState
                   ],
                 ),
               ),
-            );
+            ),
+                color: AppColors.primary_1,
+                onRefresh: ()async{
+              controller.refreshBookings(showLoader: false);
+            });
           }),
         ));
   }

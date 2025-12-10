@@ -87,7 +87,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             final recentServices = controller.providerHome!.recentServices;
             final recentBookings = controller.providerHome!.recentBookings;
 
-            return SingleChildScrollView(
+            return RefreshIndicator(child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Column(
@@ -98,7 +98,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                     ProviderProfile(
                       imageUrl: authController.userModel!.profilePic ?? '',
                       role:
-                          "${authController.userModel!.providerType ?? ""} Provider",
+                      "${authController.userModel!.providerType ?? ""} Provider",
                       name: authController.userModel!.fullName ?? "",
                       onTap: () {
                         Get.toNamed(Routes.providerInfoScreen);
@@ -147,9 +147,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     textAlign: TextAlign.center,
                                     style: AppTextStyle.sub_h2_medium_16()
                                         .copyWith(
-                                          fontSize: 11,
-                                          color: Colors.grey.shade700,
-                                        ),
+                                      fontSize: 11,
+                                      color: Colors.grey.shade700,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -188,7 +188,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                         itemCount: recentServices.length,
                         itemBuilder: (context, index) {
                           String providerType =
-                              authController.userModel!.providerType!;
+                          authController.userModel!.providerType!;
 
                           final service = recentServices[index];
 
@@ -196,7 +196,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                           String text = providerType == "Ski_Pass"
                               ? "\$${service.amount}/Day"
                               : (providerType == "Transport" ||
-                                    providerType == "Massage"|| providerType=="Ski_Hire")
+                              providerType == "Massage"|| providerType=="Ski_Hire")
                               ? "\$${service.amount}/Hr"
                               : "\$${service.status}";
 
@@ -211,7 +211,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 rating: service.averageRating
                                     .toDouble(), // rating
                                 reviews:
-                                    service.reviews.length, // number of reviews
+                                service.reviews.length, // number of reviews
                                 location: service
                                     .serviceArea, // location/service area
                                 /// delete
@@ -221,18 +221,18 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                       context: context,
                                       title: "Delete Service",
                                       message:
-                                          "Are you sure you want to delete this service?",
+                                      "Are you sure you want to delete this service?",
                                       onDelete: () async {
                                         final deleteController = Get.put(
                                           DeleteController(),
                                         );
                                         final result = await deleteController
                                             .deleteItem(
-                                              url:
-                                                  AppUrls.providerPassServiceDelete(
-                                                    service.id,
-                                                  ),
-                                            );
+                                          url:
+                                          AppUrls.providerPassServiceDelete(
+                                            service.id,
+                                          ),
+                                        );
 
                                         if (result) {
                                           homeController
@@ -261,18 +261,18 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                       context: context,
                                       title: "Delete Service",
                                       message:
-                                          "Are you sure you want to delete this service?",
+                                      "Are you sure you want to delete this service?",
                                       onDelete: () async {
                                         final deleteController = Get.put(
                                           DeleteController(),
                                         );
                                         final result = await deleteController
                                             .deleteItem(
-                                              url:
-                                                  AppUrls.deleteMassageServiceUrl(
-                                                    service.id,
-                                                  ),
-                                            );
+                                          url:
+                                          AppUrls.deleteMassageServiceUrl(
+                                            service.id,
+                                          ),
+                                        );
 
                                         if (result) {
                                           homeController
@@ -307,17 +307,17 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                       context: context,
                                       title: "Delete Seat",
                                       message:
-                                          "Are you sure you want to delete this service?",
+                                      "Are you sure you want to delete this service?",
                                       onDelete: () async {
                                         final deleteController = Get.put(
                                           DeleteController(),
                                         );
                                         final result = await deleteController
                                             .deleteItem(
-                                              url: AppUrls.deleteRestaurantUrl(
-                                                service.id,
-                                              ),
-                                            );
+                                          url: AppUrls.deleteRestaurantUrl(
+                                            service.id,
+                                          ),
+                                        );
 
                                         if (result) {
                                           homeController
@@ -348,13 +348,13 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                 onEdit: () async {
                                   if (providerType == "Restaurant") {
                                     final fullRestaurantModel =
-                                        Result.fromRecentService(service);
+                                    Result.fromRecentService(service);
 
                                     final result = await Get.toNamed(
                                       Routes.addRestaurantService,
                                       arguments: {
                                         "restaurant":
-                                            fullRestaurantModel, // Pass the converted model
+                                        fullRestaurantModel, // Pass the converted model
                                         "isEdit": true,
                                       },
                                     );
@@ -365,15 +365,15 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     }
                                   } else if (providerType == "Massage") {
                                     final fullMassageModel =
-                                        MassageResult.fromRecentService(
-                                          service,
-                                        );
+                                    MassageResult.fromRecentService(
+                                      service,
+                                    );
 
                                     final result = await Get.toNamed(
                                       Routes.addMessageService,
                                       arguments: {
                                         "massage":
-                                            fullMassageModel, // Pass the converted model
+                                        fullMassageModel, // Pass the converted model
                                         "isEdit": true,
                                       },
                                     );
@@ -385,9 +385,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                   } else if (providerType == "Transport") {
                                     // Convert RecentService to TransportResult
                                     final fullTransportModel =
-                                        TransportResult.fromRecentService(
-                                          service,
-                                        );
+                                    TransportResult.fromRecentService(
+                                      service,
+                                    );
 
                                     // Navigate to Add Transport Service screen
                                     final result = await Get.toNamed(
@@ -454,10 +454,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
                             title3: "Total Amount",
                             value3:
-                                (booking.totalPrice != 0
-                                        ? booking.totalPrice
-                                        : product.totalPrice ?? 0)
-                                    .toString(),
+                            (booking.totalPrice != 0
+                                ? booking.totalPrice
+                                : product.totalPrice ?? 0)
+                                .toString(),
                             icon3Path: "assets/icons/amount.svg",
 
                             title4: "Location",
@@ -531,7 +531,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
                           return ServiceInfoCard(
                             imageUrl:
-                                product.thumbnail ??
+                            product.thumbnail ??
                                 'assets/images/default_transport.png',
                             title1: "Title",
                             value1: product.title ?? 'N/A',
@@ -605,7 +605,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                   ],
                 ),
               ),
-            );
+            ), onRefresh: ()async{
+              controller.refreshData();
+            });
           },
         ),
       ),

@@ -1,6 +1,5 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
-
 import 'package:harry_service_app/app/data/services/network_caller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/all_booking_model.dart';
 
@@ -14,20 +13,18 @@ class BookingController extends GetxController {
   /// Error message
   String? errorMessage;
 
-
-
-
-
-
   /// Fetch bookings from API
-  Future<void> fetchBookings() async {
+  Future<void> fetchBookings({bool showLoader = true}) async {
     try {
-      isLoading = true;
+      if (showLoader) {
+        isLoading = true;
+        update();
+      }
+
       errorMessage = null;
-      update();
 
       final response = await Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.providerBookingUrl
+        url: AppUrls.providerBookingUrl,
       );
 
       if (response.statusCode == 200 && response.body?['data'] != null) {
@@ -47,14 +44,16 @@ class BookingController extends GetxController {
       bookings = [];
       errorMessage = "Something went wrong: $e";
     } finally {
-      isLoading = false;
-      update();
+      if (showLoader) {
+        isLoading = false;
+        update();
+      }
     }
   }
 
-  /// Refresh bookings (same as fetch)
-  Future<void> refreshBookings() async {
-    await fetchBookings();
+  /// Refresh bookings (loader can be controlled)
+  Future<void> refreshBookings({bool showLoader = false}) async {
+    await fetchBookings(showLoader: showLoader);
   }
 
 
