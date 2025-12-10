@@ -62,7 +62,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     } else if(providerType=="Transport") {
       url = AppUrls.transportServiceUrl();
     }else{
-      url = AppUrls.transportCategoryUrl;
+      url = AppUrls.providerHireUrl;
     }
     serviceController.fetchServices(url);
   }
@@ -88,6 +88,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
             else if (providerType == "Restaurant") activeList = controller.restaurantServiceList;
             else if (providerType == "Massage") activeList = controller.massageServiceList;
             else if (providerType == "Transport") activeList = controller.transportServiceList;
+            else if (providerType == "Ski_Hire") activeList = controller.hireServiceList;
 
             if (activeList.isEmpty) {
               return Center(child: Text("No services found.", style: AppTextStyle.sub_h3_medium_14()));
@@ -292,6 +293,47 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                           );
                         }
 
+                        if(providerType=="Ski_Hire"){
+
+                          final hire=controller.hireServiceList[index];
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: MyServiceCard(
+                              image: hire.thumbnail ?? "", // <-- use thumbnail here
+                              title: hire.title ?? "",
+                              status: "\$${hire.totalPrice.toString()}",
+                              rating: hire.averageRating?.toDouble() ?? 0, // removed unnecessary !
+                              reviews: hire.reviews?.length ?? 0,
+                              location: hire.serviceArea ?? "N/A",
+                              onDelete: () async {
+                                DeleteDialogService.show(
+                                  context: context,
+                                  title: "Delete Massage Service",
+                                  message: "Are you sure?",
+                                  onDelete: () async {
+                                    final deleteController = Get.put(DeleteController());
+                                    final result = await deleteController.deleteItem(
+                                      url: AppUrls.deleteTransportUrl(hire.id!),
+                                    );
+                                    if (result) serviceController.removeItemFromList(hire.id!, providerType);
+                                    return result;
+                                  },
+                                );
+                              },
+                              onEdit: () async {
+                                final result = await Get.toNamed(Routes.addTransportService, arguments: {
+                                  "transport": hire,
+                                  "isEdit": true,
+                                });
+                                if (result == true) await serviceController.refreshServices();
+                              },
+                            ),
+                          );
+
+
+
+                        }
                         return const SizedBox();
                       },
                     ),

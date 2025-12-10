@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/hire_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_transport_service_model.dart';
 import '../../../user/shared/models/ski_pass_model.dart';
@@ -12,6 +13,7 @@ class AllServiceController extends GetxController {
   List<Result> restaurantServiceList = [];
   List<MassageResult> massageServiceList = [];
   List<TransportResult> transportServiceList = [];
+  List<HireResult> hireServiceList = [];
 
   final authController = Get.find<AuthController>();
 
@@ -65,6 +67,12 @@ class AllServiceController extends GetxController {
                 .toList();
             break;
 
+          case 'Ski_Hire':   // FIXED
+            hireServiceList = resultList
+                .map((e) => HireResult.fromJson(e as Map<String, dynamic>))
+                .toList();
+            break;
+
           default:
             errorMessage = "Unknown provider type: $providerType";
             clearLists();
@@ -115,6 +123,12 @@ class AllServiceController extends GetxController {
         transportServiceList.removeWhere((item) => item.sId == itemId);
         if (transportServiceList.length < initialLength) update();
         break;
+
+      case 'Ski_Hire':   // NEW
+        initialLength = hireServiceList.length;
+        hireServiceList.removeWhere((item) => item.id == itemId);
+        if (hireServiceList.length < initialLength) update();
+        break;
     }
   }
 
@@ -134,6 +148,7 @@ class AllServiceController extends GetxController {
     restaurantServiceList = [];
     massageServiceList = [];
     transportServiceList = [];
+    hireServiceList = [];   // FIXED
   }
 
   /// ----------------------------
