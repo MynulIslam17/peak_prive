@@ -298,6 +298,44 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     );
                                   }else if(providerType=="Ski_Hire"){ // for delete
 
+                                    DeleteDialogService.show(
+                                      context: context,
+                                      title: "Delete Service",
+                                      message:
+                                      "Are you sure you want to delete this service?",
+                                      onDelete: () async {
+                                        final deleteController = Get.put(
+                                          DeleteController(),
+                                        );
+                                        final result = await deleteController
+                                            .deleteItem(
+                                          url: AppUrls.deleteHireServiceUrl(
+                                            service.id,
+                                          ),
+                                        );
+
+                                        if (result) {
+                                          homeController
+                                              .providerHome!
+                                              .recentServices
+                                              .removeAt(index);
+                                          homeController.update();
+
+                                          Future.microtask(() {
+                                            homeController.refreshData();
+                                          });
+
+                                          return true; // Closes the dialog quickly
+                                        } else {
+                                          Get.snackbar(
+                                            "Error",
+                                            deleteController.errorMessage ??
+                                                "Delete failed",
+                                          );
+                                          return false;
+                                        }
+                                      },
+                                    );
 
                                   }
 
