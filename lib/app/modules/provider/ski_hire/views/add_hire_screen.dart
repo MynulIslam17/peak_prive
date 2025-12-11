@@ -104,9 +104,12 @@ class _AddHireScreenState extends State<AddHireScreen> {
       _isEditMode = true;
       if (_originalHire != null) {
         _populateFormData(_originalHire!);
+
+
       }
     }
   }
+
 
   /// Populate form with existing hire data
   void _populateFormData(HireResult hire) {
@@ -119,26 +122,33 @@ class _AddHireScreenState extends State<AddHireScreen> {
     if (hire.items?.isNotEmpty ?? false) {
       _items.clear();
       for (var item in hire.items!) {
-        int? convertedQty;
+        // Safely convert numerical values to string, defaulting to '0' if null
+        final String priceStr = (item.price ?? 0).toString();
+        final String quantityStr = (item.quantity ?? 0).toString();
+
+        // Safely determine availableQty
+        int? convertedAvailableQty;
         if (item.availableQty is int) {
-          convertedQty = item.availableQty as int;
+          convertedAvailableQty = item.availableQty as int;
         } else if (item.availableQty is num) {
-          convertedQty = (item.availableQty as num).toInt();
+          convertedAvailableQty = (item.availableQty as num).toInt();
         }
 
         _items.add(
           HireItemModel(
             id: item.id,
-            name: item.name,
-            price: item.price.toString(),
-            quantity: item.quantity.toString(),
-            imageUrl: item.productPhoto,
-            availableQty: convertedQty,
+            name: item.name,                  // The item name/title
+            price: priceStr,                  // Use robust string conversion
+            quantity: quantityStr,            // Use robust string conversion
+            imageUrl: item.productPhoto,      // The item image URL
+            availableQty: convertedAvailableQty,
           ),
         );
       }
     }
   }
+
+
 
   /// ============ VALIDATION ============
 
@@ -526,7 +536,7 @@ class _AddHireScreenState extends State<AddHireScreen> {
                         color: Colors.black38,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 24),
+                      child: const Icon(Icons.upload, color: Colors.white, size: 24),
                     ),
                   ),
                 ],

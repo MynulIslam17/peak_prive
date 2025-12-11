@@ -12,6 +12,8 @@ import 'package:harry_service_app/app/modules/provider/shared/controllers/provid
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_transport_service_model.dart';
+import 'package:harry_service_app/app/modules/provider/ski_hire/models/extention.dart';
+
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/api_urls.dart';
@@ -440,6 +442,23 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     if (result == true) {
                                       homeController.refreshData();
                                     }
+                                  }else{
+
+
+                                   final fullHireModel = service.toHireResult();
+
+                                    final result = await Get.toNamed(
+                                      Routes.addHireService,
+                                      arguments: {
+                                        "hire": fullHireModel,
+                                        "isEdit": true,
+                                      },
+                                    );
+
+                                    if (result == true) {
+                                      homeController.refreshData();
+                                    }
+
                                   }
                                 },
 

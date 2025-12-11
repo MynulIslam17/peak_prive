@@ -8,6 +8,7 @@ class ServiceInfoCard extends StatelessWidget {
   final String title2, value2, icon2Path;
   final String title3, value3, icon3Path;
   final String title4, value4, icon4Path;
+    final VoidCallback ? onTap;
 
   final bool value1IsIcon;
   final bool value3IsIcon;
@@ -29,6 +30,7 @@ class ServiceInfoCard extends StatelessWidget {
     required this.icon4Path,
     this.value1IsIcon = false,
     this.value3IsIcon = false,
+     this.onTap,
   });
 
   // Safe SVG loader
@@ -113,62 +115,65 @@ class ServiceInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                imageUrl,
-                width: 75,
-                height: 95,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+    return InkWell(
+      onTap:onTap ,
+      child: Card(
+        elevation: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  imageUrl,
                   width: 75,
                   height: 95,
-                  color: Colors.grey[300],
-                  child: const Icon(Icons.broken_image, size: 40),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 75,
+                    height: 95,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.broken_image, size: 40),
+                  ),
                 ),
               ),
-            ),
 
-            const SizedBox(width: 16),
+              const SizedBox(width: 16),
 
-            // Right info section
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _infoRow(
-                    t1: title1,
-                    v1: value1,
-                    i1: icon1Path,
-                    isIcon1: value1IsIcon,
-                    t2: title2,
-                    v2: value2,
-                    i2: icon2Path,
-                  ),
-                  const SizedBox(height: 16),
-                  _infoRow(
-                    t1: title3,
-                    v1: value3,
-                    i1: icon3Path,
-                    isIcon1: value3IsIcon,
-                    t2: title4,
-                    v2: value4,
-                    i2: icon4Path,
-                  ),
-                ],
+              // Right info section
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _infoRow(
+                      t1: title1,
+                      v1: value1,
+                      i1: icon1Path,
+                      isIcon1: value1IsIcon,
+                      t2: title2,
+                      v2: value2,
+                      i2: icon2Path,
+                    ),
+                    const SizedBox(height: 16),
+                    _infoRow(
+                      t1: title3,
+                      v1: value3,
+                      i1: icon3Path,
+                      isIcon1: value3IsIcon,
+                      t2: title4,
+                      v2: value4,
+                      i2: icon4Path,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

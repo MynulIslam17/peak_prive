@@ -118,6 +118,9 @@ static const addMessageService="/addMessageService";
   static const addRestaurantService="/addRestaurantService";
   /// hire
   static const addHireService="/addHireService";
+  static const hireDetailsService="/hireDetailsService";
+
+
 
 
 

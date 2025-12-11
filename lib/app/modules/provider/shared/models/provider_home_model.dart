@@ -398,7 +398,7 @@ class ServiceCategory {
   }
 }
 
-/// Service Item model (NEW - for recentServices items)
+/// Updated ServiceItem for recentServices items
 class ServiceItem {
   final String? id;
   final String? seat;
@@ -408,6 +408,10 @@ class ServiceItem {
   final num? price;
   final String? description;
 
+  // Fields from your JSON
+  final String? productName;
+  final String? productPhoto;
+
   ServiceItem({
     this.id,
     this.seat,
@@ -416,17 +420,21 @@ class ServiceItem {
     this.availableQty,
     this.price,
     this.description,
+    this.productName,
+    this.productPhoto,
   });
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     return ServiceItem(
-      id: json['_id'] ?? '',
-      seat: json['seat'],
-      photo: json['photo'],
-      totalQty: json['totalQty'],
-      availableQty: json['availableQty'],
-      price: json['price'],
-      description: json['description'],
+      id: json["_id"] ?? '',
+      seat: json["seat"],
+      photo: json["photo"],
+      totalQty: json["totalQty"],
+      availableQty: json["availableQty"],
+      price: json["price"],
+      description: json["description"],
+      productName: json["productName"] ?? '',
+      productPhoto: json["productPhoto"] ?? '',
     );
   }
 
@@ -439,9 +447,56 @@ class ServiceItem {
       "availableQty": availableQty,
       "price": price,
       "description": description,
+      "productName": productName,
+      "productPhoto": productPhoto,
     };
   }
 }
+
+/// Service Item model (NEW - for recentServices items)
+// class ServiceItem {
+//   final String? id;
+//   final String? seat;
+//   final String? photo;
+//   final int? totalQty;
+//   final int? availableQty;
+//   final num? price;
+//   final String? description;
+//
+//   ServiceItem({
+//     this.id,
+//     this.seat,
+//     this.photo,
+//     this.totalQty,
+//     this.availableQty,
+//     this.price,
+//     this.description,
+//   });
+//
+//   factory ServiceItem.fromJson(Map<String, dynamic> json) {
+//     return ServiceItem(
+//       id: json['_id'] ?? '',
+//       seat: json['seat'],
+//       photo: json['photo'],
+//       totalQty: json['totalQty'],
+//       availableQty: json['availableQty'],
+//       price: json['price'],
+//       description: json['description'],
+//     );
+//   }
+//
+//   Map<String, dynamic> toJson() {
+//     return {
+//       "_id": id,
+//       "seat": seat,
+//       "photo": photo,
+//       "totalQty": totalQty,
+//       "availableQty": availableQty,
+//       "price": price,
+//       "description": description,
+//     };
+//   }
+// }
 
 /// Recent Service model - UPDATED with all missing fields
 // class RecentService {
@@ -759,13 +814,13 @@ class Review {
 // ⭐ UPDATED RecentService MODEL
 // =========================================================================
 
+/// Recent Service model - fully aligned with your ProviderHomeModel
 class RecentService {
   final String id;
   final String title;
   final String thumbnail;
   final ServiceCategory? category;
   final String owner;
-  // Fields related to open/close time/foodType are for other service models
   final String openTime;
   final String closeTime;
   final String serviceArea;
@@ -786,23 +841,24 @@ class RecentService {
   final List<ProductService>? services;
   final int? v;
 
-  // Existing fields from the provided model structure:
+  // Existing fields from previous model structure
   final List<PriceByDuration> priceByDuration;
   final num amount;
   final String benefits;
   final String ourRecommendations;
+  final String description;
 
-  // ⭐ NEW FIELDS ADDED FROM JSON (Transport specifics)
+  // Transport / service-specific fields
   final String? personCount;
   final String milage;
   final String power;
-  final String extraChargePerHours; // JSON has this as a String
+  final String extraChargePerHours;
   final num insuranceFee;
   final num maintainCharge;
 
-  // Note: The description field was previously missing initialization in fromJson.
-  final String description;
-
+  // New fields from your JSON
+  final num extraChargePerHour;
+  final num totalPrice;
 
   RecentService({
     required this.id,
@@ -810,7 +866,7 @@ class RecentService {
     required this.thumbnail,
     this.category,
     required this.owner,
-    this.openTime = '', // Set defaults for non-transport fields if needed
+    this.openTime = '',
     this.closeTime = '',
     required this.serviceArea,
     this.serviceFee = 0,
@@ -829,21 +885,19 @@ class RecentService {
     this.skiPassType,
     this.services,
     this.v,
-
-    // Existing fields from the provided model structure:
     this.priceByDuration = const [],
     this.amount = 0,
     this.benefits = '',
     this.ourRecommendations = '',
-    this.description = '', // Ensuring description is initialized
-
-    // ⭐ NEW FIELDS ADDED
+    this.description = '',
     this.personCount = '',
     this.milage = '',
     this.power = '',
     this.extraChargePerHours = '',
     this.insuranceFee = 0,
     this.maintainCharge = 0,
+    this.extraChargePerHour = 0,
+    this.totalPrice = 0,
   });
 
   factory RecentService.fromJson(Map<String, dynamic> json) {
@@ -855,7 +909,6 @@ class RecentService {
           ? ServiceCategory.fromJson(json["category"])
           : null,
       owner: json["owner"] ?? '',
-      // Defaulting fields not present in Transport model (like openTime, foodType)
       openTime: json["openTime"] ?? '',
       closeTime: json["closeTime"] ?? '',
       serviceArea: json["serviceArea"] ?? '',
@@ -886,23 +939,21 @@ class RecentService {
           json['services'].map((x) => ProductService.fromJson(x)))
           : [],
       v: json["__v"],
-
-      // Existing fields from the provided model structure:
       priceByDuration: (json["priceByDuration"] as List? ?? [])
           .map((e) => PriceByDuration.fromJson(e))
           .toList(),
       amount: json["amount"] ?? 0,
       benefits: json["benefits"] ?? '',
       ourRecommendations: json["ourRecommendations"] ?? '',
-
-      // ⭐ NEW FIELDS PARSING - Using null-coalescing for safety
+      description: json["description"] ?? '',
       personCount: json["personCount"]?.toString() ?? '',
       milage: json["milage"]?.toString() ?? '',
       power: json["power"]?.toString() ?? '',
       extraChargePerHours: json["extraChargePerHours"]?.toString() ?? '',
       insuranceFee: json["insuranceFee"] ?? 0,
       maintainCharge: json["maintainCharge"] ?? 0,
-      description: json["description"] ?? '', // Ensuring description is initialized
+      extraChargePerHour: json["extraChargePerHour"] ?? 0,
+      totalPrice: json["totalPrice"] ?? 0,
     );
   }
 
@@ -932,21 +983,19 @@ class RecentService {
       "skiPassType": skiPassType,
       "services": services?.map((e) => e.toJson()).toList(),
       "__v": v,
-
-      // Existing fields from the provided model structure:
       "priceByDuration": priceByDuration.map((e) => e.toJson()).toList(),
       "amount": amount,
       "benefits": benefits,
       "ourRecommendations": ourRecommendations,
-
-      // ⭐ NEW FIELDS TO JSON
+      "description": description,
       "personCount": personCount,
       "milage": milage,
       "power": power,
       "extraChargePerHours": extraChargePerHours,
       "insuranceFee": insuranceFee,
       "maintainCharge": maintainCharge,
-      "description": description,
+      "extraChargePerHour": extraChargePerHour,
+      "totalPrice": totalPrice,
     };
   }
 }

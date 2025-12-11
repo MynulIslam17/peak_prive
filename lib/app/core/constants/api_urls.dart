@@ -201,6 +201,11 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
 
+  /// booking single
+
+  static String bookingSingleItem(String id)=>"$baseUrl/booking/$id";
+
+
 
 
 

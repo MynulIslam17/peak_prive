@@ -1,11 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_booking_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/all_booking_controller.dart';
+import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_item_controller.dart';
 import '../../../../core/controllers/auth_controller.dart';
 import '../../../../core/widgets/dynamic_booking_card.dart';
 import '../../../../core/widgets/my_service_card.dart';
@@ -194,6 +196,9 @@ class _ProviderBookingRequestScreenState
                               final formattedEnd = formatSmart(result.endDateAndTime);
 
                               return ServiceInfoCard(
+                                onTap: (){
+                                  print("Transport=>>>>>>>>>>>>>>>>>>>>>>>>");
+                                },
                                 imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
                                 title1: "Title",
                                 value1: product.title ?? 'N/A',
@@ -242,6 +247,19 @@ class _ProviderBookingRequestScreenState
 
 
                               return ServiceInfoCard(
+                                onTap: (){
+                                  
+
+
+                                  Get.toNamed(Routes.hireDetailsService,
+                                  arguments: {
+                                    "bookingId" : result.sId
+                                  }
+                                  );
+
+
+                                },
+
                                 imageUrl: product.thumbnail ?? '',
                                 title1: "Ski Title",
                                 value1: product.title ?? 'N/A',
