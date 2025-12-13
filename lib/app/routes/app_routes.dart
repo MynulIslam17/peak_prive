@@ -110,15 +110,17 @@ abstract class Routes {
 
   /// massage
 static const addMessageService="/addMessageService";
+static const massageDetailsService="/massageDetailsService";/// show booking user data to provider
 
 /// transport
   static const addTransportService="/addTransportService";
 
   /// restaurant
   static const addRestaurantService="/addRestaurantService";
+  static const restaurantDetailsService="/restaurantDetailsService"; /// show booking user data to provider
   /// hire
   static const addHireService="/addHireService";
-  static const hireDetailsService="/hireDetailsService";
+  static const hireDetailsService="/hireDetailsService";/// show booking user data to provider
 
 
 

@@ -44,7 +44,7 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
     bookingId = arguments["bookingId"];
 
     if (bookingId.isNotEmpty) {
-      itemController.fetchBookingById(bookingId).then((_) {
+      itemController.fetchBookingById(bookingId: bookingId,providerType: ProviderType.Ski_Hire).then((_) {
         if (itemController.hireItem != null) {
           statusController.setInitialStatus(
             itemController.hireItem!.data!.isPermitted ?? false,

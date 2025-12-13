@@ -498,7 +498,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             ? booking.bookingItems[0]
                             : null;
 
-                        if (providerType == "Ski_Pass") {
+                        if (providerType == "Ski_Pass") { ///pass
                           return ServiceInfoCard(
                             imageUrl: product.thumbnail ?? '',
                             title1: "Title",
@@ -603,7 +603,46 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                             value4: (booking.totalPrice ?? 0).toString(),
                             icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                           );
-                        } else {
+                        }else if(providerType=="Restaurant"){
+
+                          final bookingItem = booking.bookingItems.isNotEmpty ? booking.bookingItems[0] : null;
+                          final slot = booking.slots.isNotEmpty ? booking.slots[0] : null;
+                          if (bookingItem == null || slot == null) {
+                            // Return an empty widget or placeholder if data is missing
+                            return const SizedBox();
+                          }
+                          final seat = bookingItem.itemDetails?.seat ?? 'N/A';
+
+                          return ServiceInfoCard(
+                            onTap: () {
+
+                              Get.toNamed(Routes.restaurantDetailsService,
+                                  arguments: {"bookingId": booking.id});
+                            },
+                            imageUrl: product.thumbnail ??
+                                'assets/images/default_restaurant.png',
+                            title1: "Seat Type",
+                            value1: seat ,
+                            icon1Path: "assets/icons/badge.svg",
+                            title2: "Seat Count",
+                            value2: bookingItem.quantity?.toString() ?? '0',
+                            icon2Path: "assets/icons/user3.svg",
+                            title3: "Slot",
+                            value3: "${slot.startTime ?? 'N/A'} - ${slot.endTime ?? 'N/A'}",
+                            icon3Path: "assets/icons/time.svg",
+                            title4: "Total Price",
+                            value4: (booking.totalPrice ?? 0).toString(),
+                            icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                          );
+
+
+
+                        }
+
+
+
+
+                        else {  /// hire
 
                           /// duration converter
                           String formatDuration(String start, String end) {
@@ -638,6 +677,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
 
                           return ServiceInfoCard(
+                            onTap: () {
+                              Get.toNamed(Routes.hireDetailsService,
+                                  arguments: {"bookingId": booking.id});
+                            },
                             imageUrl: product.thumbnail ?? '',
                             title1: "Ski Title",
                             value1: product.title ?? 'N/A',

@@ -6,8 +6,8 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_booking_shimmer.dart';
-import 'package:harry_service_app/app/modules/provider/shared/controllers/all_booking_controller.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_item_controller.dart';
+import 'package:harry_service_app/app/modules/provider/shared/controllers/all_booking_controller.dart';
 import '../../../../core/controllers/auth_controller.dart';
 import '../../../../core/widgets/dynamic_booking_card.dart';
 import '../../../../core/widgets/my_service_card.dart';
@@ -54,10 +54,13 @@ class _ProviderBookingRequestScreenState
               return const BookingItemShimmer();
             }
 
-            return RefreshIndicator(child: SingleChildScrollView(
-              child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+            return RefreshIndicator(
+              onRefresh: () async {
+                controller.refreshBookings(showLoader: false);
+              },
+              color: AppColors.primary_1,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -80,7 +83,8 @@ class _ProviderBookingRequestScreenState
                     const SizedBox(height: 18),
 
                     /// All bookings title
-                    Text("All Bookings (${controller.bookings.length})",
+                    Text(
+                        "All Bookings (${controller.bookings.length})",
                         style: AppTextStyle.sub_h2_medium_16()),
                     const SizedBox(height: 15),
 
@@ -132,6 +136,10 @@ class _ProviderBookingRequestScreenState
                               final bookingItem = result.bookingItems[0];
                               final slot = result.slots[0];
                               return ServiceInfoCard(
+                                onTap: () {
+                                  Get.toNamed(Routes.restaurantDetailsService,
+                                      arguments: {"bookingId": result.sId});
+                                },
                                 imageUrl: product.thumbnail ??
                                     'assets/images/default_restaurant.png',
                                 title1: "Seat Type",
@@ -154,6 +162,9 @@ class _ProviderBookingRequestScreenState
                               final formattedDate =
                               formatDateTime(result.date);
                               return ServiceInfoCard(
+                                onTap: () {
+                                  Get.toNamed(Routes.massageDetailsService);
+                                },
                                 imageUrl: product.thumbnail ??
                                     'assets/images/default_massage.png',
                                 title1: "Title",
@@ -176,8 +187,18 @@ class _ProviderBookingRequestScreenState
                                 try {
                                   final dt = DateTime.parse(dateTime);
                                   final months = [
-                                    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                                    "Jan",
+                                    "Feb",
+                                    "Mar",
+                                    "Apr",
+                                    "May",
+                                    "Jun",
+                                    "Jul",
+                                    "Aug",
+                                    "Sep",
+                                    "Oct",
+                                    "Nov",
+                                    "Dec"
                                   ];
 
                                   final month = months[dt.month - 1];
@@ -192,14 +213,15 @@ class _ProviderBookingRequestScreenState
                                 }
                               }
 
-                              final formattedStart = formatSmart(result.startDateAndTime);
-                              final formattedEnd = formatSmart(result.endDateAndTime);
+                              final formattedStart =
+                              formatSmart(result.startDateAndTime);
+                              final formattedEnd =
+                              formatSmart(result.endDateAndTime);
 
                               return ServiceInfoCard(
-                                onTap: (){
-                                  print("Transport=>>>>>>>>>>>>>>>>>>>>>>>>");
-                                },
-                                imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
+
+                                imageUrl: product.thumbnail ??
+                                    'assets/images/default_transport.png',
                                 title1: "Title",
                                 value1: product.title ?? 'N/A',
                                 icon1Path: "assets/icons/badge.svg",
@@ -214,9 +236,7 @@ class _ProviderBookingRequestScreenState
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
-                            case  "Ski_Hire" :
-
-                            /// duration converter
+                            case "Ski_Hire":
                               String formatDuration(String start, String end) {
                                 try {
                                   final startDt = DateTime.parse(start);
@@ -232,50 +252,35 @@ class _ProviderBookingRequestScreenState
                                   final days = totalHours ~/ 24;
                                   final hours = totalHours % 24;
 
-                                  // If more than 24 hours → show day + hour
                                   if (totalHours >= 24) {
                                     return "$days day $hours hour";
                                   }
 
-                                  // Less than 24 hours → show hours only
                                   return "$totalHours hour(s)";
                                 } catch (e) {
                                   return "N/A";
                                 }
                               }
 
-
-
                               return ServiceInfoCard(
-                                onTap: (){
-                                  
-
-
+                                onTap: () {
                                   Get.toNamed(Routes.hireDetailsService,
-                                  arguments: {
-                                    "bookingId" : result.sId
-                                  }
-                                  );
-
-
+                                      arguments: {"bookingId": result.sId});
                                 },
-
                                 imageUrl: product.thumbnail ?? '',
                                 title1: "Ski Title",
                                 value1: product.title ?? 'N/A',
                                 icon1Path: "assets/icons/badge.svg",
-
                                 title2: "Duration",
-                                value2: formatDuration(result.startDateAndTime.toString(), result.endDateAndTime.toString()) ?? "N/A",
+                                value2: formatDuration(
+                                    result.startDateAndTime.toString(),
+                                    result.endDateAndTime.toString()),
                                 icon2Path: "assets/icons/user3.svg",
-
                                 title3: "Total Amount",
-
                                 value3: result.totalPrice.toString(),
                                 icon3Path: "assets/icons/CurrencyCircleDollar.svg",
-
                                 title4: "Location",
-                                value4: product.serviceArea?? "N/A",
+                                value4: product.serviceArea ?? "N/A",
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
@@ -288,11 +293,7 @@ class _ProviderBookingRequestScreenState
                   ],
                 ),
               ),
-            ),
-                color: AppColors.primary_1,
-                onRefresh: ()async{
-              controller.refreshBookings(showLoader: false);
-            });
+            );
           }),
         ));
   }

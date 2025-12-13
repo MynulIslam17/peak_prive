@@ -10,10 +10,12 @@ import 'package:harry_service_app/app/modules/auth/views/email_verify_screen.dar
 
 import 'package:harry_service_app/app/modules/auth/views/pass_reset_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
+import 'package:harry_service_app/app/modules/provider/massage/views/massage_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_screen.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/provider_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/register/views/provider_info_form.dart';
 import 'package:harry_service_app/app/modules/provider/restaurant/views/add_restaurant_screen.dart';
+import 'package:harry_service_app/app/modules/provider/restaurant/views/restaurant_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/change_pass_binding.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/provider_nav_bindings.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/change_password_screen.dart';
@@ -274,6 +276,9 @@ abstract class AppPages {
     GetPage(name: Routes.addMessageService,
         page: ()=>AddMassageScreen()
      ),
+  GetPage(name: Routes.massageDetailsService,
+        page: ()=>MassageBookingDetails()
+     ),
 
 /// add transport service
     GetPage(name: Routes.addTransportService,
@@ -286,13 +291,17 @@ abstract class AppPages {
         page: ()=>AddRestaurantScreen()
      ),
 
+   GetPage(name: Routes.restaurantDetailsService,/// show booking user data to provider
+        page: ()=>RestaurantBookingDetails()
+     ),
+
 /// add  hire service
     GetPage(name: Routes.addHireService,
         page: ()=>AddHireScreen()
      ),
 
     /// add  hire service
-    GetPage(name: Routes.hireDetailsService,
+    GetPage(name: Routes.hireDetailsService, /// show booking user data to provider
         page: ()=>HireBookingDetails()
      ),
 
