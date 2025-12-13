@@ -223,50 +223,52 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
             },
 
             /// HEADER
-            body: Stack(
-              children: [
-                SizedBox(
-                  height: size.height * 0.5,
-                  width: double.infinity,
-                  child: Image.network(
-                    product?.thumbnail ?? "",
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                    const Center(child: Icon(Icons.image_not_supported)),
-                  ),
-                ),
-                Positioned(
-                  top: 60,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      "Request Details",
-                      style: AppTextStyle.h2_semibold_22(color: Colors.white),
+            body: SafeArea(
+              child: Stack(
+                children: [
+                  SizedBox(
+                    height: size.height * 0.5,
+                    width: double.infinity,
+                    child: Image.network(
+                      product?.thumbnail ?? "",
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                      const Center(child: Icon(Icons.image_not_supported)),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 60,
-                  left: 16,
-                  child: GestureDetector(
-                    onTap: () => Get.back(),
-                    child: Container(
-                      height: 42,
-                      width: 42,
-                      decoration: const BoxDecoration(
-                        color: Colors.black38,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                        size: 18,
+                  Positioned(
+                    top: 60,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Text(
+                        "Request Details",
+                        style: AppTextStyle.h2_semibold_22(color: Colors.white),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    top: 50,
+                    left: 16,
+                    child: GestureDetector(
+                      onTap: () => Get.back(),
+                      child: Container(
+                        height: 42,
+                        width: 42,
+                        decoration: const BoxDecoration(
+                          color: Colors.black38,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },

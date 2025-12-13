@@ -87,10 +87,11 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
             );
           }
 
-          final user = controller.user;
-          final product = controller.product;
-          final bookingItems = controller.bookingItems;
           final data = controller.hireItem!.data;
+          final user = data!.user;
+          final product = data.product;
+          final bookingItems = data.bookingItems;
+
 
           return SlidingUpPanel(
             controller: _panelController,

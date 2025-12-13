@@ -163,7 +163,8 @@ class _ProviderBookingRequestScreenState
                               formatDateTime(result.date);
                               return ServiceInfoCard(
                                 onTap: () {
-                                  Get.toNamed(Routes.massageDetailsService);
+                                  Get.toNamed(Routes.massageDetailsService,
+                                      arguments: {"bookingId": result.sId});
                                 },
                                 imageUrl: product.thumbnail ??
                                     'assets/images/default_massage.png',

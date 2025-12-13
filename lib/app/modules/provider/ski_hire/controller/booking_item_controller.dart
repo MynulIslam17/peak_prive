@@ -3,55 +3,28 @@ import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
 
-// Hide conflicting model names
+// Import models
+import '../../massage/models/massage_item_model.dart';
+import '../models/hire_item_model.dart' hide User, Product;
 import 'package:harry_service_app/app/modules/provider/restaurant/model/restaurant_item_model.dart'
-    hide User, Product, BookingItems;
+    hide User, Product;
 
-import '../models/hire_item_model.dart';
-enum ProviderType {
-  Ski_Hire,
-  Restaurant,
-}
+enum ProviderType { Ski_Hire, Restaurant, Massage }
 
 class ItemController extends GetxController {
   final authController = Get.find<AuthController>();
+  final networkCaller = Get.find<NetworkCaller>();
 
-  /// Provider-specific models
+  // Store booking data for each provider
   HireItemModel? hireItem;
   RestaurantItemModel? restaurantItem;
+  MassageItemModel? massageItem;
 
   ProviderType? currentProvider;
-
   bool isLoading = false;
   String? errorMessage;
 
-  /* ------------------------------------------------------------------
-     COMMON DATA ACCESS (SAFE & BEGINNER FRIENDLY)
-  ------------------------------------------------------------------ */
-
-  /// Get unified booking data based on provider
-  dynamic get _data {
-    switch (currentProvider) {
-      case ProviderType.Ski_Hire:
-        return hireItem?.data;
-      case ProviderType.Restaurant:
-        return restaurantItem?.data;
-      default:
-        return null;
-    }
-  }
-
-  /// Common shortcut getters
-  User? get user => _data?.user;
-  Product? get product => _data?.product;
-  List<BookingItems>? get bookingItems => _data?.bookingItems;
-  String? get bookingStatus => _data?.bookingStatus;
-  int? get totalPrice => _data?.totalPrice;
-
-  /* ------------------------------------------------------------------
-     API CALL
-  ------------------------------------------------------------------ */
-
+  /// Fetch booking by ID
   Future<void> fetchBookingById({
     required String bookingId,
     required ProviderType providerType,
@@ -62,7 +35,7 @@ class ItemController extends GetxController {
     update();
 
     try {
-      final response = await Get.find<NetworkCaller>().getRequest(
+      final response = await networkCaller.getRequest(
         url: AppUrls.bookingSingleItem(bookingId),
       );
 
@@ -71,9 +44,11 @@ class ItemController extends GetxController {
           case ProviderType.Ski_Hire:
             hireItem = HireItemModel.fromJson(response.body!);
             break;
-
           case ProviderType.Restaurant:
             restaurantItem = RestaurantItemModel.fromJson(response.body!);
+            break;
+          case ProviderType.Massage:
+            massageItem = MassageItemModel.fromJson(response.body!);
             break;
         }
       } else {
@@ -85,5 +60,16 @@ class ItemController extends GetxController {
       isLoading = false;
       update();
     }
+  }
+
+  /// Clear all data
+  void clearAll() {
+    hireItem = null;
+    restaurantItem = null;
+    massageItem = null;
+    currentProvider = null;
+    errorMessage = null;
+    isLoading = false;
+    update();
   }
 }
