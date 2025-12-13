@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/build_user_card.dart';
+import 'package:harry_service_app/app/core/widgets/duration_price_section.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../../../../core/constants/text-style.dart';
 
@@ -42,65 +44,101 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            child: ListView(
-              controller: sc,
+            child: Column(
               children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    height: 5,
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2.5),
+                Expanded(
+                  child: ListView(
+                    controller: sc,
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          height: 5,
+                          width: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2.5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // User Info Section
+                      Text(
+                        "User Info",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2C3E50),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ModernUserCard(),
+
+                      const SizedBox(height: 24),
+
+                      // Booking Information Section
+                      Text(
+                        "Booking Information",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2C3E50),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      buildDetailCard(
+                        label: "Massage Name",
+                        value: "value",
+                        icon: Icons.title_rounded,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(height: 12),
+                      DurationAndPriceSection(duration: "333 min", price: 333),
+                      const SizedBox(height: 12),
+                      buildDetailCard(
+                        label: "Location",
+                        value: "Demra",
+                        icon: Icons.location_city,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Date & Time Section
+                      Text(
+                        "Date & Time",
+                        style: AppTextStyle.sub_h3_medium_14(),
+                      ),
+                      const SizedBox(height: 12),
+                      buildDetailCard(
+                        label: "Booking Date",
+                        value: "Dec 15, 2024 - 2:00 PM",
+                        icon: Icons.calendar_today,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(height: 28),
+                    ],
+                  ),
+                ),
+                SafeArea(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                      backgroundColor: AppColors.primary_1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 4,
+                      shadowColor: AppColors.primary_1.withOpacity(0.4),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  "Booking Information",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF2C3E50),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                ModernUserCard(),
-
-
-
-                const SizedBox(height: 12),
-                _buildInfoTile(
-                  icon: Icons.people_outline,
-                  title: "Number of Guests",
-                  subtitle: "4 Guests",
-                ),
-                const SizedBox(height: 12),
-                _buildInfoTile(
-                  icon: Icons.schedule,
-                  title: "Booking Time",
-                  subtitle: "12:00 PM - 2:00 PM",
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(56),
-                    backgroundColor: const Color(0xFF6366F1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 4,
-                    shadowColor: const Color(0xFF6366F1).withOpacity(0.4),
-                  ),
-                  child: const Text(
-                    "Confirm Booking",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    child: const Text(
+                      "Confirm Booking",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -183,25 +221,31 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
     );
   }
 
-  // Modern info tile widget
-  Widget _buildInfoTile({
+  /// Reusable detail card
+  Widget buildDetailCard({
+    required String label,
+    required String value,
     required IconData icon,
-    required String title,
-    required String subtitle,
+    required Color color,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Colors.grey[100]!,
-          width: 1,
+          color: color.withOpacity(0.2),
+          width: 1.5,
+        ),
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.1),
+            color.withOpacity(0.05),
+          ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -211,32 +255,31 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F4F9),
+              color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF6366F1),
+              color: color,
               size: 24,
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: Color(0xFF9CA3AF),
+                    color: Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  subtitle,
+                  value,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
