@@ -205,8 +205,9 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   static String bookingSingleItem(String id)=>"$baseUrl/booking/$id";
 
+  /// change booking status  /booking/update-status
 
-
+  static String changeBookingStatus(String id)=>"$baseUrl/booking/update-status/$id";
 
 
 

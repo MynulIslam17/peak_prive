@@ -122,7 +122,7 @@ class NetworkCaller {
   // ===========================================================
   Future<NetworkResponse> patchRequest({
     required String url,
-    Map<String, String>? body,
+    Map<String, dynamic>? body,
     bool isFromLogin = false,
   }) async {
     try {
