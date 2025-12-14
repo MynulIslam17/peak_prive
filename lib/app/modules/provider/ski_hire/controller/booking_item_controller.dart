@@ -1,26 +1,38 @@
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/modules/provider/pass/models/pass_item_model.dart';
+import 'package:harry_service_app/app/modules/provider/transport/models/transport_Item_model.dart';
 
-// Import models
-import '../../massage/models/massage_item_model.dart';
+// Models
 import '../models/hire_item_model.dart' hide User, Product;
 import 'package:harry_service_app/app/modules/provider/restaurant/model/restaurant_item_model.dart'
     hide User, Product;
+import '../../massage/models/massage_item_model.dart';
 
-enum ProviderType { Ski_Hire, Restaurant, Massage }
+enum ProviderType {
+  Ski_Hire,
+  Restaurant,
+  Massage,
+  Transport,
+  Ski_Pass
+}
 
 class ItemController extends GetxController {
-  final authController = Get.find<AuthController>();
-  final networkCaller = Get.find<NetworkCaller>();
+  final AuthController authController = Get.find<AuthController>();
+  final NetworkCaller networkCaller = Get.find<NetworkCaller>();
 
-  // Store booking data for each provider
+  /// Provider-specific booking models
   HireItemModel? hireItem;
   RestaurantItemModel? restaurantItem;
   MassageItemModel? massageItem;
+  TransportItemModel? transportItem;
+  SkiPassItemModel? passItem;
 
   ProviderType? currentProvider;
+
   bool isLoading = false;
   String? errorMessage;
 
@@ -30,8 +42,8 @@ class ItemController extends GetxController {
     required ProviderType providerType,
   }) async {
     isLoading = true;
-    currentProvider = providerType;
     errorMessage = null;
+    currentProvider = providerType;
     update();
 
     try {
@@ -39,34 +51,49 @@ class ItemController extends GetxController {
         url: AppUrls.bookingSingleItem(bookingId),
       );
 
-      if (response.statusCode == 200 && response.body?['data'] != null) {
+      if (response.statusCode == 200 && response.body != null) {
+        final body = response.body!;
+
         switch (providerType) {
           case ProviderType.Ski_Hire:
-            hireItem = HireItemModel.fromJson(response.body!);
+            hireItem = HireItemModel.fromJson(body);
             break;
+
           case ProviderType.Restaurant:
-            restaurantItem = RestaurantItemModel.fromJson(response.body!);
+            restaurantItem = RestaurantItemModel.fromJson(body);
             break;
+
           case ProviderType.Massage:
-            massageItem = MassageItemModel.fromJson(response.body!);
+            massageItem = MassageItemModel.fromJson(body);
+            break;
+
+          case ProviderType.Transport:
+            transportItem = TransportItemModel.fromJson(body);
+            break;
+
+          case ProviderType.Ski_Pass:
+            passItem = SkiPassItemModel.fromJson(body);
             break;
         }
       } else {
-        errorMessage = "Failed to load booking (${response.statusCode})";
+        errorMessage = "Booking not found";
       }
-    } catch (e) {
-      errorMessage = "Something went wrong: $e";
+    } catch (e, stackTrace) {
+      debugPrint("Error fetching booking: $e\n$stackTrace");
+      errorMessage = "An error occurred while fetching the booking.";
     } finally {
       isLoading = false;
       update();
     }
   }
 
-  /// Clear all data
+  /// Clear controller state
   void clearAll() {
     hireItem = null;
     restaurantItem = null;
     massageItem = null;
+    transportItem = null;
+    passItem = null;
     currentProvider = null;
     errorMessage = null;
     isLoading = false;

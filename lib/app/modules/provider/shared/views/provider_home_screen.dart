@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/core/widgets/category_title.dart';
 import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_home_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/provider_home_controller.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_massage_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_transport_service_model.dart';
@@ -386,6 +387,9 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
                                 /// edit
                                 onEdit: () async {
+
+
+
                                   if (providerType == "Restaurant") {
                                     final fullRestaurantModel =
                                     Result.fromRecentService(service);
@@ -442,7 +446,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                     if (result == true) {
                                       homeController.refreshData();
                                     }
-                                  }else{
+                                  }else if(providerType=="Ski_Hire"){
 
 
                                    final fullHireModel = service.toHireResult();
@@ -451,6 +455,23 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                                       Routes.addHireService,
                                       arguments: {
                                         "hire": fullHireModel,
+                                        "isEdit": true,
+                                      },
+                                    );
+
+                                    if (result == true) {
+                                      homeController.refreshData();
+                                    }
+
+                                  }
+                                  else{
+
+                                    final skiPass = service.toSkiPass();
+
+                                    final result = await Get.toNamed(
+                                      Routes.addPassService,
+                                      arguments: {
+                                        "pass": skiPass,
                                         "isEdit": true,
                                       },
                                     );
@@ -527,6 +548,11 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                           );
 
                           return ServiceInfoCard(
+                            onTap: (){
+
+                              Get.toNamed(Routes.massageDetailsService,
+                                  arguments: {"bookingId": booking.id});
+                            },
                             imageUrl: product.thumbnail ?? '',
                             title1: "Title",
                             value1: product.title ?? '-',

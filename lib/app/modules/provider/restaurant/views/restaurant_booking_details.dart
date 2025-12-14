@@ -180,43 +180,69 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                     ),
 
                     // Approve button
+                    // Approve button
                     SafeArea(
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: GetBuilder<BookingStatusController>(builder: (controller) {
-                          bool permitted = controller.isPermitted ?? false; // safe null check
-                          return OutlinedButton(
-                            onPressed: () {
-                              if(!permitted){
-                                controller.changeStatus(
+                      child: GetBuilder<BookingStatusController>(
+                        builder: (statusController) {
+                          final isLoading = statusController.isLoading;
+                          final approved = itemController.restaurantItem?.data?.isPermitted ?? false;
+
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 60,
+                            child: ElevatedButton(
+                              onPressed: approved
+                                  ? null
+                                  : () async {
+                                // Set loading
+                                statusController.setLoading(true);
+
+                                // Call API to approve
+                                await statusController.changeStatus(
                                   apiUrl: AppUrls.changeBookingStatus(bookingId),
-                                  status: !permitted,
+                                  status: true,
                                 );
-                              }
 
-                            },
-                            style: OutlinedButton.styleFrom(
-                              backgroundColor:permitted ? Colors.green :  AppColors.primary_1,
-                              foregroundColor: Colors.white,
+                                // Update local model
+                                itemController.restaurantItem?.data?.isPermitted = true;
 
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                // Stop loading
+                                statusController.setLoading(false);
 
+                                // Refresh button UI
+                                statusController.update();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: approved ? Colors.green : AppColors.primary_1,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.green,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
+                              )
+                                  : Text(
+                                approved ? "✓ Approved" : "Approve",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                            child: controller.isLoading ?CircularProgressIndicator(color:Colors.white,): Text(
-                              permitted ? "Approved" : "Approve",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            )
                           );
-                        })
-
+                        },
                       ),
                     ),
+
                   ],
                 ),
               );

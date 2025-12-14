@@ -12,6 +12,7 @@ import 'package:harry_service_app/app/modules/auth/views/pass_reset_screen.dart'
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/massage_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_screen.dart';
+import 'package:harry_service_app/app/modules/provider/pass/views/pass_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/provider_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/register/views/provider_info_form.dart';
 import 'package:harry_service_app/app/modules/provider/restaurant/views/add_restaurant_screen.dart';
@@ -28,6 +29,7 @@ import 'package:harry_service_app/app/modules/provider/shared/views/provider_set
 import 'package:harry_service_app/app/modules/provider/ski_hire/views/add_hire_screen.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/views/hire_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
+import 'package:harry_service_app/app/modules/provider/transport/views/trasnsport_booking_details.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
@@ -272,6 +274,10 @@ abstract class AppPages {
         page: ()=>AddPassScreen()
      ),
 
+    GetPage(name: Routes.passDetailsService,
+        page: ()=>PassBookingDetails()
+     ),
+
 /// add message service
     GetPage(name: Routes.addMessageService,
         page: ()=>AddMassageScreen()
@@ -284,6 +290,11 @@ abstract class AppPages {
     GetPage(name: Routes.addTransportService,
         page: ()=>AddTransportScreen()
      ),
+
+    GetPage(name: Routes.transportDetailsService,
+        page: ()=>TransportBookingDetails()
+     ),
+
 
 
 /// add  restaurant service

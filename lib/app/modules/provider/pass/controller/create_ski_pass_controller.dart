@@ -64,7 +64,7 @@ class CreatePassController extends GetxController {
       final data = response.body?["data"];
       if (data != null && data.containsKey("_id")) {
         createdPassId = data["_id"];
-        Get.snackbar("Success", "Ski Pass created successfully!");
+
       } else {
         createdPassId = "Pass creation confirmed";
       }

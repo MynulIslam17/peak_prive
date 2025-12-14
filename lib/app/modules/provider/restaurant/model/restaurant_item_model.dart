@@ -17,9 +17,7 @@ class RestaurantItemModel {
     final map = <String, dynamic>{};
     map['code'] = code;
     map['message'] = message;
-    if (data != null) {
-      map['data'] = data!.toJson();
-    }
+    if (data != null) map['data'] = data!.toJson();
     return map;
   }
 }
@@ -39,6 +37,7 @@ class Data {
   String? createdAt;
   String? updatedAt;
   int? iV;
+  Map<String, dynamic>? extra;
 
   Data({
     this.sId,
@@ -55,6 +54,7 @@ class Data {
     this.createdAt,
     this.updatedAt,
     this.iV,
+    this.extra,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) {
@@ -67,17 +67,34 @@ class Data {
       date: json['date'],
       bookingItems: json['bookingItems'] != null
           ? List<BookingItems>.from(
-          json['bookingItems'].map((x) => BookingItems.fromJson(x)))
-          : null,
+          (json['bookingItems'] as List).map((x) => BookingItems.fromJson(x)))
+          : [],
       slots: json['slots'] != null
-          ? List<Slots>.from(json['slots'].map((x) => Slots.fromJson(x)))
-          : null,
+          ? List<Slots>.from((json['slots'] as List).map((x) => Slots.fromJson(x)))
+          : [],
       bookingStatus: json['bookingStatus'],
       totalPrice: json['totalPrice'],
       isPermitted: json['isPermitted'],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       iV: json['__v'],
+      extra: Map<String, dynamic>.from(json)
+        ..removeWhere((key, value) => [
+          '_id',
+          'user',
+          'product',
+          'productModel',
+          'category',
+          'date',
+          'bookingItems',
+          'slots',
+          'bookingStatus',
+          'totalPrice',
+          'isPermitted',
+          'createdAt',
+          'updatedAt',
+          '__v'
+        ].contains(key)),
     );
   }
 
@@ -89,18 +106,15 @@ class Data {
     map['productModel'] = productModel;
     map['category'] = category;
     map['date'] = date;
-    if (bookingItems != null) {
-      map['bookingItems'] = bookingItems!.map((x) => x.toJson()).toList();
-    }
-    if (slots != null) {
-      map['slots'] = slots!.map((x) => x.toJson()).toList();
-    }
+    map['bookingItems'] = bookingItems?.map((x) => x.toJson()).toList() ?? [];
+    map['slots'] = slots?.map((x) => x.toJson()).toList() ?? [];
     map['bookingStatus'] = bookingStatus;
     map['totalPrice'] = totalPrice;
     map['isPermitted'] = isPermitted;
     map['createdAt'] = createdAt;
     map['updatedAt'] = updatedAt;
     map['__v'] = iV;
+    if (extra != null) map.addAll(extra!);
     return map;
   }
 }
@@ -113,6 +127,7 @@ class User {
   String? profileUrl;
   String? address;
   String? status;
+  Map<String, dynamic>? extra;
 
   User({
     this.sId,
@@ -122,34 +137,44 @@ class User {
     this.profileUrl,
     this.address,
     this.status,
+    this.extra,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) => User(
-    sId: json['_id'],
-    fullName: json['fullName'],
-    email: json['email'],
-    phoneNumber: json['phoneNumber'],
-    profileUrl: json['profileUrl'],
-    address: json['address'],
-    status: json['status'],
-  );
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      sId: json['_id'],
+      fullName: json['fullName'],
+      email: json['email'],
+      phoneNumber: json['phoneNumber'],
+      profileUrl: json['profileUrl'],
+      address: json['address'],
+      status: json['status'],
+      extra: Map<String, dynamic>.from(json)
+        ..removeWhere((key, value) =>
+            ['_id', 'fullName', 'email', 'phoneNumber', 'profileUrl', 'address', 'status']
+                .contains(key)),
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-    '_id': sId,
-    'fullName': fullName,
-    'email': email,
-    'phoneNumber': phoneNumber,
-    'profileUrl': profileUrl,
-    'address': address,
-    'status': status,
-  };
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    map['_id'] = sId;
+    map['fullName'] = fullName;
+    map['email'] = email;
+    map['phoneNumber'] = phoneNumber;
+    map['profileUrl'] = profileUrl;
+    map['address'] = address;
+    map['status'] = status;
+    if (extra != null) map.addAll(extra!);
+    return map;
+  }
 }
 
 class Product {
   String? sId;
   String? title;
   String? thumbnail;
-  String? category;
+  Category? category;
   String? openTime;
   String? closeTime;
   String? serviceArea;
@@ -159,6 +184,7 @@ class Product {
   List<Slots>? slots;
   List<AvailableSlots>? availableSlots;
   int? serviceFee;
+  Map<String, dynamic>? extra;
 
   Product({
     this.sId,
@@ -174,46 +200,92 @@ class Product {
     this.slots,
     this.availableSlots,
     this.serviceFee,
+    this.extra,
   });
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
-    sId: json['_id'],
-    title: json['title'],
-    thumbnail: json['thumbnail'],
-    category: json['category'],
-    openTime: json['openTime'],
-    closeTime: json['closeTime'],
-    serviceArea: json['serviceArea'],
-    foodType: json['foodType'],
-    status: json['status'],
-    description: json['description'],
-    slots: json['slots'] != null
-        ? List<Slots>.from(json['slots'].map((x) => Slots.fromJson(x)))
-        : null,
-    availableSlots: json['availableSlots'] != null
-        ? List<AvailableSlots>.from(
-        json['availableSlots'].map((x) => AvailableSlots.fromJson(x)))
-        : null,
-    serviceFee: json['serviceFee'],
-  );
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      sId: json['_id'],
+      title: json['title'],
+      thumbnail: json['thumbnail'],
+      category: json['category'] != null ? Category.fromJson(json['category']) : null,
+      openTime: json['openTime'],
+      closeTime: json['closeTime'],
+      serviceArea: json['serviceArea'],
+      foodType: json['foodType'],
+      status: json['status'],
+      description: json['description'],
+      slots: json['slots'] != null
+          ? List<Slots>.from((json['slots'] as List).map((x) => Slots.fromJson(x)))
+          : [],
+      availableSlots: json['availableSlots'] != null
+          ? List<AvailableSlots>.from(
+          (json['availableSlots'] as List).map((x) => AvailableSlots.fromJson(x)))
+          : [],
+      serviceFee: json['serviceFee'],
+      extra: Map<String, dynamic>.from(json)
+        ..removeWhere((key, value) => [
+          '_id',
+          'title',
+          'thumbnail',
+          'category',
+          'openTime',
+          'closeTime',
+          'serviceArea',
+          'foodType',
+          'status',
+          'description',
+          'slots',
+          'availableSlots',
+          'serviceFee'
+        ].contains(key)),
+    );
+  }
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
     map['_id'] = sId;
     map['title'] = title;
     map['thumbnail'] = thumbnail;
-    map['category'] = category;
+    if (category != null) map['category'] = category!.toJson();
     map['openTime'] = openTime;
     map['closeTime'] = closeTime;
     map['serviceArea'] = serviceArea;
     map['foodType'] = foodType;
     map['status'] = status;
     map['description'] = description;
-    if (slots != null) map['slots'] = slots!.map((x) => x.toJson()).toList();
-    if (availableSlots != null) {
-      map['availableSlots'] = availableSlots!.map((x) => x.toJson()).toList();
-    }
+    map['slots'] = slots?.map((x) => x.toJson()).toList() ?? [];
+    map['availableSlots'] = availableSlots?.map((x) => x.toJson()).toList() ?? [];
     map['serviceFee'] = serviceFee;
+    if (extra != null) map.addAll(extra!);
+    return map;
+  }
+}
+
+class Category {
+  String? sId;
+  String? name;
+  String? categoryPhoto;
+  Map<String, dynamic>? extra;
+
+  Category({this.sId, this.name, this.categoryPhoto, this.extra});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      sId: json['_id'],
+      name: json['name'],
+      categoryPhoto: json['categoryPhoto'],
+      extra: Map<String, dynamic>.from(json)
+        ..removeWhere((key, value) => ['_id', 'name', 'categoryPhoto'].contains(key)),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{};
+    map['_id'] = sId;
+    map['name'] = name;
+    map['categoryPhoto'] = categoryPhoto;
+    if (extra != null) map.addAll(extra!);
     return map;
   }
 }
@@ -225,11 +297,13 @@ class Slots {
 
   Slots({this.startTime, this.endTime, this.sId});
 
-  factory Slots.fromJson(Map<String, dynamic> json) => Slots(
-    startTime: json['startTime'],
-    endTime: json['endTime'],
-    sId: json['_id'],
-  );
+  factory Slots.fromJson(Map<String, dynamic> json) {
+    return Slots(
+      startTime: json['startTime'],
+      endTime: json['endTime'],
+      sId: json['_id'],
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'startTime': startTime,
@@ -245,11 +319,13 @@ class AvailableSlots {
 
   AvailableSlots({this.sId, this.startTime, this.endTime});
 
-  factory AvailableSlots.fromJson(Map<String, dynamic> json) => AvailableSlots(
-    sId: json['_id'],
-    startTime: json['startTime'],
-    endTime: json['endTime'],
-  );
+  factory AvailableSlots.fromJson(Map<String, dynamic> json) {
+    return AvailableSlots(
+      sId: json['_id'],
+      startTime: json['startTime'],
+      endTime: json['endTime'],
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     '_id': sId,
@@ -265,11 +341,13 @@ class BookingItems {
 
   BookingItems({this.itemId, this.quantity, this.item});
 
-  factory BookingItems.fromJson(Map<String, dynamic> json) => BookingItems(
-    itemId: json['itemId'],
-    quantity: json['quantity'],
-    item: json['item'],
-  );
+  factory BookingItems.fromJson(Map<String, dynamic> json) {
+    return BookingItems(
+      itemId: json['itemId'],
+      quantity: json['quantity'],
+      item: json['item'], // Keep dynamic to allow any structure
+    );
+  }
 
   Map<String, dynamic> toJson() => {
     'itemId': itemId,

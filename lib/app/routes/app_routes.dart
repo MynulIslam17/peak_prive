@@ -107,6 +107,7 @@ abstract class Routes {
 ///add services  part
 ///pass
   static const addPassService="/addPass";
+  static const passDetailsService="/passDetailsService";/// show booking user data to provider
 
   /// massage
 static const addMessageService="/addMessageService";
@@ -114,6 +115,7 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
 
 /// transport
   static const addTransportService="/addTransportService";
+  static const transportDetailsService="/transportDetailsService";/// show booking user data to provider
 
   /// restaurant
   static const addRestaurantService="/addRestaurantService";

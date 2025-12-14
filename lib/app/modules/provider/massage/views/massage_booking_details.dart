@@ -4,6 +4,7 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/build_user_card.dart';
 import 'package:harry_service_app/app/core/widgets/duration_price_section.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/hire_service_model.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_status_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
@@ -22,7 +23,7 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
   late String bookingId;
   final PanelController _panelController = PanelController();
   final itemController = Get.put(ItemController());
-  final bookingStatus = Get.put(BookingStatusController());
+  final bookingStatusController = Get.put(BookingStatusController());
 
   @override
   void initState() {
@@ -45,19 +46,20 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
       backgroundColor: const Color(0xFFFAFBFC),
       body: GetBuilder<ItemController>(
         builder: (controller) {
-          final bookingData = controller.massageItem?.data;
+          final massage = controller.massageItem;
+          final data = massage?.data;
 
-          // Full-screen loader
-          if (controller.isLoading) {
+          // Full-screen loader on first fetch
+          if (controller.isLoading && massage == null) {
             return const RestaurantDetailsShimmer();
           }
 
           // No data
-          if (bookingData == null) {
+          if (data == null) {
             return const Center(child: Text('No Data Found'));
           }
 
-          final user = bookingData.user;
+          final user = data.user;
 
           return Stack(
             children: [
@@ -88,6 +90,7 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                           child: ListView(
                             controller: sc,
                             children: [
+                              // Drag handle
                               Center(
                                 child: Container(
                                   height: 5,
@@ -99,6 +102,8 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                                 ),
                               ),
                               const SizedBox(height: 20),
+
+                              // User Info Section
                               Text(
                                 "User Info",
                                 style: TextStyle(
@@ -113,8 +118,12 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                                   fullName: user.fullName,
                                   serviceArea: user.address,
                                   profileUrl: user.profileUrl,
+                                  onMessageTap: () {},
+                                  onCallTap: () {},
                                 ),
                               const SizedBox(height: 24),
+
+                              // Booking Information Section
                               Text(
                                 "Booking Information",
                                 style: TextStyle(
@@ -126,31 +135,33 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                               const SizedBox(height: 12),
                               buildDetailCard(
                                 label: "Massage Name",
-                                value: bookingData.product?.title ?? "N/A",
+                                value: data.product?.title ?? "N/A",
                                 icon: Icons.title_rounded,
                                 color: Colors.orange,
                               ),
                               const SizedBox(height: 12),
                               DurationAndPriceSection(
-                                duration: bookingData.duration ?? "N/A",
-                                price: bookingData.totalPrice ?? 0,
+                                duration: data.duration ?? "N/A",
+                                price: data.totalPrice ?? 0,
                               ),
                               const SizedBox(height: 12),
                               buildDetailCard(
                                 label: "Location",
-                                value: bookingData.product?.serviceArea ?? "N/A",
+                                value: data.product?.serviceArea ?? "N/A",
                                 icon: Icons.location_city,
                                 color: Colors.orange,
                               ),
                               const SizedBox(height: 24),
+
+                              // Date & Time Section
                               Text(
                                 "Date & Time",
                                 style: AppTextStyle.sub_h3_medium_14(),
                               ),
                               const SizedBox(height: 12),
                               buildDetailCard(
-                                label: "Booking Date",
-                                value: "${formatDateTime(bookingData.date)} - ${bookingData.time ?? "N/A"}",
+                                label: "Booking",
+                                value: formatDateTime(data.date),
                                 icon: Icons.calendar_today,
                                 color: Colors.blue,
                               ),
@@ -158,41 +169,71 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                             ],
                           ),
                         ),
-                        // Inside the SafeArea button section:
+
+                        // Approval Button
                         SafeArea(
-                          child: GetBuilder<BookingStatusController>(builder: (controller) {
-                            final permitted = controller.isPermitted ?? false;
+                          child: GetBuilder<BookingStatusController>(
+                            builder: (statusController) {
+                              final isLoading = statusController.isLoading;
+                              final approved = itemController.massageItem?.data?.isPermitted ?? false;
 
-                            return ElevatedButton(
-                              onPressed: () {
-                                if (!permitted) {
-                                  // Call controller method to approve booking
-                                  controller.changeStatus(
-                                    apiUrl: AppUrls.changeBookingStatus(bookingId),
-                                    status: true,
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size.fromHeight(56),
-                                backgroundColor: AppColors.primary_1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 4,
-                                shadowColor: AppColors.primary_1.withOpacity(0.4),
-                              ),
-                              child: Text(
-                                permitted ? "Approved" : "Approve",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            );
-                          }),
-                        )
+                              return SizedBox(
+                                height: 60,
+                                child: ElevatedButton(
+                                  onPressed: approved
+                                      ? null
+                                      : () async {
+                                    // Set button loading only
+                                    statusController.setLoading(true);
 
+                                    // Call API to approve booking
+                                    await statusController.changeStatus(
+                                      apiUrl: AppUrls.changeBookingStatus(bookingId),
+                                      status: true,
+                                    );
+
+                                    // Update isPermitted locally without triggering shimmer
+                                    itemController.massageItem?.data?.isPermitted = true;
+
+                                    // Stop button loading
+                                    statusController.setLoading(false);
+
+                                    // Refresh button UI
+                                    statusController.update();
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(56),
+                                    backgroundColor: approved ? Colors.green : AppColors.primary_1,
+                                    foregroundColor: Colors.white,
+                                    disabledBackgroundColor: Colors.green,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    elevation: 4,
+                                    shadowColor: AppColors.primary_1.withOpacity(0.4),
+                                  ),
+                                  child: isLoading
+                                      ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
+                                      : Text(
+                                    approved ? "✓ Approved" : "Approve",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -200,6 +241,7 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                 body: SafeArea(
                   child: Stack(
                     children: [
+                      // Header image
                       Container(
                         height: size.height * 0.5,
                         width: double.infinity,
@@ -213,13 +255,15 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                             ],
                           ),
                         ),
-                        child: bookingData.product?.thumbnail != null
+                        child: data.product?.thumbnail != null
                             ? Image.network(
-                          bookingData.product!.thumbnail!,
+                          data.product!.thumbnail!,
                           fit: BoxFit.cover,
                         )
                             : Container(color: Colors.grey[300]),
                       ),
+
+                      // Back button + Title
                       Positioned(
                         top: 45,
                         left: 16,
@@ -310,9 +354,23 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey[600])),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[600],
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF2C3E50))),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2C3E50),
+                  ),
+                ),
               ],
             ),
           ),

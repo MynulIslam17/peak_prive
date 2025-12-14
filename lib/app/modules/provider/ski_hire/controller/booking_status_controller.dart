@@ -3,25 +3,26 @@ import 'package:harry_service_app/app/data/services/network_caller.dart';
 
 class BookingStatusController extends GetxController {
   bool? _isPermitted;
-  bool isLoading = false;
+  bool isLoading = false; // button loading
   String? errorMessage;
 
   bool? get isPermitted => _isPermitted;
 
-  /// Initialize controller with existing status
   void setInitialStatus(bool status) {
     _isPermitted = status;
     update();
   }
 
-  /// Change booking status (approve)
+  /// Set button loading
+  void setLoading(bool value) {
+    isLoading = value;
+    update(); // only refresh button
+  }
+
   Future<void> changeStatus({
     required String apiUrl,
     required bool status,
   }) async {
-    isLoading = true;
-    update();
-
     try {
       final response = await Get.find<NetworkCaller>().patchRequest(
         url: apiUrl,
@@ -35,9 +36,7 @@ class BookingStatusController extends GetxController {
       }
     } catch (e) {
       errorMessage = e.toString();
-    } finally {
-      isLoading = false;
-      update();
     }
   }
 }
+

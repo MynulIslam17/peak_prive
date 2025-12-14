@@ -2,14 +2,16 @@ class MassageItemModel {
   int? code;
   String? message;
   Data? data;
+  Map<String, dynamic>? extra; // catch-all for unexpected fields
 
-  MassageItemModel({this.code, this.message, this.data});
+  MassageItemModel({this.code, this.message, this.data, this.extra});
 
   factory MassageItemModel.fromJson(Map<String, dynamic> json) {
     return MassageItemModel(
       code: json['code'],
       message: json['message'],
       data: json['data'] != null ? Data.fromJson(json['data']) : null,
+      extra: json, // store everything else
     );
   }
 
@@ -18,6 +20,7 @@ class MassageItemModel {
     map['code'] = code;
     map['message'] = message;
     if (data != null) map['data'] = data!.toJson();
+    if (extra != null) map.addAll(extra!); // keep extra fields
     return map;
   }
 }
@@ -31,15 +34,16 @@ class Data {
   int? personCount;
   String? date;
   String? time;
-  List<dynamic>? slots; // corrected
+  List<dynamic>? slots;
   String? duration;
   String? bookingStatus;
   int? totalPrice;
   bool? isPermitted;
-  List<dynamic>? bookingItems; // corrected
+  List<dynamic>? bookingItems;
   String? createdAt;
   String? updatedAt;
   int? iV;
+  Map<String, dynamic>? extra;
 
   Data({
     this.sId,
@@ -59,6 +63,7 @@ class Data {
     this.createdAt,
     this.updatedAt,
     this.iV,
+    this.extra,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) {
@@ -80,6 +85,7 @@ class Data {
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       iV: json['__v'],
+      extra: json,
     );
   }
 
@@ -101,43 +107,59 @@ class Data {
     'createdAt': createdAt,
     'updatedAt': updatedAt,
     '__v': iV,
+    if (extra != null) ...extra!,
   };
 }
 
 class User {
   String? sId;
-  String? email;
-  String? status;
-  String? address;
   String? fullName;
+  String? email;
   String? profileUrl;
+  String? address;
+  String? status;
+  String? phoneNumber;
+  Map<String, dynamic>? extra;
 
-  User({this.sId, this.email, this.status, this.address, this.fullName, this.profileUrl});
+  User({
+    this.sId,
+    this.fullName,
+    this.email,
+    this.profileUrl,
+    this.address,
+    this.status,
+    this.phoneNumber,
+    this.extra,
+  });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       sId: json['_id'],
-      email: json['email'],
-      status: json['status'],
-      address: json['address'],
       fullName: json['fullName'],
+      email: json['email'],
       profileUrl: json['profileUrl'],
+      address: json['address'],
+      status: json['status'],
+      phoneNumber: json['phoneNumber'],
+      extra: json,
     );
   }
 
   Map<String, dynamic> toJson() => {
     '_id': sId,
-    'email': email,
-    'status': status,
-    'address': address,
     'fullName': fullName,
+    'email': email,
     'profileUrl': profileUrl,
+    'address': address,
+    'status': status,
+    'phoneNumber': phoneNumber,
+    if (extra != null) ...extra!,
   };
 }
 
 class Product {
   String? sId;
-  String? category;
+  Category? category;
   String? thumbnail;
   String? title;
   String? openTime;
@@ -147,6 +169,7 @@ class Product {
   int? amount;
   String? benefits;
   String? ourRecommendations;
+  Map<String, dynamic>? extra;
 
   Product({
     this.sId,
@@ -160,12 +183,13 @@ class Product {
     this.amount,
     this.benefits,
     this.ourRecommendations,
+    this.extra,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       sId: json['_id'],
-      category: json['category'],
+      category: json['category'] != null ? Category.fromJson(json['category']) : null,
       thumbnail: json['thumbnail'],
       title: json['title'],
       openTime: json['openTime'],
@@ -177,12 +201,13 @@ class Product {
       amount: json['amount'],
       benefits: json['benefits'],
       ourRecommendations: json['ourRecommendations'],
+      extra: json,
     );
   }
 
   Map<String, dynamic> toJson() => {
     '_id': sId,
-    'category': category,
+    'category': category?.toJson(),
     'thumbnail': thumbnail,
     'title': title,
     'openTime': openTime,
@@ -192,6 +217,32 @@ class Product {
     'amount': amount,
     'benefits': benefits,
     'ourRecommendations': ourRecommendations,
+    if (extra != null) ...extra!,
+  };
+}
+
+class Category {
+  String? name;
+  String? categoryPhoto;
+  String? sId;
+  Map<String, dynamic>? extra;
+
+  Category({this.name, this.categoryPhoto, this.sId, this.extra});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      name: json['name'],
+      categoryPhoto: json['categoryPhoto'],
+      sId: json['_id'],
+      extra: json,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'categoryPhoto': categoryPhoto,
+    '_id': sId,
+    if (extra != null) ...extra!,
   };
 }
 
@@ -199,14 +250,16 @@ class PriceByDuration {
   String? duration;
   int? amount;
   String? sId;
+  Map<String, dynamic>? extra;
 
-  PriceByDuration({this.duration, this.amount, this.sId});
+  PriceByDuration({this.duration, this.amount, this.sId, this.extra});
 
   factory PriceByDuration.fromJson(Map<String, dynamic> json) {
     return PriceByDuration(
       duration: json['duration'],
       amount: json['amount'],
       sId: json['_id'],
+      extra: json,
     );
   }
 
@@ -214,5 +267,6 @@ class PriceByDuration {
     'duration': duration,
     'amount': amount,
     '_id': sId,
+    if (extra != null) ...extra!,
   };
 }

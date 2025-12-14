@@ -1,3 +1,7 @@
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart' as home;
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_pass_service_model.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_pass_service_model.dart' as pass;
+
 class ProviderHomeModel {
   final ProviderStats stats;
   final List<Booking> recentBookings;
@@ -1029,6 +1033,56 @@ class PriceByDuration {
     };
   }
 }
+
+
+
+extension RecentServiceToSkiPass on home.RecentService {
+  pass.SkiPass toSkiPass() {
+    return pass.SkiPass(
+      id: id,
+      title: title,
+      thumbnail: thumbnail,
+      owner: owner,
+      skiPassType: skiPassType ?? '',
+      serviceArea: serviceArea,
+
+      amount: amount != 0
+          ? amount
+          : totalPrice != 0
+          ? totalPrice
+          : serviceFee,
+
+      description: description.isNotEmpty
+          ? description
+          : benefits,
+
+      averageRating: averageRating,
+      refunds: refunds,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      v: v ?? 0,
+
+      // ✅ EXPLICIT CONVERSIONS
+      services: (services ?? [])
+          .map((e) => pass.ProductService(
+        title: e.title,
+        description: e.description,
+      ))
+          .toList(),
+
+      reviews: reviews
+          .map((e) => pass.Review(
+        userId: e.userId,
+        rating: e.rating,
+        comment: e.comment,
+        createdAt: e.createdAt,
+      ))
+          .toList(),
+    );
+  }
+}
+
+
 
 
 

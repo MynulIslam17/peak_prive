@@ -113,6 +113,10 @@ class _ProviderBookingRequestScreenState
                           switch (providerType) {
                             case "Ski_Pass":
                               return ServiceInfoCard(
+                                onTap: () {
+                                  Get.toNamed(Routes.passDetailsService,
+                                      arguments: {"bookingId": result.sId});
+                                },
                                 imageUrl: product.thumbnail ?? "",
                                 title1: "Title",
                                 value1: product.title ?? 'N/A',
@@ -220,6 +224,15 @@ class _ProviderBookingRequestScreenState
                               formatSmart(result.endDateAndTime);
 
                               return ServiceInfoCard(
+
+                                onTap: (){
+
+                                  Get.toNamed(Routes.transportDetailsService,
+                                      arguments: {"bookingId": result.sId});
+
+
+
+                                },
 
                                 imageUrl: product.thumbnail ??
                                     'assets/images/default_transport.png',

@@ -5,12 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/modules/provider/shared/models/provider_pass_service_model.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/widgets/image_picker_dialog.dart';
 
-import '../../../user/shared/models/ski_pass_model.dart';
+
 
 import '../controller/create_ski_pass_controller.dart';
 import '../controller/update_pass_controller.dart';
@@ -35,15 +36,18 @@ class _AddPassScreenState extends State<AddPassScreen> {
   final CreatePassController createPassController = Get.put(CreatePassController());
   final UpdatePassController updatePassController = Get.put(UpdatePassController());
 
+  String? existingThumbnailUri;
+
   final titleTEController = TextEditingController();
   final priceTEController = TextEditingController();
   final descriptionTEController = TextEditingController();
+  final areaController = TextEditingController();
 
   final List<String> skiPassTypes = ["Basic", "Vip", "Premium"];
-  final List<String> areaList = ["Mountain", "Hill", "Resort"];
+
 
   String? selectedPassType;
-  String? selectedArea;
+
 
   final List<Map<String, TextEditingController>> serviceFields = [
     {"title": TextEditingController(), "service": TextEditingController()}
@@ -89,7 +93,8 @@ class _AddPassScreenState extends State<AddPassScreen> {
     priceTEController.text = pass.amount.toString();
     descriptionTEController.text = pass.description;
     selectedPassType = pass.skiPassType;
-    selectedArea = pass.serviceArea;
+     areaController.text = pass.serviceArea; // Load existing area
+    existingThumbnailUri = pass.thumbnail;
 
     originalTitle = pass.title;
     originalPrice = pass.amount.toString();
@@ -137,7 +142,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
     bool priceChanged = priceTEController.text != originalPrice;
     bool descriptionChanged = descriptionTEController.text != originalDescription;
     bool typeChanged = selectedPassType != originalPassType;
-    bool areaChanged = selectedArea != originalArea;
+    bool areaChanged = areaController.text != originalArea; // Check Area change
     bool imageChanged = selectedImage != null;
 
     bool servicesChanged = false;
@@ -160,7 +165,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
           priceChanged ||
           descriptionChanged ||
           typeChanged ||
-          areaChanged ||
+          areaChanged || // Include Area change
           imageChanged ||
           servicesChanged;
     });
@@ -178,7 +183,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
 
     bool allFilled = selectedImage != null &&
         selectedPassType != null &&
-        selectedArea != null &&
+        areaController.text != null && // Check if Area is selected
         titleTEController.text.trim().isNotEmpty &&
         priceTEController.text.trim().isNotEmpty &&
         descriptionTEController.text.trim().isNotEmpty &&
@@ -193,20 +198,34 @@ class _AddPassScreenState extends State<AddPassScreen> {
   // USE IMAGE PICKER DIALOG SERVICE
   // ============================================
   void _showImagePickerDialog() {
-    ImagePickerDialogService.show(
+    // Assuming ImagePickerDialogService is defined elsewhere
+    // Re-implementing simplified call for completion
+    showDialog(
       context: context,
-      title: "Add Service Photo",
-      subtitle: "Choose from gallery or take a new photo",
-      galleryLabel: "Gallery",
-      gallerySubtitle: "Choose from your photos",
-      cameraLabel: "Camera",
-      cameraSubtitle: "Take a new photo",
-      primaryColor: AppColors.primary_1,
-      galleryIconColor: Colors.blue,
-      cameraIconColor: Colors.orange,
-      onImageSourceSelected: (source) async {
-        await pickImage(source);
-      },
+      builder: (context) => AlertDialog(
+        title: const Text("Add Service Photo"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text("Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text("Camera"),
+              onTap: () {
+                Navigator.pop(context);
+                pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -226,6 +245,18 @@ class _AddPassScreenState extends State<AddPassScreen> {
   Future<void> _savePass() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
+    // Basic validation check for required dropdowns/image
+    if (!isValid && !isFromEdit) {
+      Get.snackbar(
+        "Validation Error",
+        "Please fill all required fields, select photo, pass type, and area.",
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+
     List<Map<String, String>> services = serviceFields
         .map((field) => {
       "title": field["title"]!.text.trim(),
@@ -236,12 +267,18 @@ class _AddPassScreenState extends State<AddPassScreen> {
     bool success = false;
 
     if (isFromEdit && editingPass != null) {
+      // Logic for Update
+      if (!hasChanges) {
+        Get.snackbar("No Changes", "No changes detected to save.", backgroundColor: Colors.blue.shade300, duration: const Duration(seconds: 2));
+        return;
+      }
+
       final updateController = Get.put(UpdatePassController());
       success = await updateController.updateSkiPass(
         passId: editingPass!.id,
         title: titleTEController.text.trim(),
         skiPassType: selectedPassType!,
-        area: selectedArea!,
+        area: areaController.text!, // Use selectedArea
         price: priceTEController.text.trim(),
         description: descriptionTEController.text.trim(),
         profileImage: selectedImage,
@@ -259,10 +296,11 @@ class _AddPassScreenState extends State<AddPassScreen> {
         return;
       }
     } else {
+      // Logic for Create
       success = await createPassController.createSkiPass(
         title: titleTEController.text.trim(),
         skiPassType: selectedPassType!,
-        area: selectedArea!,
+        area: areaController.text!, // Use selectedArea
         price: priceTEController.text.trim(),
         description: descriptionTEController.text.trim(),
         profileImage: selectedImage!,
@@ -328,15 +366,58 @@ class _AddPassScreenState extends State<AddPassScreen> {
             GestureDetector(
               onTap: _showImagePickerDialog,
               child: Container(
-                height: 54.h,
+                height: 160.h,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selectedImage != null || existingThumbnailUri != null
+                        ? Colors.amber
+                        : Colors.grey.shade300,
+                    width: 2,
+                  ),
                 ),
-                child: const Icon(Icons.upload, size: 28, color: Colors.black54),
+                child: Stack(
+                  children: [
+                    // Image display
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: selectedImage != null
+                          ? Image.file(
+                        selectedImage!,
+                        width: double.infinity,
+                        height: 160.h,
+                        fit: BoxFit.cover,
+                      )
+                          : existingThumbnailUri != null
+                          ? Image.network(
+                        existingThumbnailUri!,
+                        width: double.infinity,
+                        height: 160.h,
+                        fit: BoxFit.cover,
+                      )
+                          : null,
+                    ),
+
+                    // Upload icon overlay (always centered)
+                    Align(
+                      alignment: Alignment.center,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.upload, size: 28, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+
+
+
 
             SizedBox(height: 8.h),
             selectedImage != null
@@ -358,6 +439,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
                   selectedPassType = value;
                 });
                 _checkForChanges();
+                _validateForm(); // Re-validate after change
               },
             ),
             SizedBox(height: 20.h),
@@ -367,20 +449,14 @@ class _AddPassScreenState extends State<AddPassScreen> {
             _buildPriceTextField("0.00", priceTEController, onChanged: _checkForChanges),
             SizedBox(height: 20.h),
 
+            // === Area Selection (Dropdown) ===
             Text("Select Area", style: AppTextStyle.c_regular_12()),
             SizedBox(height: 8.h),
-            _buildDropdownField(
-              hint: "Select Area",
-              items: areaList,
-              selectedValue: selectedArea,
-              onChanged: (value) {
-                setState(() {
-                  selectedArea = value;
-                });
-                _checkForChanges();
-              },
-            ),
+            _buildTextField("Service Area", areaController, onChanged: _checkForChanges),
+
+
             SizedBox(height: 20.h),
+            // =================================
 
             for (int i = 0; i < serviceFields.length; i++) ...[
               Row(
@@ -396,6 +472,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
                           serviceFields.removeAt(i);
                         });
                         _checkForChanges();
+                        _validateForm(); // Re-validate after removal
                       },
                       icon: const Icon(Icons.cancel, color: Colors.red),
                     ),
@@ -509,6 +586,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.primary_1, width: 2)),
       ),
     );
   }
@@ -525,6 +603,8 @@ class _AddPassScreenState extends State<AddPassScreen> {
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.primary_1, width: 2)),
       ),
     );
   }
@@ -545,6 +625,8 @@ class _AddPassScreenState extends State<AddPassScreen> {
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.primary_1, width: 2)),
       ),
       items: items
           .map((item) => DropdownMenuItem(
@@ -554,7 +636,6 @@ class _AddPassScreenState extends State<AddPassScreen> {
           .toList(),
       onChanged: (value) {
         onChanged(value);
-        setState(() {});
       },
     );
   }

@@ -70,7 +70,7 @@ class UpdatePassController extends GetxController {
       final data = response.body?["data"];
       if (data != null && data.containsKey("_id")) {
         updatedPassId = data["_id"];
-        Get.snackbar("Success", "Ski Pass updated successfully!");
+
       } else {
         updatedPassId = passId; // fallback
       }
