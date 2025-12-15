@@ -68,12 +68,34 @@ class _SetInformationState extends State<SetInformation> {
         },
       );
 
-      // Wait a moment for the payment sheet to fully close
+      /// Wait a moment for the payment sheet to fully close
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Check if payment was successful
+      /// Check if payment was successful
       if (result.isSuccess) {
-        // Show success dialog
+
+        /// if payment success hit url for saved in booking
+        final transactionId = result.paymentData?['transactionId'];
+
+
+      /// calling booking api with transaction id
+
+        Map<String,dynamic>body={
+
+          "userId": authController.userModel!.id,
+          "productId":prodoductId,
+          "personCount":selectedPerson,
+           "date":selectedDate.toString(),
+          "time": selectedTime.toString(),
+          "transactionId": transactionId,
+
+        };
+        await bookingController.proceedBooking(body);
+
+
+
+
+        /// Show success dialog
         if (mounted) {
           showDialog(
             context: context,
@@ -232,6 +254,7 @@ class _SetInformationState extends State<SetInformation> {
   void _handlePaymentSuccess(PaymentResult result) {
     // Don't show snackbar immediately - wait for sheet to close
     setState(() {
+
       _isProcessingPayment = false;
     });
   }

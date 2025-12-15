@@ -179,7 +179,7 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                       ),
                     ),
 
-                    // Approve button
+
                     // Approve button
                     SafeArea(
                       child: GetBuilder<BookingStatusController>(

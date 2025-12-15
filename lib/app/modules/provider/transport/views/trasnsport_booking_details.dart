@@ -107,9 +107,9 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                           /// USER INFO
                           if (user != null)
                             ModernUserCard(
-                              fullName: user.fullName,
-                              serviceArea: user.address,
-                              profileUrl: user.profileUrl,
+                              fullName: user.fullName ?? "N/A",
+                              serviceArea: user.address?? "N/A",
+                              profileUrl: user.profileUrl ?? "N/A",
                             ),
 
                           const SizedBox(height: 24),
@@ -189,6 +189,7 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
 
                                 if(!isPermitted){
 
+
                                   await statusController.changeStatus(
                                     apiUrl: AppUrls.changeBookingStatus(
                                       bookingId,
@@ -209,7 +210,7 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                               ),
                               child: statusCtrl.isLoading ? Center(child: CircularProgressIndicator(color: Colors.white,)) : Text(
                                 statusCtrl.isPermitted == true
-                                    ? "Approved"
+                                    ? "✓ Approved"
                                     : "Approve",
                               )
                             ),
@@ -333,11 +334,6 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
     );
   }
 
-  String _formatDate(String? date) {
-    if (date == null) return "N/A";
-    return DateFormat('dd MMM yyyy, hh:mm a')
-        .format(DateTime.parse(date).toLocal());
-  }
 
 
 

@@ -19,6 +19,7 @@ class ModernUserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -31,10 +32,8 @@ class ModernUserCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFF6366F1).withOpacity(0.2),
-          width: 1,
         ),
       ),
-      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           _buildAvatar(),
@@ -63,19 +62,24 @@ class ModernUserCard extends StatelessWidget {
         radius: 32,
         backgroundColor: Colors.grey.shade300,
         backgroundImage: hasImage ? NetworkImage(profileUrl!) : null,
-        child: !hasImage
-            ? const Icon(Icons.person, size: 32, color: Colors.white)
-            : null,
+        child: hasImage
+            ? null
+            : const Icon(Icons.person, size: 32, color: Colors.white),
       ),
     );
   }
 
   Widget _buildUserInfo() {
+    final displayName =
+    (fullName == null || fullName!.isEmpty) ? 'N/A' : fullName!;
+    final displayArea =
+    (serviceArea == null || serviceArea!.isEmpty) ? 'N/A' : serviceArea!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          fullName ?? 'N/A',
+          displayName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -95,7 +99,7 @@ class ModernUserCard extends StatelessWidget {
             const SizedBox(width: 4),
             Expanded(
               child: Text(
-                serviceArea ?? 'N/A',
+                displayArea,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -123,22 +127,29 @@ class ModernUserCard extends StatelessWidget {
   }
 
   Widget _buildActionIconButton(IconData icon, VoidCallback? onTap) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-            ),
-          ],
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: const Color(0xFF6366F1),
+          ),
         ),
-        child: Icon(icon, size: 20, color: const Color(0xFF6366F1)),
       ),
     );
   }

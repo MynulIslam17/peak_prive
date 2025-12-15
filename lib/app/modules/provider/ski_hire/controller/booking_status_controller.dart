@@ -24,10 +24,15 @@ class BookingStatusController extends GetxController {
     required bool status,
   }) async {
     try {
+
+       isLoading=true;
+       update();
       final response = await Get.find<NetworkCaller>().patchRequest(
         url: apiUrl,
         body: {'isPermitted': status},
       );
+       isLoading=false;
+      update();
 
       if (response.isSuccess) {
         _isPermitted = status;

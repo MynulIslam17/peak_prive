@@ -74,7 +74,7 @@ static String hireDetailsUrl(String id)=>"$baseUrl/ski-hire/${id}";
 
 
 /// give rating and review
-static String hireBookingReviewUrl(String productId)=>"$baseUrl/ski-hire/review/${productId}";
+static String bookingReviewUrl({required String productId,required String serviceType})=>"$baseUrl/$serviceType/review/${productId}";
 
 
 

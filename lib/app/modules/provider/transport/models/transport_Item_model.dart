@@ -25,6 +25,7 @@ class TransportItemModel {
 class TransportBookingData {
   String? id;
   User? user;
+  bool? isHandOver;
   Product? product;
   String? productModel;
   String? category;
@@ -47,6 +48,8 @@ class TransportBookingData {
     this.id,
     this.user,
     this.product,
+    this.isHandOver,
+
     this.productModel,
     this.category,
     this.startDateAndTime,
@@ -68,6 +71,7 @@ class TransportBookingData {
   TransportBookingData.fromJson(Map<String, dynamic> json) {
     id = json['_id'];
     user = json['user'] != null ? User.fromJson(json['user']) : null;
+    isHandOver = json['isHandOver'];
     product = json['product'] != null ? Product.fromJson(json['product']) : null;
     productModel = json['productModel'];
     category = json['category'];
@@ -93,6 +97,7 @@ class TransportBookingData {
     return {
       '_id': id,
       'user': user?.toJson(),
+      'isHandOver': isHandOver,
       'product': product?.toJson(),
       'productModel': productModel,
       'category': category,

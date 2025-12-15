@@ -373,7 +373,9 @@ class _BookingScreenState extends State<BookingScreen>
         String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
 
         return _navController.getServiceType == "ski_pass"
-            ? BookingCard(
+            ? BookingCard(  /// working only for pass
+
+
           image: product.thumbnail,
           personCount: booking.bookingItems.isNotEmpty
               ? booking.bookingItems.fold<int>(
@@ -387,7 +389,23 @@ class _BookingScreenState extends State<BookingScreen>
           time: booking.startDateAndTime != null
               ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
               : "",
-          onTap: () {},
+          buttonIcon: status =="Active" ?Icons.info_outline: Icons.rate_review,
+          onTap: () {
+
+            if(status=="Active"){
+
+              Get.toNamed(Routes.userPassBookingDetails,arguments: {
+
+                "bookingId":booking.id
+              });
+
+
+            }else{
+              _showDialog(product.id);
+            }
+
+
+          },
         )
             : BookingCardItem(
           image: product.thumbnail,

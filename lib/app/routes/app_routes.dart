@@ -17,6 +17,7 @@ abstract class Routes {
   /// Pass
   static const passInformation = "/passInfo";
   static const passCardDetails = "/passDetails";
+  static const userPassBookingDetails="/userPassBookingDetails";
 
   /// Transport
   static const transportDetails = "/transportDetails";

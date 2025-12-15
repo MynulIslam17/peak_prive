@@ -1,0 +1,350 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:harry_service_app/app/core/constants/app_colors.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+import 'package:harry_service_app/app/modules/provider/pass/models/pass_item_model.dart';
+import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_details_single_controller.dart';
+import 'package:harry_service_app/app/modules/user/shared/models/booking_model.dart';
+
+class UsePassBookingInfo extends StatefulWidget {
+
+
+  const UsePassBookingInfo({super.key});
+
+  /// ---------------- DUMMY DATA ----------------
+  static final Map<String, dynamic> dummyBooking = {
+    "_id": "BK-123456",
+    "bookingStatus": "Completed",
+    "personCount": 5,
+    "date": "2025-11-12T00:00:00.000Z",
+    "time": "12:30 PM",
+    "totalPrice": 260,
+    "createdAt": "2025-11-13T03:30:17.814Z",
+    "product": {
+      "title": "Mountain Adventure Ski Pass",
+      "thumbnail":
+      "https://images.unsplash.com/photo-1517821365201-1fa81d8edb8f",
+      "skiPassType": "Premium",
+      "serviceArea": "Aspen Mountain Resort",
+      "services": [
+        {"title": "Free Parking"},
+        {"title": "Free Events"},
+        {"title": "Free Ski Lessons"},
+      ],
+    }
+  };
+
+
+
+
+  @override
+  State<UsePassBookingInfo> createState() => _UsePassBookingInfoState();
+}
+
+class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
+
+
+  final passItemController=Get.put(SinglePassBookingItem());
+
+  late final String bookingId;
+
+ @override
+  void initState() {
+
+   var argument=Get.arguments;
+   bookingId=argument["bookingId"];
+
+   _fetchData();
+
+    super.initState();
+  }
+
+  void _fetchData()async{
+    await passItemController.fetchBooking(bookingId);
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+
+
+
+
+
+
+    final booking = UsePassBookingInfo.dummyBooking;
+    final product = booking['product'];
+
+
+    return Scaffold(
+      backgroundColor: const Color(0xffF9F7F3),
+      appBar: AppBar(
+        backgroundColor: const Color(0xffF9F7F3),
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "Booking Details",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        leading: Padding(
+          padding: const EdgeInsets.all(3),
+          child: IconButton(
+            onPressed: () {
+              Get.back();
+            },
+            icon: SvgPicture.asset(
+              "assets/icons/back_icon.svg",
+              color: Colors.black,
+              width: 30.w,
+              height: 30.h,
+            ),
+          ),
+        ),
+      ),
+      body: GetBuilder<SinglePassBookingItem>(builder: (controller){
+
+        if(controller.isLoading){
+          return Center(child: CircularProgressIndicator(color: AppColors.primary_1,),);
+        }
+
+
+        return  Stack(
+          children: [
+            _buildMainContent(product, booking),
+            _buildSlidingPanel(booking),
+          ],
+        );
+      })
+    );
+  }
+
+  /// ---------------- MAIN CONTENT ----------------
+  Widget _buildMainContent(
+      Map<String, dynamic> product, Map<String, dynamic> booking) {
+    return Padding(
+      padding: EdgeInsets.all(16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16.r),
+            child: Image.asset(
+             "assets/images/ski_pass_9.png",
+              width: double.infinity,
+              height: 220.h,
+              fit: BoxFit.cover,
+            ),
+          ),
+
+          SizedBox(height: 16.h),
+
+          /// Title
+          Text(
+
+            product['title'],
+            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
+          ),
+
+          SizedBox(height: 6.h),
+
+          /// Pass Type
+          Text(
+            product['skiPassType'],
+            style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
+          ),
+
+          SizedBox(height: 12.h),
+
+          /// Booking Status
+          _buildStatusBadge(booking['bookingStatus']),
+
+          SizedBox(height: 20.h),
+
+          /// Included Services
+          Text(
+            "Included Services",
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
+          ),
+
+          SizedBox(height: 10.h),
+
+          ...product['services'].map<Widget>((service) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: Row(
+                children: const [
+                  Icon(Icons.check_circle, color: Colors.green, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Service included",
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  /// ---------------- SLIDING PANEL ----------------
+  Widget _buildSlidingPanel(Map<String, dynamic> booking) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.2,
+      minChildSize: 0.2,
+      maxChildSize: 0.75,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.all(16.w),
+            children: [
+              /// Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 20.h),
+
+              _infoRow("Date", _formatDate(booking['date'])),
+              _infoRow("Time", booking['time']),
+              _infoRow("Persons", booking['personCount'].toString()),
+              _infoRow(
+                  "Location", booking['product']['serviceArea']),
+              _infoRow("Booking ID", booking['_id']),
+              _infoRow(
+                  "Total Paid", "\$${booking['totalPrice']}"),
+              _infoRow(
+                  "Booked On", _formatDateTime(booking['createdAt'])),
+
+              SizedBox(height: 24.h),
+
+              _buildActionButton(booking['bookingStatus']),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// ---------------- STATUS BADGE ----------------
+  Widget _buildStatusBadge(String status) {
+    Color color;
+    switch (status.toLowerCase()) {
+      case 'completed':
+        color = Colors.green;
+        break;
+      case 'active':
+        color = Colors.orange;
+        break;
+      case 'cancelled':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.grey;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  /// ---------------- ACTION BUTTON ----------------
+  Widget _buildActionButton(String status) {
+    if (status == "Active") {
+      return ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          padding: EdgeInsets.symmetric(vertical: 14),
+          shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: const Text("Use Pass"),
+      );
+    }
+
+    if (status == "Completed") {
+      return ElevatedButton(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          disabledBackgroundColor: Colors.grey[300],
+          padding: EdgeInsets.symmetric(vertical: 14),
+        ),
+        child: const Text("Completed"),
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: () {},
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        padding: EdgeInsets.symmetric(vertical: 14),
+      ),
+      child: const Text("Book Again"),
+    );
+  }
+
+  /// ---------------- HELPERS ----------------
+  Widget _infoRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String isoDate) {
+    final date = DateTime.parse(isoDate);
+    return "${date.day}-${date.month}-${date.year}";
+  }
+
+  String _formatDateTime(String isoDate) {
+    final date = DateTime.parse(isoDate);
+    return "${date.day}-${date.month}-${date.year} "
+        "${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+  }
+}

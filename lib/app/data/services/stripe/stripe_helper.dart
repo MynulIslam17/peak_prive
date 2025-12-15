@@ -168,9 +168,18 @@ class StripePaymentHelper {
     try {
       await Stripe.instance.presentPaymentSheet();
 
-      _log('Payment completed successfully');
+      /// Capture PaymentIntent ID as transaction ID
+      final transactionId = _currentPaymentData?['id'];
 
-      final result = PaymentResult.success(paymentData: _currentPaymentData);
+      _log('Payment completed successfully. Transaction ID: $transactionId');
+
+      /// Include transactionId in the PaymentResult
+      final result = PaymentResult.success(
+        paymentData: {
+          ...?_currentPaymentData,
+          'transactionId': transactionId,
+        },
+      );
 
       // Clear current payment data
       _currentPaymentData = null;
@@ -204,6 +213,7 @@ class StripePaymentHelper {
       return result;
     }
   }
+
 
   /// Main method to process a payment
   Future<PaymentResult> processPayment({

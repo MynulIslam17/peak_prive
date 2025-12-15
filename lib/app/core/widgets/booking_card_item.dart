@@ -106,6 +106,9 @@ class BookingCardItem extends StatelessWidget {
                         ),
                       ],
                     ),
+                    
+
+                    
                   ],
                 ),
               ),

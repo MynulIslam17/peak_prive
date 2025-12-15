@@ -40,6 +40,7 @@ import 'package:harry_service_app/app/modules/user/massage/views/booking_request
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
 
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/pass/views/user_pass_booking_info.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/bindings/restaurant_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurant_booking_info.dart';
@@ -149,6 +150,15 @@ abstract class AppPages {
 
     binding: SinglePassDetailsBindings()
     ),
+
+        GetPage(
+        name: Routes.userPassBookingDetails,
+        page: () => UsePassBookingInfo(),
+
+        ),
+
+
+
 
     GetPage(
       /// pass booking details

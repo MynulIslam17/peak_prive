@@ -613,6 +613,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                           );
 
                           return ServiceInfoCard(
+                            onTap: (){
+                              Get.toNamed(Routes.transportDetailsService,
+                                  arguments: {"bookingId": booking.id});
+                            },
                             imageUrl:
                             product.thumbnail ??
                                 'assets/images/default_transport.png',

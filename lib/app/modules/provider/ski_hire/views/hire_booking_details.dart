@@ -194,7 +194,7 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                                     )
                                   : Text(
                                       sController.isPermitted == true
-                                          ? "Approved"
+                                          ? "✓ Approved"
                                           : "Approve",
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
@@ -218,63 +218,65 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
   }
 
   Widget _buildModernHeader(double height, product) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              height: height * 0.5,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    const Color(0xFF1a1a2e).withOpacity(0.7),
-                    const Color(0xFF16213e).withOpacity(0.7),
-                  ],
-                ),
-              ),
-              child: Image.network(product?.thumbnail ?? "", fit: BoxFit.cover),
-            ),
-            Positioned(
-              top: 66,
-              child: Text(
-                "Request Details",
-                style: AppTextStyle.h2_semibold_22(color: Colors.white),
-              ),
-            ),
-            Positioned(
-              top: 66,
-              left: 16,
-              child: GestureDetector(
-                onTap: () => Get.back(),
-                child: Container(
-                  height: 42,
-                  width: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+    return SafeArea(
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: height * 0.5,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF1a1a2e).withOpacity(0.7),
+                      const Color(0xFF16213e).withOpacity(0.7),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new,
-                    color: Colors.white,
-                    size: 18,
+                ),
+                child: Image.network(product?.thumbnail ?? "", fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 66,
+                child: Text(
+                  "Request Details",
+                  style: AppTextStyle.h2_semibold_22(color: Colors.white),
+                ),
+              ),
+              Positioned(
+                top: 66,
+                left: 16,
+                child: GestureDetector(
+                  onTap: () => Get.back(),
+                  child: Container(
+                    height: 42,
+                    width: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 

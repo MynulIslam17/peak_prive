@@ -103,16 +103,6 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                               ),
                               const SizedBox(height: 20),
 
-                              // User Info Section
-                              Text(
-                                "User Info",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF2C3E50),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
                               if (user != null)
                                 ModernUserCard(
                                   fullName: user.fullName,
@@ -125,7 +115,7 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
 
                               // Booking Information Section
                               Text(
-                                "Booking Information",
+                                "Title",
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
@@ -139,12 +129,34 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                                 icon: Icons.title_rounded,
                                 color: Colors.orange,
                               ),
+
+                              const SizedBox(height: 12),
+
+                              Text(
+                                "Price",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2C3E50),
+                                ),
+                              ),
                               const SizedBox(height: 12),
                               DurationAndPriceSection(
                                 duration: data.duration ?? "N/A",
                                 price: data.totalPrice ?? 0,
                               ),
                               const SizedBox(height: 12),
+                              Text(
+                                "Location",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2C3E50),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
                               buildDetailCard(
                                 label: "Location",
                                 value: data.product?.serviceArea ?? "N/A",
