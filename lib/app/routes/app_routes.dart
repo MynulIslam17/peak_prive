@@ -21,6 +21,7 @@ abstract class Routes {
 
   /// Transport
   static const transportDetails = "/transportDetails";
+  static const userTransportBookingDetails = "/userTransportBookingDetails";
 
   /// Message
   static const massageDetails = "/massageDetails";
@@ -28,6 +29,9 @@ abstract class Routes {
 
   /// Hire
   static const hireDetails = "/hireDetails";
+  static const userHireBookingDetails = "/userHireBookingDetails";
+
+
 
   /// Profile
   static const profile = "profile";
@@ -36,6 +40,7 @@ abstract class Routes {
   static const restaurantDetails = "/restaurantDetails";
   static const restaurantInfo = "/restaurantInfo";
   static const restaurantBookingInfo = "/restaurantBookingInfo";
+  static const  userRestaurantBookingDetails = "/userRestaurantBookingDetails";
 
 
 

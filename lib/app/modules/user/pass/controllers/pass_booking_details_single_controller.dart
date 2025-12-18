@@ -3,13 +3,14 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
-import 'package:harry_service_app/app/modules/provider/pass/models/pass_item_model.dart';
+
+import 'package:harry_service_app/app/modules/user/pass/models/get_single_pass.dart';
 
 class SinglePassBookingItem extends GetxController {
   final AuthController authController = Get.find<AuthController>();
   final NetworkCaller networkCaller = Get.find<NetworkCaller>();
 
-  SkiPassItemModel? booking;
+ GetSinglePass ?  getSinglePass;
   bool isLoading = false;
   String? errorMessage;
 
@@ -25,8 +26,7 @@ class SinglePassBookingItem extends GetxController {
       );
 
       if (response.statusCode == 200 && response.body != null) {
-        final data = response.body!['data'];
-        booking = SkiPassItemModel.fromJson(data); // Correct model parsing
+        getSinglePass = GetSinglePass.fromJson(response.body);
       } else {
         errorMessage = "Booking not found";
       }
@@ -39,9 +39,10 @@ class SinglePassBookingItem extends GetxController {
     }
   }
 
+
   /// Clear controller state
   void clear() {
-    booking = null;
+    getSinglePass = null;
     errorMessage = null;
     isLoading = false;
     update();

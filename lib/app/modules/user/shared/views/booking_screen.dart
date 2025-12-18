@@ -92,7 +92,7 @@ class _BookingScreenState extends State<BookingScreen>
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -140,7 +140,9 @@ class _BookingScreenState extends State<BookingScreen>
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: 18, horizontal: 20),
+                      vertical: 18,
+                      horizontal: 20,
+                    ),
                     child: StatefulBuilder(
                       builder: (context, setState) {
                         return Column(
@@ -170,11 +172,12 @@ class _BookingScreenState extends State<BookingScreen>
                                 color: Colors.deepPurple,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.deepPurpleAccent
-                                        .withOpacity(0.2),
+                                    color: Colors.deepPurpleAccent.withOpacity(
+                                      0.2,
+                                    ),
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
-                                  )
+                                  ),
                                 ],
                               ),
                               textAlign: TextAlign.center,
@@ -188,8 +191,9 @@ class _BookingScreenState extends State<BookingScreen>
                               direction: Axis.horizontal,
                               allowHalfRating: true,
                               itemCount: 5,
-                              itemPadding:
-                              EdgeInsets.symmetric(horizontal: 4.0),
+                              itemPadding: EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                              ),
                               itemBuilder: (context, _) => Icon(
                                 Icons.star,
                                 color: Colors.amber,
@@ -213,8 +217,9 @@ class _BookingScreenState extends State<BookingScreen>
                                 filled: true,
                                 fillColor: Colors.deepPurple.withOpacity(0.05),
                                 hintText: "Write your feedback...",
-                                hintStyle:
-                                TextStyle(color: Colors.deepPurpleAccent),
+                                hintStyle: TextStyle(
+                                  color: Colors.deepPurpleAccent,
+                                ),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -242,17 +247,21 @@ class _BookingScreenState extends State<BookingScreen>
                                       foregroundColor: AppColors.primary_1,
                                       backgroundColor: Colors.white,
                                       side: BorderSide(
-                                          color: AppColors.primary_1, width: 1.5),
+                                        color: AppColors.primary_1,
+                                        width: 1.5,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding:
-                                      EdgeInsets.symmetric(vertical: 14),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
                                     ),
                                     child: Text(
                                       "Cancel",
-                                      style:
-                                      TextStyle(fontWeight: FontWeight.bold),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -260,60 +269,67 @@ class _BookingScreenState extends State<BookingScreen>
 
                                 /// Submit
                                 GetBuilder<HireRatingController>(
-                                    builder: (controller) {
-                                      return controller.isLoading
-                                          ? Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.primary_1,
-                                        ),
-                                      )
-                                          : SizedBox(
-                                        width: 110,
-                                        child: ElevatedButton(
-                                          onPressed: () async {
-                                            double rating = _rating;
-                                            String feedback =
-                                                feedbackTEController.text;
-
-                                            Map<String, dynamic> body = {
-                                              "rating": rating,
-                                              "comment": feedback
-                                            };
-
-                                            bool success =
-                                            await ratingController
-                                                .sendRating(
-                                                productId, body);
-
-                                            if (success) {
-                                              print(
-                                                  "=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success");
-                                            }
-
-                                            Navigator.of(context).pop();
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.deepPurple,
-                                            foregroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                              BorderRadius.circular(12),
+                                  builder: (controller) {
+                                    return controller.isLoading
+                                        ? Center(
+                                            child: CircularProgressIndicator(
+                                              color: AppColors.primary_1,
                                             ),
-                                            padding: EdgeInsets.symmetric(
-                                                vertical: 14),
-                                            elevation: 3,
-                                            shadowColor: Colors
-                                                .deepPurpleAccent
-                                                .withOpacity(0.3),
-                                          ),
-                                          child: Text(
-                                            "Submit",
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      );
-                                    })
+                                          )
+                                        : SizedBox(
+                                            width: 110,
+                                            child: ElevatedButton(
+                                              onPressed: () async {
+                                                double rating = _rating;
+                                                String feedback =
+                                                    feedbackTEController.text;
+
+                                                Map<String, dynamic> body = {
+                                                  "rating": rating,
+                                                  "comment": feedback,
+                                                };
+
+                                                bool success =
+                                                    await ratingController
+                                                        .sendRating(
+                                                          productId,
+                                                          body,
+                                                        );
+
+                                                if (success) {
+                                                  print(
+                                                    "=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success",
+                                                  );
+                                                }
+
+                                                Navigator.of(context).pop();
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    Colors.deepPurple,
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                  vertical: 14,
+                                                ),
+                                                elevation: 3,
+                                                shadowColor: Colors
+                                                    .deepPurpleAccent
+                                                    .withOpacity(0.3),
+                                              ),
+                                              child: Text(
+                                                "Submit",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                  },
+                                ),
                               ],
                             ),
                           ],
@@ -366,70 +382,96 @@ class _BookingScreenState extends State<BookingScreen>
 
         // Clamp totalPrice to prevent negative
         double safePrice =
-        (booking.totalPrice != null && booking.totalPrice >= 0)
+            (booking.totalPrice != null && booking.totalPrice >= 0)
             ? booking.totalPrice
             : 0;
 
         String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
 
         return _navController.getServiceType == "ski_pass"
-            ? BookingCard(  /// working only for pass
-
-
-          image: product.thumbnail,
-          personCount: booking.bookingItems.isNotEmpty
-              ? booking.bookingItems.fold<int>(
-              0, (sum, item) => sum + (item.quantity ?? 0))
-              : 1,
-          passType: product?.title ?? "Default",
-          location: product?.serviceArea ?? "-",
-          date: booking.startDateAndTime != null
-              ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
-              : "",
-          time: booking.startDateAndTime != null
-              ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
-              : "",
-          buttonIcon: status =="Active" ?Icons.info_outline: Icons.rate_review,
-          onTap: () {
-
-            if(status=="Active"){
-
-              Get.toNamed(Routes.userPassBookingDetails,arguments: {
-
-                "bookingId":booking.id
-              });
-
-
-            }else{
-              _showDialog(product.id);
-            }
-
-
-          },
-        )
+            ? BookingCard(
+                /// working only for pass
+                image: product.thumbnail,
+                personCount: booking.bookingItems.isNotEmpty
+                    ? booking.bookingItems.fold<int>(
+                        0,
+                        (sum, item) => sum + (item.quantity ?? 0),
+                      )
+                    : 1,
+                passType: product?.title ?? "Default",
+                location: product?.serviceArea ?? "-",
+                date: booking.startDateAndTime != null
+                    ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
+                    : "",
+                time: booking.startDateAndTime != null
+                    ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
+                    : "",
+                buttonIcon: status == "Active"
+                    ? Icons.info_outline
+                    : Icons.rate_review,
+                onTap: () {
+                  if (status == "Active") {
+                    Get.toNamed(
+                      Routes.userPassBookingDetails,
+                      arguments: {"bookingId": booking.id},
+                    );
+                  } else {
+                    _showDialog(product.id);
+                  }
+                },
+              )
             : BookingCardItem(
-          image: product.thumbnail,
-          borderColor: status == "Active"
-              ? Colors.yellow
-              : status == "Completed"
-              ? Colors.green
-              : Colors.red,
-          title: product.title,
-          timeLabel: _formatBookingTime(booking),
-          price: displayPrice,
-          buttonText: status == "Active"
-              ? "Details"
-              : status == "Completed"
-              ? "Give Review"
-              : "Book Again",
-          onButtonTap: () {
-            if (status == "Completed") {
-              _showDialog(product.id);
-            }if(status=="Active"){
-              Get.toNamed(Routes.bookingExtraPayment);
-            }
-          },
-        );
+                image: product.thumbnail,
+                buttonIcon: status == "Active"
+                    ? Icons.info_outline
+                    : Icons.rate_review,
+                borderColor: status == "Active"
+                    ? Colors.yellow
+                    : status == "Completed"
+                    ? Colors.green
+                    : Colors.red,
+                title: product.title,
+                timeLabel: _formatBookingTime(booking),
+                price: displayPrice,
+                buttonText: status == "Active"
+                    ? "Details"
+                    : status == "Completed"
+                    ? "Give Review"
+                    : null,
+                onButtonTap: () {
+                  if (status == "Completed") {
+                    _showDialog(product.id);
+                  }
+                  if (status == "Active") {
+                    String type = _navController.getServiceType;
+
+                    if (type == "ski_hire") {
+                      Get.toNamed(
+                        Routes.userHireBookingDetails,
+                        arguments: {"bookingId": booking.id},
+                      );
+                    }else if(type=="transport"){
+
+                      Get.toNamed(
+                        Routes.userTransportBookingDetails,
+                        arguments: {"bookingId": booking.id},
+                      );
+                    }else if(type=="restaurant"){
+
+                      Get.toNamed(
+                        Routes.userRestaurantBookingDetails,
+                        arguments: {"bookingId": booking.id},
+                      );
+
+                    }
+
+
+
+
+
+                  }
+                },
+              );
       },
     );
   }

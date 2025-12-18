@@ -8,10 +8,11 @@ class BookingCardItem extends StatelessWidget {
   final String image;
   final String title;              // Product name
   final String price;              // Price
-  final String buttonText;         // Button label
+  final  buttonText;         // Button label
   final VoidCallback onButtonTap;  // Button action
   final Color borderColor;         // Card border color
   final String? timeLabel;         // Optional time label
+  final IconData buttonIcon;
 
   const BookingCardItem({
     super.key,
@@ -22,6 +23,7 @@ class BookingCardItem extends StatelessWidget {
     required this.onButtonTap,
     this.borderColor = Colors.white,
     this.timeLabel,
+    required this.buttonIcon,
   });
 
   @override
@@ -96,13 +98,53 @@ class BookingCardItem extends StatelessWidget {
 
 
                         Spacer(),
-                        // Button
-                        CustomButton(
-                          text: buttonText,
-                          width: 110,
-                          height: 30,
-                          textSize: 11,
-                          onTap: onButtonTap,
+                        /// Button
+                        if(buttonText!=null)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: GestureDetector(
+                            onTap: onButtonTap,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8.r),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xffD4AF38),
+                                    const Color(0xffF4D03F),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    buttonIcon,
+                                    color: Colors.white,
+                                    size: 14.sp,
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  Text(
+                                    buttonText,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
