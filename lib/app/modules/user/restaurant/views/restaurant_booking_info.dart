@@ -25,12 +25,11 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
   late StripePaymentHelper _paymentHelper;
   bool _isProcessingPayment = false;
 
-
   late final Map<String, dynamic> productInfo;
 
   ///finds controller
   final createBookingController = Get.find<CreateBookingController>();
-  final  authController = Get.find<AuthController>();
+  final authController = Get.find<AuthController>();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _bookingSeatController = TextEditingController();
 
@@ -57,15 +56,11 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   @override
   void initState() {
-
     super.initState();
     productInfo = Get.arguments;
     slotsList = List<Slot>.from(Get.arguments["availableSlots"]);
     _initializeStripeHelper();
   }
-
-
-
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
@@ -84,9 +79,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
   }
 
   void _handlePaymentSuccess(PaymentResult result) {
-    ///  Don't show snackbar immediately - wait for sheet to close
     setState(() {
-
       _isProcessingPayment = false;
     });
   }
@@ -95,8 +88,8 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
     setState(() {
       _isProcessingPayment = false;
     });
+    _showError("Payment Failed");
   }
-
 
   /// --- Convert selected date & time to ISO 8601 ---
   DateTime? _getIsoDateTime() {
@@ -219,8 +212,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
         if (mounted) {
           Navigator.of(context).pop(); // Close dialog
           Get.offAllNamed(Routes.bottomNav);
-
-          /// Back to previous screen
         }
       }
     }
@@ -673,7 +664,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
             ),
           ),
 
-
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -690,8 +680,10 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               width: double.infinity,
               height: 56,
               child: GetBuilder<CreateBookingController>(builder: (controller) {
+                bool isLoading = controller.bookingProgress || _isProcessingPayment;
+
                 return ElevatedButton(
-                  onPressed: controller.bookingProgress
+                  onPressed: isLoading
                       ? null
                       : () async {
                     // --- VALIDATIONS ---
@@ -735,24 +727,23 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                       return;
                     }
 
-
-
+                    setState(() {
+                      _isProcessingPayment = true;
+                    });
 
                     // Process Stripe payment
-                    final PaymentResult = await _paymentHelper.processPayment(
+                    final paymentResult = await _paymentHelper.processPayment(
                       context: context,
-                      amount: 100.0, // Payment amount in dollars
+                      amount: 100.0,
                       currency: 'USD',
-                      description: 'Pass Booking Payment',
+                      description: 'Restaurant Booking Payment',
                       metadata: {
-
                         "userId": authController.userModel?.id ?? "",
                         "productId": productInfo["productId"],
-
                       },
                     );
 
-                    if(PaymentResult.isSuccess){
+                    if (paymentResult.isSuccess) {
                       /// --- BOOKING REQUEST BODY ---
                       Map<String, dynamic> reqBody = {
                         "userId": productInfo["userId"],
@@ -762,23 +753,16 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                         ],
                         "slots": [_selectedSlot],
                         "date": isoDateTime.toIso8601String(),
-                        "transactionId": PaymentResult.paymentData?['transactionId'],
+                        "transactionId": paymentResult.paymentData?['transactionId'] ?? '',
                       };
 
-
-
-
-                      ///--- CALL API ---
+                      /// --- CALL API ---
                       await _createBooking(reqBody);
-
-
-
+                    } else {
+                      setState(() {
+                        _isProcessingPayment = false;
+                      });
                     }
-
-
-
-
-
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: goldColor,
@@ -787,7 +771,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: controller.bookingProgress
+                  child: isLoading
                       ? SizedBox(
                     width: 24,
                     height: 24,

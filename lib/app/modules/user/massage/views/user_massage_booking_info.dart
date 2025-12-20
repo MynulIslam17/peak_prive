@@ -6,6 +6,9 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../data/services/stripe/payment_result.dart';
+import '../../../../data/services/stripe/stripe_config.dart';
+import '../../../../data/services/stripe/stripe_helper.dart';
 import '../controllers/massage_booking_single_controller.dart';
 
 class UserMassageBookingInfo extends StatefulWidget {
@@ -17,6 +20,10 @@ class UserMassageBookingInfo extends StatefulWidget {
 }
 
 class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
+
+  // Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
 
   /// ---------------- DATE FORMAT ----------------
   String _formatDate(DateTime? date) {
@@ -84,6 +91,10 @@ class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
 
 
   }
+
+
+
+
 
 
   @override
