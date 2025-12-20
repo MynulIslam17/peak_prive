@@ -15,29 +15,6 @@ class UsePassBookingInfo extends StatefulWidget {
 
   const UsePassBookingInfo({super.key});
 
-  /// ---------------- DUMMY DATA ----------------
-  static final Map<String, dynamic> dummyBooking = {
-    "_id": "BK-123456",
-    "bookingStatus": "Completed",
-    "personCount": 5,
-    "date": "2025-11-12T00:00:00.000Z",
-    "time": "12:30 PM",
-    "totalPrice": 260,
-    "createdAt": "2025-11-13T03:30:17.814Z",
-    "product": {
-      "title": "Mountain Adventure Ski Pass",
-      "thumbnail":
-      "https://images.unsplash.com/photo-1517821365201-1fa81d8edb8f",
-      "skiPassType": "Premium",
-      "serviceArea": "Aspen Mountain Resort",
-      "services": [
-        {"title": "Free Parking"},
-        {"title": "Free Events"},
-        {"title": "Free Ski Lessons"},
-      ],
-    }
-  };
-
 
 
 
@@ -74,8 +51,6 @@ class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
 
 
 
-    final booking = UsePassBookingInfo.dummyBooking;
-    final product = booking['product'];
 
 
     return Scaffold(
@@ -113,8 +88,8 @@ class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
 
         return  Stack(
           children: [
-            _buildMainContent(product, booking),
-            _buildSlidingPanel(booking),
+            _buildMainContent(),
+            _buildSlidingPanel(),
           ],
         );
       })
@@ -122,8 +97,7 @@ class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
   }
 
   /// ---------------- MAIN CONTENT ----------------
-  Widget _buildMainContent(
-      Map<String, dynamic> product, Map<String, dynamic> booking) {
+  Widget _buildMainContent() {
     return GetBuilder<SinglePassBookingItem>(builder: (controller){
 
       final data=controller.getSinglePass!.data;
@@ -204,7 +178,7 @@ class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
   }
 
   /// ---------------- SLIDING PANEL ----------------
-  Widget _buildSlidingPanel(Map<String, dynamic> booking) {
+  Widget _buildSlidingPanel() {
     return GetBuilder<SinglePassBookingItem>(builder: (controller){
 
       final data=controller.getSinglePass!.data;

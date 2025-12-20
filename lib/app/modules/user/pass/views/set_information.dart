@@ -252,7 +252,7 @@ class _SetInformationState extends State<SetInformation> {
   }
 
   void _handlePaymentSuccess(PaymentResult result) {
-    // Don't show snackbar immediately - wait for sheet to close
+    ///  Don't show snackbar immediately - wait for sheet to close
     setState(() {
 
       _isProcessingPayment = false;

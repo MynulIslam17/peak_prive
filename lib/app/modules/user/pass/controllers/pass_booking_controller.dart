@@ -21,16 +21,13 @@ class CreateBookingController extends GetxController {
     try {
       /// Send the booking request data as a POST request
       final response = await Get.find<NetworkCaller>().postRequest(
-        url: AppUrls.passBookingUrl,
+        url: AppUrls.userBookingUrl,
         body: body,
       );
 
       if (response.isSuccess && response.body != null) {
         final data = response.body!['data'];
 
-        /// Extract sessionId and sessionUrl from the response
-        _sessionId = data['sessionId'];
-        _sessionUrl = data['sessionUrl'];
 
         _errorMessage = null;
         update();

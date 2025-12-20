@@ -31,7 +31,7 @@ static const passAllServiceUrl="$baseUrl/ski-pass/all";
 static String singlePassDetails(String id)=>"$baseUrl/ski-pass/$id";
 
 ///  create booking booking
-static String passBookingUrl="${baseUrl}/booking/create";
+static String userBookingUrl="${baseUrl}/booking/create";
 
 
 ///get my booking

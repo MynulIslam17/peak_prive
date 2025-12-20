@@ -39,7 +39,7 @@ void main() async {
           return GetMaterialApp(
            initialBinding: AppBindings(),
             debugShowCheckedModeBanner: false,
-            title: 'First Method',
+            title: 'Service App',
             initialRoute: AppPages.initialRoutes,
             getPages: AppPages.routes,
           );

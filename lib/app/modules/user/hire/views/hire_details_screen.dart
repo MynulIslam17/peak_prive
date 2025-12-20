@@ -18,9 +18,13 @@ import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/hire_card_item.dart';
 import '../../../../core/widgets/shimmer/hire_shimmer.dart';
-import '../../../../core/widgets/shimmer/pass_details_skeleton.dart';
+
 import '../../../../core/widgets/provider_info.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+
+import '../../../../data/services/stripe/payment_result.dart';
+import '../../../../data/services/stripe/stripe_config.dart';
+import '../../../../data/services/stripe/stripe_helper.dart';
 
 class HireDetailsScreen extends StatefulWidget {
   const HireDetailsScreen({super.key});
@@ -33,15 +37,10 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
 
-  /// Selected address & location
-  String? _selectedAddress;
-  double? _selectedLat;
-  double? _selectedLng;
 
-  /// Map toggle and markers
-  bool showMap = false;
-  Set<Marker> _markers = {};
-  GoogleMapController? _mapController;
+  ///  Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
 
   /// textEditing Controlller
   final addressTEController = TextEditingController();
@@ -61,8 +60,33 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   bool _isClickedBookButton = false;
   DateTime? startDate;
   DateTime? endDate;
+  String? _phoneCountryCode = 'BD'; // Store country code
+
+  /// Show error message
+  void _showError(String title, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// Validate phone number format
+  bool _isValidPhoneNumber(String phoneNumber) {
+    if (phoneNumber.isEmpty) return false;
 
 
+    String digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
+
+    // Check if it has at least 7 digits and max 15 digits (international standard)
+    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+      return false;
+    }
+
+    return true;
+  }
 
   /// Pick date and time
   Future<void> _datePicker({required bool isStart}) async {
@@ -88,61 +112,35 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       pickedTime.minute,
     );
 
-    // ====== VALIDATION ======
     if (!isStart && startDate != null) {
       if (combined.isBefore(startDate!)) {
-        Get.snackbar(
+        _showError(
           "Invalid End Time",
           "End time cannot be earlier than start time.",
-          snackPosition: SnackPosition.BOTTOM,
         );
         return;
       }
     }
-    // ========================
 
     setState(() {
       if (isStart) {
         startDate = combined;
-
-        // Optional: If startDate > endDate, reset endDate
         if (endDate != null && endDate!.isBefore(startDate!)) {
           endDate = null;
         }
-
       } else {
         endDate = combined;
       }
     });
   }
 
-  /// Check location permission
-  Future<bool> _checkLocationPermission() async {
-    LocationPermission permission = await Geolocator.checkPermission();
 
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      Get.snackbar(
-        "Permission Required",
-        "Please enable location permission from settings",
-      );
-      return false;
-    }
-
-    return true;
-  }
 
   /// create new booking
-
   Future<void> _createBooking(Map<String, dynamic> reqBody) async {
     bool success = await bookingController.proceedBooking(reqBody);
 
     if (success) {
-
-      /// showing dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -173,22 +171,12 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         },
       );
 
+      await Future.delayed(Duration(seconds: 2));
 
-
-
-     await Future.delayed(Duration(seconds: 1));
-
-      if(mounted){
-        Navigator.of(context).pop();/// close the dilaog
-        Get.back(); /// back to previous screen
+      if (mounted) {
+        Navigator.of(context).pop();
+        Get.back();
       }
-
-
-
-
-
-
-
     }
   }
 
@@ -200,14 +188,54 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     var argument = Get.arguments;
     id = argument["id"];
 
-    /// Call API
     _fetchDetails();
+    _initializeStripeHelper();
   }
+
+
+
+
+  void _initializeStripeHelper() {
+    final config = StripeConfig(
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _paymentHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: _handlePaymentSuccess,
+      onPaymentFailure: _handlePaymentFailure,
+      onLog: (message) => debugPrint('StripeLog: $message'),
+    );
+  }
+
+
+
+
+  void _handlePaymentSuccess(PaymentResult result) {
+    ///  Don't show snackbar immediately - wait for sheet to close
+    setState(() {
+
+      _isProcessingPayment = false;
+    });
+  }
+
+  void _handlePaymentFailure(PaymentResult result) {
+    setState(() {
+      _isProcessingPayment = false;
+    });
+  }
+
+
+
 
   @override
   void dispose() {
-    _mapController?.dispose();
     tabController.dispose();
+    addressTEController.dispose();
+    numberController.dispose();
     super.dispose();
   }
 
@@ -223,12 +251,10 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       backgroundColor: Colors.white,
       body: GetBuilder<HireDetailsController>(
         builder: (controller) {
-          // Loading state shimmer effect
           if (controller.isLoading) {
             return const HireDetailsSkeleton();
           }
 
-          // Null check for hireDetails
           if (controller.hireDetails == null) {
             return Center(
               child: Text(
@@ -276,17 +302,24 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          // Line image
+                          /// Handle indicator
                           Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Center(
-                              child: image.line.image(width: 87.w, height: 9.h),
+                              child: Container(
+                                width: 50.w,
+                                height: 5.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             ),
                           ),
                           SizedBox(height: 20.h),
 
                           if (!_isClickedBookButton) ...[
-                            // Provider Info
+                            /// Provider Info
                             ProviderInfo(
                               image: hireDetails.owner.profileUrl,
                               providerName: hireDetails.owner.fullName,
@@ -296,7 +329,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                             ),
                             SizedBox(height: 10.h),
 
-                            // Tabs
+                            /// Tabs
                             TabBar(
                               controller: tabController,
                               indicatorSize: TabBarIndicatorSize.tab,
@@ -342,47 +375,42 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       height: 60,
                                       child: ElevatedButton(
                                         onPressed:
-                                            controller.totalSelectedPrice > 0
+                                        controller.totalSelectedPrice > 0
                                             ? () {
-                                                setState(() {
-                                                  _isClickedBookButton = true;
-                                                  Map<String, int>
-                                                  selectedItems =
-                                                      controller.selectedItems;
-                                                  print(selectedItems);
-                                                });
-                                              }
+                                          setState(() {
+                                            _isClickedBookButton =
+                                            true;
+                                          });
+                                        }
                                             : null,
                                         style: ButtonStyle(
                                           backgroundColor:
-                                              MaterialStateProperty.resolveWith<
-                                                Color
-                                              >((states) {
-                                                if (states.contains(
-                                                  MaterialState.disabled,
-                                                )) {
-                                                  return Colors.grey.shade300;
-                                                }
-                                                return AppColors.primary_1;
-                                              }),
+                                          MaterialStateProperty.resolveWith<
+                                              Color>((states) {
+                                            if (states.contains(
+                                              MaterialState.disabled,
+                                            )) {
+                                              return Colors.grey.shade300;
+                                            }
+                                            return AppColors.primary_1;
+                                          }),
                                           foregroundColor:
-                                              MaterialStateProperty.resolveWith<
-                                                Color
-                                              >((states) {
-                                                if (states.contains(
-                                                  MaterialState.disabled,
-                                                )) {
-                                                  return Colors.grey.shade600;
-                                                }
-                                                return Colors.white;
-                                              }),
+                                          MaterialStateProperty.resolveWith<
+                                              Color>((states) {
+                                            if (states.contains(
+                                              MaterialState.disabled,
+                                            )) {
+                                              return Colors.grey.shade600;
+                                            }
+                                            return Colors.white;
+                                          }),
                                           textStyle: MaterialStateProperty.all(
                                             const TextStyle(fontSize: 16),
                                           ),
                                           shape: MaterialStateProperty.all(
                                             RoundedRectangleBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(10),
+                                              BorderRadius.circular(10),
                                             ),
                                           ),
                                           elevation: MaterialStateProperty.all(
@@ -414,43 +442,43 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                     /// Selected products
                                     GridView.builder(
                                       shrinkWrap: true,
-                                      physics: NeverScrollableScrollPhysics(),
+                                      physics:
+                                      NeverScrollableScrollPhysics(),
                                       itemCount: controller.hireDetails!.items
                                           .where(
                                             (item) =>
-                                                controller.getQuantity(
-                                                  item.id,
-                                                ) >
-                                                0,
-                                          )
+                                        controller.getQuantity(
+                                          item.id,
+                                        ) >
+                                            0,
+                                      )
                                           .length,
                                       gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount: 2,
-                                            mainAxisSpacing: 10,
-                                            crossAxisSpacing: 10,
-                                            childAspectRatio: 1.6,
-                                          ),
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        mainAxisSpacing: 10,
+                                        crossAxisSpacing: 10,
+                                        childAspectRatio: 1.6,
+                                      ),
                                       itemBuilder: (context, index) {
                                         final filteredItems = controller
                                             .hireDetails!
                                             .items
                                             .where(
                                               (item) =>
-                                                  controller.getQuantity(
-                                                    item.id,
-                                                  ) >
-                                                  0,
-                                            )
+                                          controller.getQuantity(
+                                            item.id,
+                                          ) >
+                                              0,
+                                        )
                                             .toList();
                                         final item = filteredItems[index];
 
                                         return SelectedItem(
                                           productName: item.productName,
                                           productImg: item.productPhoto,
-                                          quantity: controller.getQuantity(
-                                            item.id,
-                                          ),
+                                          quantity:
+                                          controller.getQuantity(item.id),
                                           price: item.price,
                                         );
                                       },
@@ -463,15 +491,17 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(8),
                                         border: Border.all(
-                                          color: Colors.grey.withOpacity(0.4),
+                                          color:
+                                          Colors.grey.withOpacity(0.4),
                                         ),
                                       ),
                                       child: SingleChildScrollView(
                                         child: Column(
                                           children: [
-                                            // Header Row
+                                            /// Header Row
                                             Padding(
-                                              padding: const EdgeInsets.only(
+                                              padding:
+                                              const EdgeInsets.only(
                                                 left: 20,
                                                 right: 20,
                                                 top: 15,
@@ -479,95 +509,96 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                               ),
                                               child: Row(
                                                 mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
+                                                MainAxisAlignment
+                                                    .spaceBetween,
                                                 children: [
                                                   Text(
                                                     "Product Name",
-                                                    style:
-                                                        AppTextStyle.sub_h3_medium_14(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14(),
                                                   ),
                                                   Text(
                                                     "Unit",
-                                                    style:
-                                                        AppTextStyle.sub_h3_medium_14(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14(),
                                                   ),
                                                   Text(
                                                     "Price",
-                                                    style:
-                                                        AppTextStyle.sub_h3_medium_14(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14(),
                                                   ),
                                                 ],
                                               ),
                                             ),
 
-                                            // Selected items
+                                            /// Selected items
                                             ...controller.hireDetails!.items
                                                 .where(
                                                   (item) =>
-                                                      controller.getQuantity(
-                                                        item.id,
-                                                      ) >
-                                                      0,
-                                                )
+                                              controller.getQuantity(
+                                                item.id,
+                                              ) >
+                                                  0,
+                                            )
                                                 .map((item) {
-                                                  final qty = controller
-                                                      .getQuantity(item.id);
-                                                  final price =
-                                                      item.price * qty;
-                                                  return Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 20,
-                                                          vertical: 4,
-                                                        ),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Text(
-                                                          item.productName,
-                                                          style:
-                                                              AppTextStyle.sub_h3_regular_14(),
-                                                        ),
-                                                        Text(
-                                                          qty.toString(),
-                                                          style:
-                                                              AppTextStyle.sub_h3_regular_14(),
-                                                        ),
-                                                        Text(
-                                                          "\$$price",
-                                                          style:
-                                                              AppTextStyle.sub_h3_regular_14(),
-                                                        ),
-                                                      ],
+                                              final qty = controller
+                                                  .getQuantity(item.id);
+                                              final price =
+                                                  item.price * qty;
+                                              return Padding(
+                                                padding:
+                                                const EdgeInsets
+                                                    .symmetric(
+                                                  horizontal: 20,
+                                                  vertical: 4,
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      item.productName,
+                                                      style: AppTextStyle
+                                                          .sub_h3_regular_14(),
                                                     ),
-                                                  );
-                                                })
+                                                    Text(
+                                                      qty.toString(),
+                                                      style: AppTextStyle
+                                                          .sub_h3_regular_14(),
+                                                    ),
+                                                    Text(
+                                                      "\$$price",
+                                                      style: AppTextStyle
+                                                          .sub_h3_regular_14(),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            })
                                                 .toList(),
 
-                                            // Total Row
+                                            /// Total Row
                                             Padding(
                                               padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 20,
-                                                    vertical: 10,
-                                                  ),
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 20,
+                                                vertical: 10,
+                                              ),
                                               child: Row(
                                                 mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
+                                                MainAxisAlignment
+                                                    .spaceBetween,
                                                 children: [
                                                   Text(
                                                     "Total",
-                                                    style:
-                                                        AppTextStyle.sub_h3_medium_14(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_medium_14(),
                                                   ),
                                                   Text(
                                                     "\$${controller.totalSelectedPrice}",
-                                                    style:
-                                                        AppTextStyle.sub_h3_regular_14(),
+                                                    style: AppTextStyle
+                                                        .sub_h3_regular_14(),
                                                   ),
                                                 ],
                                               ),
@@ -583,7 +614,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                     Card(
                                       color: Colors.white,
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(
+                                        padding:
+                                        const EdgeInsets.symmetric(
                                           vertical: 20,
                                           horizontal: 10,
                                         ),
@@ -595,17 +627,16 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
+                                                    CrossAxisAlignment
+                                                        .start,
                                                     children: [
                                                       Text(
                                                         "Start Date & Time",
-                                                        style:
-                                                            AppTextStyle.sub_h3_medium_14()
-                                                                .copyWith(
-                                                                  fontSize:
-                                                                      11.sp,
-                                                                ),
+                                                        style: AppTextStyle
+                                                            .sub_h3_medium_14()
+                                                            .copyWith(
+                                                          fontSize: 11.sp,
+                                                        ),
                                                       ),
                                                       SizedBox(height: 6.h),
                                                       InkWell(
@@ -616,37 +647,41 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                         child: Container(
                                                           width: 155.w,
                                                           height: 38,
-                                                          decoration: BoxDecoration(
-                                                            border: Border.all(
+                                                          decoration:
+                                                          BoxDecoration(
+                                                            border:
+                                                            Border.all(
                                                               color:
-                                                                  Colors.grey,
+                                                              Colors.grey,
                                                             ),
                                                             borderRadius:
-                                                                BorderRadius.circular(
-                                                                  8,
-                                                                ),
+                                                            BorderRadius
+                                                                .circular(
+                                                              8,
+                                                            ),
                                                           ),
                                                           padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 8,
-                                                              ),
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8,
+                                                          ),
                                                           child: Row(
                                                             children: [
                                                               icon.calendarDots
                                                                   .svg(
-                                                                    width: 20,
-                                                                    height: 20,
-                                                                  ),
+                                                                width: 20,
+                                                                height: 20,
+                                                              ),
                                                               SizedBox(
                                                                 width: 5.w,
                                                               ),
                                                               Text(
                                                                 startDate ==
-                                                                        null
+                                                                    null
                                                                     ? "Date & Time"
                                                                     : "${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year} ${startDate!.hour.toString().padLeft(2, '0')}:${startDate!.minute.toString().padLeft(2, '0')}",
-                                                                style:
-                                                                    AppTextStyle.c_regular_10(),
+                                                                style: AppTextStyle
+                                                                    .c_regular_10(),
                                                               ),
                                                             ],
                                                           ),
@@ -659,17 +694,16 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                 Expanded(
                                                   child: Column(
                                                     crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
+                                                    CrossAxisAlignment
+                                                        .start,
                                                     children: [
                                                       Text(
                                                         "End Date & Time",
-                                                        style:
-                                                            AppTextStyle.sub_h3_medium_14()
-                                                                .copyWith(
-                                                                  fontSize:
-                                                                      11.sp,
-                                                                ),
+                                                        style: AppTextStyle
+                                                            .sub_h3_medium_14()
+                                                            .copyWith(
+                                                          fontSize: 11.sp,
+                                                        ),
                                                       ),
                                                       SizedBox(height: 6.h),
                                                       InkWell(
@@ -680,27 +714,31 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                         child: Container(
                                                           width: 155.w,
                                                           height: 38,
-                                                          decoration: BoxDecoration(
-                                                            border: Border.all(
+                                                          decoration:
+                                                          BoxDecoration(
+                                                            border:
+                                                            Border.all(
                                                               color:
-                                                                  Colors.grey,
+                                                              Colors.grey,
                                                             ),
                                                             borderRadius:
-                                                                BorderRadius.circular(
-                                                                  8,
-                                                                ),
+                                                            BorderRadius
+                                                                .circular(
+                                                              8,
+                                                            ),
                                                           ),
                                                           padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 8,
-                                                              ),
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                            horizontal: 8,
+                                                          ),
                                                           child: Row(
                                                             children: [
                                                               icon.calendarDots
                                                                   .svg(
-                                                                    width: 20,
-                                                                    height: 20,
-                                                                  ),
+                                                                width: 20,
+                                                                height: 20,
+                                                              ),
                                                               SizedBox(
                                                                 width: 5.w,
                                                               ),
@@ -708,8 +746,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                                                 endDate == null
                                                                     ? "Date & Time"
                                                                     : "${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year} ${endDate!.hour.toString().padLeft(2, '0')}:${endDate!.minute.toString().padLeft(2, '0')}",
-                                                                style:
-                                                                    AppTextStyle.c_regular_10(),
+                                                                style: AppTextStyle
+                                                                    .c_regular_10(),
                                                               ),
                                                             ],
                                                           ),
@@ -723,124 +761,44 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
                                             SizedBox(height: 20),
 
-                                            /// Phone Field
+                                            /// Phone Field with IntlPhoneField
                                             IntlPhoneField(
                                               controller: numberController,
                                               decoration: InputDecoration(
                                                 labelText: 'Phone Number',
                                                 border: OutlineInputBorder(
                                                   borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  BorderRadius.circular(12),
                                                 ),
+                                                hintText: 'Enter phone number',
                                               ),
                                               initialCountryCode: 'BD',
-                                              onChanged: (phone) =>
-                                                  print(phone.completeNumber),
+                                              onChanged: (phone) {
+                                                setState(() {
+                                                  _phoneCountryCode =
+                                                      phone.countryCode;
+                                                });
+                                                print(
+                                                    'Complete: ${phone.completeNumber}');
+                                              },
                                             ),
 
                                             SizedBox(height: 20),
 
-                                            // /// Location Picker
-                                            // Text(
-                                            //   "Pick Your Location",
-                                            //   style: AppTextStyle.sub_h3_medium_14(),
-                                            // ),
-                                            // SizedBox(height: 8),
-                                            // showMap
-                                            //     ? SizedBox(
-                                            //   height: 300,
-                                            //   child: GoogleMap(
-                                            //     initialCameraPosition: const CameraPosition(
-                                            //       target: LatLng(23.779112538236312, 90.4234655498775),
-                                            //       zoom: 15,
-                                            //     ),
-                                            //     markers: _markers,
-                                            //     onMapCreated: (controller) {
-                                            //       _mapController = controller;
-                                            //     },
-                                            //     onTap: (LatLng pos) async {
-                                            //       // Animate camera to tapped position
-                                            //       _mapController?.animateCamera(
-                                            //         CameraUpdate.newLatLngZoom(pos, 15),
-                                            //       );
-                                            //
-                                            //       setState(() {
-                                            //         _selectedLat = pos.latitude;
-                                            //         _selectedLng = pos.longitude;
-                                            //
-                                            //         // Add marker at tapped position
-                                            //         _markers = {
-                                            //           Marker(
-                                            //             markerId: const MarkerId('selected_location'),
-                                            //             position: pos,
-                                            //             infoWindow: InfoWindow(
-                                            //               title: 'Selected Location',
-                                            //               snippet: '${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}',
-                                            //             ),
-                                            //           ),
-                                            //         };
-                                            //       });
-                                            //
-                                            //       try {
-                                            //         List<Placemark> place = await placemarkFromCoordinates(
-                                            //           pos.latitude,
-                                            //           pos.longitude,
-                                            //         );
-                                            //
-                                            //         setState(() {
-                                            //           _selectedAddress =
-                                            //           "${place.first.street}, ${place.first.locality}, ${place.first.country}";
-                                            //         });
-                                            //
-                                            //         Get.snackbar("Location Picked", _selectedAddress ?? "");
-                                            //       } catch (e) {
-                                            //         Get.snackbar("Error", "Failed to get address");
-                                            //       }
-                                            //     },
-                                            //   ),
-                                            // )
-                                            //     : GestureDetector(
-                                            //   onTap: () async {
-                                            //     if (await _checkLocationPermission()) {
-                                            //       setState(() => showMap = true);
-                                            //     }
-                                            //   },
-                                            //   child: Container(
-                                            //     width: double.infinity,
-                                            //     padding: const EdgeInsets.all(12),
-                                            //     decoration: BoxDecoration(
-                                            //       border: Border.all(color: Colors.grey.shade400),
-                                            //       borderRadius: BorderRadius.circular(8),
-                                            //     ),
-                                            //     child: Row(
-                                            //       children: [
-                                            //         const Icon(Icons.map, color: Colors.blue),
-                                            //         SizedBox(width: 8.w),
-                                            //         Expanded(
-                                            //           child: Text(
-                                            //             _selectedAddress ?? "Tap to pick your location on map",
-                                            //             style: AppTextStyle.sub_h3_regular_14(),
-                                            //           ),
-                                            //         ),
-                                            //       ],
-                                            //     ),
-                                            //   ),
-                                            // ),
                                             TextFormField(
-                                              controller: addressTEController,
+                                              controller:
+                                              addressTEController,
                                               decoration: InputDecoration(
                                                 border: OutlineInputBorder(
                                                   borderSide: BorderSide(
                                                     color: Colors.black,
                                                   ),
                                                   borderRadius:
-                                                      BorderRadius.circular(12),
+                                                  BorderRadius.circular(12),
                                                 ),
-                                                hint: Text(
-                                                  "Address",
-                                                  style: TextStyle(
-                                                    color: Colors.grey,
-                                                  ),
+                                                hintText: "Address",
+                                                hintStyle: TextStyle(
+                                                  color: Colors.grey,
                                                 ),
                                               ),
                                             ),
@@ -853,79 +811,62 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                               ),
                             ),
 
-                            /// create booking  button
+                            /// Checkout button
                             Padding(
                               padding: const EdgeInsets.symmetric(
                                 vertical: 20,
                                 horizontal: 10,
                               ),
                               child: GetBuilder<CreateBookingController>(
-                                builder: (controller) {
-                                  return controller.bookingProgress
+                                builder: (bookController) {
+                                  return bookController.bookingProgress
                                       ? const Center(
-                                    child: CircularProgressIndicator(color: AppColors.primary_1),
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primary_1,
+                                    ),
                                   )
                                       : CustomButton(
                                     width: double.infinity,
                                     text: "Checkout",
                                     onTap: () async {
-                                      // Take phone number and address
-                                      String phoneNumber = numberController.text.trim();
-                                      String address = addressTEController.text.trim();
 
-                                      // Validation checks
-                                      if (phoneNumber.isEmpty) {
-                                        Get.snackbar(
-                                          "Validation Error",
-                                          "Phone number cannot be empty",
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.black,
-                                        );
+                                      if (_isProcessingPayment) return;
+
+                                      /// ---------- VALIDATION ----------
+                                      final phoneNumber = numberController.text.trim();
+                                      final address = addressTEController.text.trim();
+
+                                      if (!_isValidPhoneNumber(phoneNumber)) {
+                                        _showError("Invalid Phone", "Enter valid phone number");
                                         return;
                                       }
 
-                                      if (address.isEmpty) {
-                                        Get.snackbar(
-                                          "Validation Error",
-                                          "Address cannot be empty",
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.black,
-                                        );
+                                      if (address.isEmpty || startDate == null || endDate == null) {
+                                        _showError("Validation Error", "Fill all required fields");
                                         return;
                                       }
 
-                                      // Date validation
-                                      if (startDate == null) {
-                                        Get.snackbar(
-                                          "Validation Error",
-                                          "Please select start date & time",
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.black,
-                                        );
-                                        return;
-                                      }
+                                      setState(() => _isProcessingPayment = true);
 
-                                      if (endDate == null) {
-                                        Get.snackbar(
-                                          "Validation Error",
-                                          "Please select end date & time",
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.black,
-                                        );
-                                        return;
-                                      }
+                                      /// ---------- STRIPE PAYMENT ----------
+                                      final PaymentResult paymentResult =
+                                      await _paymentHelper.processPayment(
+                                        context: context,
+                                        amount: hireController.totalSelectedPrice.toDouble(),
+                                        currency: "USD",
+                                        description: "Hire Booking Payment",
+                                        metadata: {
+                                          "userId": authController.userModel?.id ?? "",
+                                          "productId": id,
+                                        },
+                                      );
 
-                                      if (endDate!.isBefore(startDate!)) {
-                                        Get.snackbar(
-                                          "Validation Error",
-                                          "End date & time must be after start date & time",
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.black,
-                                        );
-                                        return;
-                                      }
+                                      setState(() => _isProcessingPayment = false);
 
-                                      // Prepare selected items
+                                      /// Wait a moment for the payment sheet to fully close
+                                      await Future.delayed(const Duration(milliseconds: 500));
+
+                                      /// ---------- CREATE BOOKING ----------
                                       final itemList = hireController.selectedItems.entries
                                           .map((e) => {
                                         "itemId": e.key,
@@ -933,26 +874,39 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                       })
                                           .toList();
 
-                                      // Prepare request body with ISO 8601 dates
-                                      final reqBody = {
-                                        "userId": authController.userModel?.id ?? "",
-                                        "productId": id,
-                                        "bookingItems": itemList,
-                                        "address": address,
-                                        "phoneNumber": phoneNumber,
-                                        "startDateAndTime": startDate!.toUtc().toIso8601String(),
-                                        "endDateAndTime": endDate!.toUtc().toIso8601String(),
-                                      };
 
-                                      // If everything is ok, create booking
-                                      _createBooking(reqBody);
+
+                                      /// if payment succesfull
+
+                                      if(paymentResult.isSuccess){
+
+                                        final reqBody = {
+                                          "userId": authController.userModel?.id ?? "",
+                                          "productId": id,
+                                          "bookingItems": itemList,
+                                          "address": address,
+                                          "phoneNumber": phoneNumber,
+                                          "startDateAndTime": startDate!.toUtc().toIso8601String(),
+                                          "endDateAndTime": endDate!.toUtc().toIso8601String(),
+                                          "transactionId": paymentResult.paymentData?['transactionId'],
+                                        };
+
+
+                                        await _createBooking(reqBody);
+
+
+                                      }
+
+
+
+
+
                                     },
+
                                   );
                                 },
                               ),
                             )
-
-
                           ],
                         ],
                       ),
@@ -961,7 +915,11 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                 ),
 
                 /// Back button
-                CustomBackButton(onTap: () => Get.back()),
+                Positioned(
+                  top: 20.h,
+                  left: 20.w,
+                  child: CustomBackButton(onTap: () => Get.back()),
+                ),
               ],
             ),
           );
