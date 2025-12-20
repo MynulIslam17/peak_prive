@@ -130,7 +130,7 @@ class _UserRestaurantBookingInfoState extends State<UserRestaurantBookingInfo> {
           // Restaurant Name
           Text(
             product?.title ?? "Restaurant Name",
-            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 6.h),
 

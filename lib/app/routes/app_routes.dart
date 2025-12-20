@@ -26,6 +26,7 @@ abstract class Routes {
   /// Message
   static const massageDetails = "/massageDetails";
   static const bookingRequest = "/bookingRequest";
+  static const userMassageBookingDetails="/userMassageBookingDetails";
 
   /// Hire
   static const hireDetails = "/hireDetails";

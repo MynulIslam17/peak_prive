@@ -463,6 +463,12 @@ class _BookingScreenState extends State<BookingScreen>
                         arguments: {"bookingId": booking.id},
                       );
 
+                    }else{
+                      Get.toNamed(
+                        Routes.userMassageBookingDetails,
+                        arguments: {"bookingId": booking.id},
+                      );
+
                     }
 
 

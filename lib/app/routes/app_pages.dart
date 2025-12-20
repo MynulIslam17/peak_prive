@@ -39,6 +39,7 @@ import 'package:harry_service_app/app/modules/user/hire/views/user_hire_booking_
 import 'package:harry_service_app/app/modules/user/massage/bindings/message_details_binding.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/massage/views/user_massage_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/user_pass_booking_info.dart';
@@ -205,12 +206,23 @@ abstract class AppPages {
 
 
     /// message
-    GetPage(name: Routes.massageDetails, page: () => MassageDetailsScreen(),
-    binding: MessageDetailsBindings()),
+    GetPage(
+        name: Routes.massageDetails,
+        page: () => MassageDetailsScreen(),
+      binding: MessageDetailsBindings()),
 
-    GetPage(name: Routes.bookingRequest, page: () => BookingRequest(),
+    GetPage(name: Routes.bookingRequest,
+        page: () => BookingRequest(),
     binding: BookingDetailsBindings()
     ),
+
+    GetPage( /// show booking details to user
+        name: Routes.userMassageBookingDetails,
+        page: () => UserMassageBookingInfo(),
+
+    ),
+
+
 
     /// hire
     GetPage(name: Routes.hireDetails,
