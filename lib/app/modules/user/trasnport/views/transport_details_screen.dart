@@ -15,6 +15,9 @@ import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking
 import 'package:harry_service_app/app/modules/user/trasnport/controlers/trasnport_details_controller.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/widgets/custome_back_button.dart';
+import '../../../../data/services/stripe/payment_result.dart';
+import '../../../../data/services/stripe/stripe_config.dart';
+import '../../../../data/services/stripe/stripe_helper.dart';
 
 class TransportDetailsScreen extends StatefulWidget {
   const TransportDetailsScreen({super.key});
@@ -24,6 +27,13 @@ class TransportDetailsScreen extends StatefulWidget {
 }
 
 class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
+
+
+  // Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
+
+
   late final String productId;
 
   /// find controllers
@@ -32,11 +42,12 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
   final authController = Get.find<AuthController>();
 
 
+
   final image = Assets.images;
   final icon = Assets.icons;
 
   /// total price
-   int ? totalPrice;
+  int ? totalPrice;
 
   bool _isRentClicked = false;
   DateTime? selectedStartDate;
@@ -133,39 +144,52 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
 
 
 
-      await Future.delayed(Duration(seconds: 1));
+      await Future.delayed(Duration(seconds: 2));
 
       if(mounted){
         Navigator.of(context).pop();/// close the dilaog
         Get.back(); /// back to previous screen
       }
-
-
-
-
-
-
-
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   @override
   void initState() {
     super.initState();
     productId = Get.arguments["id"];
     _fetchDetails();
+
+    _initializeStripeHelper();
+  }
+
+  void _initializeStripeHelper() {
+    final config = StripeConfig(
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _paymentHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: _handlePaymentSuccess,
+      onPaymentFailure: _handlePaymentFailure,
+      onLog: (message) => debugPrint('StripeLog: $message'),
+    );
+  }
+
+  void _handlePaymentSuccess(PaymentResult result) {
+    ///  Don't show snackbar immediately - wait for sheet to close
+    setState(() {
+
+      _isProcessingPayment = false;
+    });
+  }
+
+  void _handlePaymentFailure(PaymentResult result) {
+    setState(() {
+      _isProcessingPayment = false;
+    });
   }
 
   /// call api method
@@ -350,54 +374,65 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
                             SizedBox(height: 20),
 
                             /// checkout button
-                           Padding(
-                             padding: const EdgeInsets.symmetric(vertical: 20),
-                             child: GetBuilder<CreateBookingController>(builder: (controller){
-                               return controller.bookingProgress?
-                               CircularProgressIndicator(color: AppColors.primary_1,)
-                                   :  CustomButton(
-                                 text: "Checkout",
-                                 width: double.infinity,
-                                 onTap: ()async {
+                            SafeArea(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                child: GetBuilder<CreateBookingController>(builder: (controller){
+                                  return controller.bookingProgress?
+                                  CircularProgressIndicator(color: AppColors.primary_1,)
+                                      :  CustomButton(
+                                    text: "Checkout",
+                                    width: double.infinity,
+                                    onTap: ()async {
+                                      if (_isProcessingPayment) return;
+
+                                      if (selectedStartDate == null || selectedEndDate == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text("Please select both start and end date & time before proceeding."),
+                                            backgroundColor: Colors.redAccent,
+                                            duration: Duration(seconds: 2),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      // Process Stripe payment
+                                      final PaymentResult = await _paymentHelper.processPayment(
+                                        context: context,
+                                        amount: 100.0, // Payment amount in dollars
+                                        currency: 'USD',
+                                        description: 'Pass Booking Payment',
+                                        metadata: {
+
+                                          "userId": authController.userModel?.id ?? "",
+                                          "productId": productId,
+
+                                        },
+                                      );
+
+                                      if(PaymentResult.isSuccess){
+                                        Map<String, dynamic> body = {
+                                          "userId": authController.userModel!.id,
+                                          "productId": productId,
+                                          "totalPrice" : totalPrice ?? 0,
+                                          "startDateAndTime": selectedStartDate!.toIso8601String(), // ISO format
+                                          "endDateAndTime": selectedEndDate!.toIso8601String(), // ISO format
+                                          "transactionId": PaymentResult.paymentData?['transactionId'],
+                                        };
+
+                                        /// call the api for create booking
+
+                                        await   _createBooking(body);
 
 
-                                   if (selectedStartDate == null || selectedEndDate == null) {
-                                     Get.snackbar(
-                                       "Incomplete Selection",
-                                       "Please select both start and end date & time before proceeding.",
-                                       snackPosition: SnackPosition.TOP,
-                                       backgroundColor: Colors.redAccent,
-                                       colorText: Colors.black87,
-                                     );
-                                     return;
-                                   }
+                                      }
 
-
-
-                                   Map<String, dynamic> body = {
-                                     "userId": authController.userModel!.id,
-                                     "productId": productId,
-                                      "totalPrice" : totalPrice ?? 0,
-                                     "startDateAndTime": selectedStartDate!.toIso8601String(), // ISO format
-                                     "endDateAndTime": selectedEndDate!.toIso8601String(),     // ISO format
-                                   };
-
-
-
-                                   /// call the api for create booking
-
-                                   await   _createBooking(body);
-
-
-
-
-
-
-
-                                 },
-                               );
-                             }),
-                           ),
+                                    },
+                                  );
+                                }),
+                              ),
+                            ),
                             SizedBox(height: 20),
 
 
@@ -519,7 +554,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
                 "${date.month.toString().padLeft(2, '0')}/"
                 "${date.year}  "
                 "${date.hour.toString().padLeft(2, '0')}:"
-                "${date.minute.toString().padLeft(2, '0')}",
+                "${date.minute.toString().padLeft(2, '0')}",style: TextStyle(fontSize: 9),
           ),
         ],
       ),

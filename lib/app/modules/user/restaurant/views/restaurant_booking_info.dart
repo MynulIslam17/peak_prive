@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/models/restaurant_details_model.dart';
 
 import '../../../../core/constants/text-style.dart';
+import '../../../../data/services/stripe/payment_result.dart';
+import '../../../../data/services/stripe/stripe_config.dart';
+import '../../../../data/services/stripe/stripe_helper.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/controllers/pass_booking_controller.dart';
 
@@ -16,8 +20,17 @@ class RestaurantBookingInfo extends StatefulWidget {
 }
 
 class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
+
+  // Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
+
+
   late final Map<String, dynamic> productInfo;
+
+  ///finds controller
   final createBookingController = Get.find<CreateBookingController>();
+  final  authController = Get.find<AuthController>();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _bookingSeatController = TextEditingController();
 
@@ -31,12 +44,59 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   late final List<Slot> slotsList;
 
+  /// Show error message
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   void initState() {
+
+    super.initState();
     productInfo = Get.arguments;
     slotsList = List<Slot>.from(Get.arguments["availableSlots"]);
-    super.initState();
+    _initializeStripeHelper();
   }
+
+
+
+
+  void _initializeStripeHelper() {
+    final config = StripeConfig(
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _paymentHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: _handlePaymentSuccess,
+      onPaymentFailure: _handlePaymentFailure,
+      onLog: (message) => debugPrint('StripeLog: $message'),
+    );
+  }
+
+  void _handlePaymentSuccess(PaymentResult result) {
+    ///  Don't show snackbar immediately - wait for sheet to close
+    setState(() {
+
+      _isProcessingPayment = false;
+    });
+  }
+
+  void _handlePaymentFailure(PaymentResult result) {
+    setState(() {
+      _isProcessingPayment = false;
+    });
+  }
+
 
   /// --- Convert selected date & time to ISO 8601 ---
   DateTime? _getIsoDateTime() {
@@ -155,7 +215,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
           ),
         );
 
-        await Future.delayed(const Duration(seconds: 1));
+        await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
           Navigator.of(context).pop(); // Close dialog
           Get.offAllNamed(Routes.bottomNav);
@@ -398,15 +458,15 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                      colors: [goldColor, goldColor.withOpacity(0.85)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
+                colors: [goldColor, goldColor.withOpacity(0.85)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
                   : LinearGradient(
-                      colors: [Colors.white, Colors.grey.shade50],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                colors: [Colors.white, Colors.grey.shade50],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
@@ -632,12 +692,11 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               child: GetBuilder<CreateBookingController>(builder: (controller) {
                 return ElevatedButton(
                   onPressed: controller.bookingProgress
-                      ? null // disable while loading
+                      ? null
                       : () async {
                     // --- VALIDATIONS ---
                     if (_bookingSeatController.text.isEmpty) {
-                      Get.snackbar("Error", "Please enter number of seats",
-                          backgroundColor: Colors.red);
+                      _showError("Please enter number of seats");
                       return;
                     }
 
@@ -645,56 +704,81 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
                     int availableSeat = productInfo["availableQty"];
 
                     if (selectedSeat <= 0) {
-                      Get.snackbar("Error", "Please enter a valid seat number",
-                          backgroundColor: Colors.red);
+                      _showError("Please enter a valid seat number");
                       return;
                     }
 
                     if (selectedSeat > availableSeat) {
-                      Get.snackbar("Error", "Only $availableSeat seats available",
-                          backgroundColor: Colors.red);
+                      _showError("Only $availableSeat seats available");
                       return;
                     }
 
                     if (_selectedDate == null) {
-                      Get.snackbar("Error", "Please select a date",
-                          backgroundColor: Colors.red);
+                      _showError("Please select a date");
                       return;
                     }
 
                     if (_selectedTime == null) {
-                      Get.snackbar("Error", "Please select a time",
-                          backgroundColor: Colors.red);
+                      _showError("Please select a time");
                       return;
                     }
 
                     if (_selectedSlot == null || _selectedSlot!.isEmpty) {
-                      Get.snackbar("Error", "Please select a time slot",
-                          backgroundColor: Colors.red);
+                      _showError("Please select a time slot");
                       return;
                     }
 
                     // --- ISO DATE TIME ---
                     DateTime? isoDateTime = _getIsoDateTime();
                     if (isoDateTime == null) {
-                      Get.snackbar("Error", "Invalid date/time",
-                          backgroundColor: Colors.red);
+                      _showError("Invalid date/time");
                       return;
                     }
 
-                    // --- BOOKING REQUEST BODY ---
-                    Map<String, dynamic> reqBody = {
-                      "userId": productInfo["userId"],
-                      "productId": productInfo["productId"],
-                      "bookingItems": [
-                        {"itemId": productInfo["itemId"], "quantity": selectedSeat},
-                      ],
-                      "slots": [_selectedSlot],
-                      "date": isoDateTime.toIso8601String(),
-                    };
 
-                    // --- CALL API ---
-                    await _createBooking(reqBody);
+
+
+                    // Process Stripe payment
+                    final PaymentResult = await _paymentHelper.processPayment(
+                      context: context,
+                      amount: 100.0, // Payment amount in dollars
+                      currency: 'USD',
+                      description: 'Pass Booking Payment',
+                      metadata: {
+
+                        "userId": authController.userModel?.id ?? "",
+                        "productId": productInfo["productId"],
+
+                      },
+                    );
+
+                    if(PaymentResult.isSuccess){
+                      /// --- BOOKING REQUEST BODY ---
+                      Map<String, dynamic> reqBody = {
+                        "userId": productInfo["userId"],
+                        "productId": productInfo["productId"],
+                        "bookingItems": [
+                          {"itemId": productInfo["itemId"], "quantity": selectedSeat},
+                        ],
+                        "slots": [_selectedSlot],
+                        "date": isoDateTime.toIso8601String(),
+                        "transactionId": PaymentResult.paymentData?['transactionId'],
+                      };
+
+
+
+
+                      ///--- CALL API ---
+                      await _createBooking(reqBody);
+
+
+
+                    }
+
+
+
+
+
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: goldColor,
@@ -725,13 +809,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               }),
             ),
           )
-
-
-
-
-
-
-
 
         ],
       ),

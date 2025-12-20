@@ -6,6 +6,9 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/model/get_single_trasnport.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../data/services/stripe/payment_result.dart';
+import '../../../../data/services/stripe/stripe_config.dart';
+import '../../../../data/services/stripe/stripe_helper.dart';
 import '../controlers/transport_booking_single_controller.dart'
     show SingleTransportBookingItem;
 
@@ -21,6 +24,11 @@ class _UserTransportBookingInfoState extends State<UserTransportBookingInfo> {
   final transportController = Get.put(SingleTransportBookingItem());
   late final String bookingId;
 
+
+  // Stripe payment helper
+  late StripePaymentHelper _paymentHelper;
+  bool _isProcessingPayment = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,7 +39,20 @@ class _UserTransportBookingInfoState extends State<UserTransportBookingInfo> {
 
     /// Call API
     transportController.fetchBooking(bookingId);
+
+
+
   }
+
+
+
+
+
+
+
+
+
+
 
   String _formatDateTime(DateTime? date) {
     if (date == null) return "-";
