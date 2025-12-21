@@ -120,7 +120,7 @@ class _BookingRequestState extends State<BookingRequest> {
     // Process Stripe payment
     final paymentResult = await _paymentHelper.processPayment(
       context: context,
-      amount: selectedDuration!.amount.toDouble(), // Use selected duration price
+      amount: selectedDuration!.amount.toDouble(),
       currency: 'USD',
       description: 'Pass Booking Payment',
       metadata: {
@@ -254,7 +254,7 @@ class _BookingRequestState extends State<BookingRequest> {
                     width: 150,
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color:item==selectedDuration ? AppColors.primary_1 : Colors.grey.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     alignment: Alignment.center,

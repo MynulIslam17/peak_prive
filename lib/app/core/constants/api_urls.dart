@@ -212,6 +212,10 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
 
+  /// get balance
+
+  static String getBalanceUrl = '$baseUrl/wallet/get-balance';
+
 
 
 

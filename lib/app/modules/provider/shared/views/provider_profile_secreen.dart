@@ -94,7 +94,11 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                         ProfileFieldBox(
                           leadingIcon: icons.wallet,
                           actionIcons: icons.careRight,
-                          onTap: () {},
+                          onTap: () {
+
+
+
+                          },
                           title: "Wallet",
                         ),
                     

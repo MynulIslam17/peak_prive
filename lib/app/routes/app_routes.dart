@@ -45,6 +45,12 @@ abstract class Routes {
 
 
 
+  /// user wallets
+
+  static const userWallet="/userWallet";
+  static const userTransaction="/userTransaction";
+
+
 
 
   // ===========================================================================
@@ -69,6 +75,9 @@ abstract class Routes {
   static const otpVerify="/otpVerify";
   static const emailVerify="/emailVerify";
   static const passReset="/passReset";
+
+
+
 
 
 
@@ -130,6 +139,9 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
   /// hire
   static const addHireService="/addHireService";
   static const hireDetailsService="/hireDetailsService";/// show booking user data to provider
+
+
+
 
 
 

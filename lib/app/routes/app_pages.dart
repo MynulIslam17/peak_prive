@@ -50,8 +50,10 @@ import 'package:harry_service_app/app/modules/user/restaurant/views/resturant_in
 import 'package:harry_service_app/app/modules/user/restaurant/views/user_restaurant_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/all_transaction.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/extra_booking_screen.dart';
+import 'package:harry_service_app/app/modules/user/shared/views/user_wallet.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/bindings/trasnport_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/user_transport_booking_info.dart';
@@ -265,6 +267,11 @@ abstract class AppPages {
 
 
 
+
+    /// user wallet
+
+    GetPage(name: Routes.userWallet, page: ()=>UserWallet()),
+    GetPage(name: Routes.userTransaction, page: ()=>AllTransaction()),
 
 
 

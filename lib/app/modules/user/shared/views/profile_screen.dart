@@ -178,7 +178,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildProfileMenuItem(
                   icon: Icons.wallet_outlined,
                   title: 'Wallet',
-                  onTap: () {},
+                  onTap: () {
+                    Get.toNamed(Routes.userWallet);
+                  },
                 ),
                 SizedBox(height: 15.h),
                 _buildProfileMenuItem(
