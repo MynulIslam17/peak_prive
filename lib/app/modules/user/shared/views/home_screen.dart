@@ -111,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
               return GetBuilder<TransportController>(
                 builder: (controller) {
                   return GetBuilder<MassageController>(
+
+
                     builder: (controller) {
                       return GetBuilder<RestaurantController>(
                         builder: (controller) {
@@ -133,14 +135,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onTap: () {},
                                     ),
                                     SizedBox(height: 20.h),
+
+                                    ///search bar===============
                                     CustomSearchBar(
+
                                       controller: searchCtrl,
-                                      onChanged: (v) => setState(() {}),
+                                      onChanged: (value) => setState(() {
+
+                                        massage.fetchAllMassageAndCategory(null,value);
+
+                                      }
+                                      ),
                                       onClear: () {
+                                        FocusScope.of(context).unfocus(); /// hide the keyboard
+                                        massage.fetchAllMassageAndCategory();
                                         searchCtrl.clear();
                                         setState(() {});
                                       },
                                     ),
+
+
+
+
                                   ],
                                 ),
                               ),
@@ -271,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ? "Top Car in Town"
                                           : type == "restaurant"
                                           ? "Restaurant"
-                                          : "Massage",
+                                          : "Top Massage’s Provider",
                                       text: "See All",
                                       onClick: () {},
                                     ),
@@ -372,6 +388,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         }).toList(),
                                       ),
 
+
                                     /// MASSAGE
                                     if (type == "massage")
                                       massage.isLoading
@@ -380,6 +397,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ItemCardSkeleton(),
                                           ItemCardSkeleton(),
                                         ],
+                                      )
+                                          : massage.massageList.isEmpty
+                                          ? Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                                        child: Center(
+                                          child: Text(
+                                            "No massage services found",
+                                            style: AppTextStyle.sub_h1_regular_18(),
+                                          ),
+                                        ),
                                       )
                                           : Column(
                                         children: massage.massageList.map((item) {

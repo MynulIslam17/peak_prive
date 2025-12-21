@@ -19,50 +19,42 @@ class MassageController extends GetxController {
   String? get errorMessage => _errorMessage;
 
   /// Fetch all massage services + categories
-  Future<bool> fetchAllMassageAndCategory([String? category]) async {
+  Future<bool> fetchAllMassageAndCategory([String? category, String? search]) async {
     _isLoading = true;
-    update(); // trigger UI rebuild
+    update();
 
     bool success = false;
 
     try {
-      // Track selected category
       selectedCategoryName = category;
 
-      // Parallel API requests
-      final massageFuture = Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.massageServiceUrl(category),
-      );
+      /// Build URL
+      String url = AppUrls.massageServiceUrl(category);
+      if (search != null && search.isNotEmpty) {
+        // Check if URL already has '?', if not use '?', otherwise use '&'
+        url += url.contains('?') ? '&search=$search' : '?search=$search';
+      }
 
-      final categoryFuture = Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.massageCategoryUrl,
-      );
 
-      final responses = await Future.wait([massageFuture, categoryFuture]);
-      final massageResponse = responses[0];
-      final categoryResponse = responses[1];
 
-      // Clear old data
+      final massageResponse = await Get.find<NetworkCaller>().getRequest(url: url);
+      final categoryResponse = await Get.find<NetworkCaller>().getRequest(url: AppUrls.massageCategoryUrl);
+
+      /// Clear old data
       massageList.clear();
       categoryList.clear();
 
-      /// Parse massage list
       if (massageResponse.isSuccess && massageResponse.body != null) {
         final data = massageResponse.body!['data'];
         if (data != null && data['result'] != null) {
           final list = data['result'] as List<dynamic>;
-          massageList = list
-              .map((e) => Massage.fromJson(e as Map<String, dynamic>))
-              .toList();
+          massageList = list.map((e) => Massage.fromJson(e as Map<String, dynamic>)).toList();
         }
       }
 
-      /// Parse categories
       if (categoryResponse.isSuccess && categoryResponse.body != null) {
         final list = categoryResponse.body!['data'] as List<dynamic>? ?? [];
-        categoryList = list
-            .map((e) => ServiceCategory.fromJson(e as Map<String, dynamic>))
-            .toList();
+        categoryList = list.map((e) => ServiceCategory.fromJson(e as Map<String, dynamic>)).toList();
         success = true;
       }
     } catch (e) {
@@ -70,11 +62,12 @@ class MassageController extends GetxController {
       success = false;
     } finally {
       _isLoading = false;
-      update(); // trigger UI rebuild
+      update();
     }
 
     return success;
   }
+
 
   /// Clear all data
   void clearData() {

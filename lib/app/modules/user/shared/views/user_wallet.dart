@@ -33,9 +33,12 @@ class _UserWalletState extends State<UserWallet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text("My Wallet"),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () {
             Get.back();
