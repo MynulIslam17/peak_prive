@@ -58,6 +58,8 @@ class _ProviderAccountInformationScreenState
 
   void _fetchProfileInfo() async {
     bool success = await profileController.fetchProfile();
+    if (!mounted) return; // ensure widget is still in tree
+
     if (success) {
       final UserModel? user = profileController.userModel;
 
@@ -72,19 +74,13 @@ class _ProviderAccountInformationScreenState
 
   /// update button event
   Future<void> _updateButton() async {
-    /// gets the value
     String name = nameTEController.text.trim();
     String phone = phoneTEController.text.trim();
     String address = addressTEController.text.trim();
 
     // Validate inputs
     if (name.isEmpty) {
-      Get.snackbar(
-        "Error",
-        "Name cannot be empty",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      _showSnackBar("Name cannot be empty", Colors.red);
       return;
     }
 
@@ -95,28 +91,37 @@ class _ProviderAccountInformationScreenState
       ApiUrl: AppUrls.updateProfileUrl,
     );
 
+    if (!mounted) return;
+
     if (success) {
       // Update text controllers with new values
-      setState(() {
-        nameTEController.text = name;
-        phoneTEController.text = phone;
-        addressTEController.text = address;
-      });
+      if (mounted) {
+        setState(() {
+          nameTEController.text = name;
+          phoneTEController.text = phone;
+          addressTEController.text = address;
+        });
+      }
 
-      Get.snackbar(
-        "Success",
-        "Profile updated successfully",
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      _showSnackBar("Profile updated successfully", Colors.green);
     } else {
-      Get.snackbar(
-        "Error",
+      _showSnackBar(
         updateProfileController.errorMessage ?? "Failed to update profile",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        Colors.red,
       );
     }
+  }
+
+  /// Helper method to show snackbar safely
+  void _showSnackBar(String message, Color bgColor) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: bgColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -130,200 +135,204 @@ class _ProviderAccountInformationScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBarWithTitle(
-        icons: icons,
-        title: "Account Information",
-        onTap: () => Get.back(),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 25),
+    return WillPopScope(
+      onWillPop: () async {
+        if (mounted) {
+          Get.back();
+        }
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBarWithTitle(
+          icons: icons,
+          title: "Account Information",
+          onTap: () {
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 25),
 
-                      /// Profile Header - WRAPPED WITH GetBuilder for AuthController
-                      GetBuilder<AuthController>(
-                        builder: (authCtrl) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            height: 160,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: authCtrl.userModel?.profilePic.isNotEmpty == true
-                                      ? NetworkImage(authCtrl.userModel!.profilePic) as ImageProvider
-                                      : const AssetImage("assets/images/profile_img.jpg") as ImageProvider,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    safeText(authCtrl.userModel?.fullName),
-                                    style: AppTextStyle.h3_medium_20(),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                        /// Profile Header
+                        GetBuilder<AuthController>(
+                          builder: (authCtrl) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              height: 160,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: authCtrl.userModel?.profilePic.isNotEmpty == true
+                                        ? NetworkImage(authCtrl.userModel!.profilePic) as ImageProvider
+                                        : const AssetImage("assets/images/profile_img.jpg") as ImageProvider,
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 30),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Text(
+                                      safeText(authCtrl.userModel?.fullName),
+                                      style: AppTextStyle.h3_medium_20(),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 30),
 
-                      /// Name Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Name",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: nameTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.person,
-                            color: Colors.grey,
+                        /// Name Field
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Name",
+                            style: AppTextStyle.c_regular_12(),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      /// Email Field (Read-only)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Email",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: emailTEController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.mail,
-                            color: Colors.grey,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.black12,
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: nameTEController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(
+                              Icons.person,
+                              color: Colors.grey,
                             ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.black12,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.12),
                           ),
-                          disabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Colors.black12,
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// Email Field (Read-only)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Email",
+                            style: AppTextStyle.c_regular_12(),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: emailTEController,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(
+                              Icons.mail,
+                              color: Colors.grey,
                             ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.black12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.black12),
+                            ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.black12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.12),
                           ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                      /// Phone Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Phone",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: phoneTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.phone,
-                            color: Colors.grey,
+                        /// Phone Field
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Phone",
+                            style: AppTextStyle.c_regular_12(),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
                         ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: phoneTEController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(
+                              Icons.phone,
+                              color: Colors.grey,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.12),
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 20),
 
-                      /// Address Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Address",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: addressTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.location_city,
-                            color: Colors.grey,
+                        /// Address Field
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Address",
+                            style: AppTextStyle.c_regular_12(),
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
                         ),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: addressTEController,
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(
+                              Icons.location_city,
+                              color: Colors.grey,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.withOpacity(0.12),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              /// Save Button
-              GetBuilder<UpdateProfileController>(
-                builder: (controller) {
-                  return controller.isLoading
-                      ? CircularProgressIndicator(
-                    color: AppColors.primary_1,
-                  )
-                      : SizedBox(
-                    height: 55,
-                    width: double.infinity,
-                    child: CustomButton(
-                      text: "Save Changes",
-                      backgroundColor: AppColors.primary_1,
-                      onTap: _updateButton,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+                /// Save Button
+                GetBuilder<UpdateProfileController>(
+                  builder: (controller) {
+                    return controller.isLoading
+                        ? CircularProgressIndicator(color: AppColors.primary_1)
+                        : SizedBox(
+                      height: 55,
+                      width: double.infinity,
+                      child: CustomButton(
+                        text: "Save Changes",
+                        backgroundColor: AppColors.primary_1,
+                        onTap: _updateButton,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),

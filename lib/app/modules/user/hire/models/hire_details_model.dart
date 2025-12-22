@@ -1,3 +1,5 @@
+import '../../../../data/models/review_model.dart';
+
 class HireDetailsModel {
   final String id;
   final Category? category;
@@ -141,53 +143,4 @@ class HireItem {
   }
 }
 
-// REVIEW MODEL
-class Review {
-  final ReviewUser user;
-  final double rating;
-  final String comment;
-  final DateTime createdAt;
 
-  Review({
-    required this.user,
-    required this.rating,
-    required this.comment,
-    required this.createdAt,
-  });
-
-  factory Review.fromJson(Map<String, dynamic> json) {
-    return Review(
-      user: ReviewUser.fromJson(json['userId'] ?? {}),
-      rating: (json['rating']?.toDouble() ?? 0.0),
-      comment: json['comment'] ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-    );
-  }
-}
-
-// USER INSIDE REVIEW
-class ReviewUser {
-  final String id;
-  final String fullName;
-  final String email;
-  final String phoneNumber;
-  final String profileUrl;
-
-  ReviewUser({
-    required this.id,
-    required this.fullName,
-    required this.email,
-    required this.phoneNumber,
-    required this.profileUrl,
-  });
-
-  factory ReviewUser.fromJson(Map<String, dynamic> json) {
-    return ReviewUser(
-      id: json['_id'] ?? '',
-      fullName: json['fullName'] ?? '',
-      email: json['email'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
-      profileUrl: json['profileUrl'] ?? '',
-    );
-  }
-}

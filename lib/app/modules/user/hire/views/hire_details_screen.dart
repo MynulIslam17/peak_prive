@@ -350,7 +350,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                                 controller: tabController,
                                 children: [
                                   _aboutSection(hireDetails),
-                                  ListView(children: [ReviewScreen()]),
+                                  ListView(children: [ReviewScreen(reviewList: hireDetails.reviews,)]),
                                 ],
                               ),
                             ),

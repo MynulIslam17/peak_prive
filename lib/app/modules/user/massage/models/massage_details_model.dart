@@ -1,3 +1,5 @@
+import '../../../../data/models/review_model.dart';
+
 class MassageDetailsModel {
   final int code;
   final String message;
@@ -246,40 +248,4 @@ class PriceByDuration {
       PriceByDuration(id: '', duration: '', amount: 0);
 }
 
-class Review {
-  final String userId;
-  final num rating;
-  final String comment;
-  final DateTime createdAt;
 
-  Review({
-    required this.userId,
-    required this.rating,
-    required this.comment,
-    required this.createdAt,
-  });
-
-  factory Review.fromJson(Map<String, dynamic>? json) {
-    try {
-      if (json == null) return Review.empty();
-
-      return Review(
-        userId: json['userId']?.toString() ?? '',
-        rating: json['rating'] is num ? json['rating'] : 0,
-        comment: json['comment']?.toString() ?? '',
-        createdAt: _safeDate(json['createdAt']),
-      );
-    } catch (_) {
-      return Review.empty();
-    }
-  }
-
-  static Review empty() {
-    return Review(
-      userId: '',
-      rating: 0,
-      comment: '',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
-}

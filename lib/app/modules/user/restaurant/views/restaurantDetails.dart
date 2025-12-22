@@ -302,7 +302,7 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
   /// Review Section Content (currently empty)
   Widget _buildReviewSection() {
-    return ReviewScreen();
+    return ReviewScreen(reviewList: restaurantDetailsController!.restaurantDetails!.reviews,);
   }
 
   /// seating card

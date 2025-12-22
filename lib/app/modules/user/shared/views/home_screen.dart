@@ -138,21 +138,82 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                     ///search bar===============
                                     CustomSearchBar(
-
                                       controller: searchCtrl,
-                                      onChanged: (value) => setState(() {
+                                      onChanged: (value) {
+                                        if (nav.getServiceType == "ski_pass") {
+                                          pass.searchPass(value);
+                                        }
 
-                                        massage.fetchAllMassageAndCategory(null,value);
+                                        if (nav.getServiceType == "massage") {
+                                          massage.searchMassage(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                            search: value,
+                                          );
+                                        }
 
-                                      }
-                                      ),
+                                        if (nav.getServiceType == "ski_hire") {
+                                          hire.searchSkiHire(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                            search: value,
+                                          );
+                                        }
+
+                                        if (nav.getServiceType == "transport") {
+                                          transport.searchTransport(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                            search: value,
+                                          );
+                                        }
+
+                                        if (nav.getServiceType == "restaurant") {
+                                          restaurant.searchRestaurant(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                            search: value,
+                                          );
+                                        }
+
+
+                                      },
                                       onClear: () {
-                                        FocusScope.of(context).unfocus(); /// hide the keyboard
-                                        massage.fetchAllMassageAndCategory();
+
+                                        FocusScope.of(context).unfocus();
                                         searchCtrl.clear();
-                                        setState(() {});
+
+                                        if (nav.getServiceType == "ski_pass") {
+                                          pass.fetchAllPass();
+                                        }
+
+                                        if (nav.getServiceType == "massage") {
+                                          massage.fetchAllMassageAndCategory(
+                                            selectedCategory == "All" ? null : selectedCategory,
+                                          );
+                                        }
+
+                                        if (nav.getServiceType == "ski_hire") {
+                                          hire.fetchAllSkiHireAndCategory(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                          );
+                                        }
+
+
+                                        if (nav.getServiceType == "transport") {
+                                          transport.fetchAllTransportAndCategory(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                          );
+                                        }
+
+                                        if (nav.getServiceType == "restaurant") {
+                                          transport.fetchAllTransportAndCategory(
+                                            category: selectedCategory == "All" ? null : selectedCategory,
+                                          );
+                                        }
+
+
+
+
                                       },
                                     ),
+
 
 
 
@@ -252,13 +313,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                             });
 
                                             if (type == "ski_hire") {
-                                              hire.fetchAllSkiHireAndCategory(categoryName);
+                                              hire.fetchAllSkiHireAndCategory(category: categoryName);
                                             } else if (type == "transport") {
-                                              transport.fetchAllTransportAndCategory(categoryName);
+                                              transport.fetchAllTransportAndCategory(category: categoryName);
                                             } else if (type == "massage") {
                                               massage.fetchAllMassageAndCategory(categoryName);
                                             } else if (type == "restaurant") {
-                                              restaurant.fetchAllRestaurantsAndCategory(categoryName);
+                                              restaurant.fetchAllRestaurantsAndCategory(category: categoryName);
                                             }
                                           },
                                         ),
@@ -296,7 +357,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                     /// SKI PASS LIST
                                     if (type == "ski_pass")
                                       pass.fetchProgress
-                                          ? Center(child: CircularProgressIndicator())
+                                          ? Column(
+                                        children: [
+                                          ItemCardSkeleton(),
+                                          ItemCardSkeleton(),
+                                        ],
+                                      )
+                                          : pass.skiPassList.isEmpty
+                                          ? Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                                        child: Center(
+                                          child: Text(
+                                            "No ski pass services found",
+                                            style: AppTextStyle.sub_h1_regular_18(),
+                                          ),
+                                        ),
+                                      )
                                           : Column(
                                         children: pass.skiPassList.map((item) {
                                           return Padding(
@@ -304,7 +380,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             child: ItemCard(
                                               image: item.thumbnail ?? "",
                                               title: item.title ?? "",
-                                              price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                                              price:
+                                              "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
                                               rating: item.averageRating ?? 0.0,
                                               reviewCount: "${item.reviews.length}",
                                               location: item.serviceArea ?? "",
@@ -330,6 +407,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ItemCardSkeleton(),
                                         ],
                                       )
+                                          : hire.skiHireList.isEmpty
+                                          ? Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                                        child: Center(
+                                          child: Text(
+                                            "No ski pass services found",
+                                            style: AppTextStyle.sub_h1_regular_18(),
+                                          ),
+                                        ),
+                                      )
+
                                           : Column(
                                         children: hire.skiHireList.map((item) {
                                           return Padding(
@@ -363,6 +451,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ItemCardSkeleton(),
                                           ItemCardSkeleton(),
                                         ],
+                                      )
+                                          :transport.transportList.isEmpty
+                                           ? Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                                        child: Center(
+                                          child: Text(
+                                            "No transport services found",
+                                            style: AppTextStyle.sub_h1_regular_18(),
+                                          ),
+                                        ),
                                       )
                                           : Column(
                                         children: transport.transportList.map((item) {
@@ -440,6 +538,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ItemCardSkeleton(),
                                           ItemCardSkeleton(),
                                         ],
+                                      )
+                                          :restaurant.restaurantList.isEmpty
+                                          ?  Padding(
+                                        padding: EdgeInsets.symmetric(vertical: 20.h),
+                                        child: Center(
+                                          child: Text(
+                                            "No restaurant services found",
+                                            style: AppTextStyle.sub_h1_regular_18(),
+                                          ),
+                                        ),
                                       )
                                           : Column(
                                         children: restaurant.restaurantList.map((item) {

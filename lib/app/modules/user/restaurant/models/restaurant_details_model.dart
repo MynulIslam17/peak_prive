@@ -1,3 +1,5 @@
+import 'package:harry_service_app/app/data/models/review_model.dart';
+
 class RestaurantDetailsModel {
   final String id;
   final String title;
@@ -14,7 +16,7 @@ class RestaurantDetailsModel {
   final List<Slot> slots;
   final double averageRating;
   final List<Slot> availableSlots;
-  final List<dynamic> reviews;
+  final List<Review> reviews;
   final List<dynamic> refunds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -48,34 +50,22 @@ class RestaurantDetailsModel {
       id: data['_id'] ?? '',
       title: data['title'] ?? '',
       thumbnail: data['thumbnail'],
-      category:
-      data['category'] != null ? Category.fromJson(data['category']) : null,
+      category: data['category'] != null ? Category.fromJson(data['category']) : null,
       owner: data['owner'] != null ? Owner.fromJson(data['owner']) : null,
       openTime: data['openTime'],
       closeTime: data['closeTime'],
       serviceArea: data['serviceArea'],
       foodType: data['foodType'],
       status: data['status'],
-      items: (data['items'] as List<dynamic>? ?? [])
-          .map((e) => RestaurantItem.fromJson(e))
-          .toList(),
+      items: (data['items'] as List<dynamic>? ?? []).map((e) => RestaurantItem.fromJson(e)).toList(),
       description: data['description'],
-      slots: (data['slots'] as List<dynamic>? ?? [])
-          .map((e) => Slot.fromJson(e))
-          .toList(),
-      averageRating:
-      (data['averageRating'] is num) ? (data['averageRating'] as num).toDouble() : 0.0,
-      availableSlots: (data['availableSlots'] as List<dynamic>? ?? [])
-          .map((e) => Slot.fromJson(e))
-          .toList(),
-      reviews: (data['reviews'] as List<dynamic>? ?? []),
+      slots: (data['slots'] as List<dynamic>? ?? []).map((e) => Slot.fromJson(e)).toList(),
+      averageRating: (data['averageRating'] is num) ? (data['averageRating'] as num).toDouble() : 0.0,
+      availableSlots: (data['availableSlots'] as List<dynamic>? ?? []).map((e) => Slot.fromJson(e)).toList(),
+      reviews: (data['reviews'] as List<dynamic>? ?? []).map((e) => Review.fromJson(e)).toList(),
       refunds: (data['refunds'] as List<dynamic>? ?? []),
-      createdAt: data['createdAt'] != null
-          ? DateTime.tryParse(data['createdAt'])
-          : null,
-      updatedAt: data['updatedAt'] != null
-          ? DateTime.tryParse(data['updatedAt'])
-          : null,
+      createdAt: data['createdAt'] != null ? DateTime.tryParse(data['createdAt']) : null,
+      updatedAt: data['updatedAt'] != null ? DateTime.tryParse(data['updatedAt']) : null,
     );
   }
 
@@ -95,25 +85,31 @@ class RestaurantDetailsModel {
     'slots': slots.map((e) => e.toJson()).toList(),
     'averageRating': averageRating,
     'availableSlots': availableSlots.map((e) => e.toJson()).toList(),
-    'reviews': reviews,
+    'reviews': reviews.map((e) => {
+      'userId': e.userId,
+      'user': {
+        '_id': e.user.id,
+        'fullName': e.user.fullName,
+        'profileUrl': e.user.profileUrl,
+      },
+      'rating': e.rating,
+      'comment': e.comment,
+      'createdAt': e.createdAt.toIso8601String(),
+    }).toList(),
     'refunds': refunds,
     'createdAt': createdAt?.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
   };
 }
 
-// ======================= CATEGORY =========================
 
+// ================= CATEGORY =================
 class Category {
   final String id;
   final String name;
   final String? categoryPhoto;
 
-  Category({
-    required this.id,
-    required this.name,
-    this.categoryPhoto,
-  });
+  Category({required this.id, required this.name, this.categoryPhoto});
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
     id: json['_id'] ?? '',
@@ -128,8 +124,7 @@ class Category {
   };
 }
 
-// ======================= OWNER =========================
-
+// ================= OWNER =================
 class Owner {
   final String id;
   final String? fullName;
@@ -186,8 +181,7 @@ class Owner {
   };
 }
 
-// ======================= RESTAURANT ITEM =========================
-
+// ================= RESTAURANT ITEM =================
 class RestaurantItem {
   final String id;
   final String? seat;
@@ -228,18 +222,13 @@ class RestaurantItem {
   };
 }
 
-// ======================= SLOT =========================
-
+// ================= SLOT =================
 class Slot {
   final String id;
   final String? startTime;
   final String? endTime;
 
-  Slot({
-    required this.id,
-    this.startTime,
-    this.endTime,
-  });
+  Slot({required this.id, this.startTime, this.endTime});
 
   factory Slot.fromJson(Map<String, dynamic> json) => Slot(
     id: json['_id'] ?? '',

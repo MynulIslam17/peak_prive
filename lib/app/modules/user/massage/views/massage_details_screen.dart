@@ -199,7 +199,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
                                 ListView(
                                   padding: EdgeInsets.all(20),
                                   children: [
-                                    ReviewScreen()
+                                    ReviewScreen(reviewList: massage.reviews,)
                                   ],
                                 ),
                               ],
