@@ -43,7 +43,7 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
         ),
         leading: IconButton(
           onPressed: Get.back,
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
         ),
       ),
       body: GetBuilder<SingleHireBookingItem>(
@@ -108,11 +108,6 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
 
             SizedBox(height: 6.h),
 
-            // Category / Model
-            Text(
-              data.productModel ?? data.category ?? "",
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[700]),
-            ),
 
             SizedBox(height: 12.h),
 
@@ -189,8 +184,8 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
     final product = data.product;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.14,
-      minChildSize: 0.14,
+      initialChildSize: 0.25,
+      minChildSize: 0.25,
       maxChildSize: 0.75,
       builder: (context, scrollController) {
         return Container(

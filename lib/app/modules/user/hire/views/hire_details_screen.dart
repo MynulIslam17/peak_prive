@@ -1,27 +1,20 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
-import 'package:harry_service_app/app/core/widgets/selected_hire_tem.dart';
-import 'package:harry_service_app/app/modules/user/hire/contollers/hire_details_controller.dart';
-import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
-import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
-import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/app_colors.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/hire_shimmer.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/custome_back_button.dart';
-import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/hire_card_item.dart';
-import '../../../../core/widgets/shimmer/hire_shimmer.dart';
-
 import '../../../../core/widgets/provider_info.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
-
+import '../../../../core/widgets/selected_hire_tem.dart';
+import '../../../../modules/user/pass/controllers/pass_booking_controller.dart';
+import '../../../../modules/user/hire/contollers/hire_details_controller.dart';
+import '../../../../modules/user/massage/views/review_screen.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
@@ -36,111 +29,92 @@ class HireDetailsScreen extends StatefulWidget {
 class _HireDetailsScreenState extends State<HireDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
+  final hireController = Get.find<HireDetailsController>();
+  final bookingController = Get.put(CreateBookingController());
+  final authController = Get.put(AuthController());
 
-
-  ///  Stripe payment helper
-  late StripePaymentHelper _paymentHelper;
+  bool _isCheckoutMode = false;
   bool _isProcessingPayment = false;
 
-  /// textEditing Controlller
-  final addressTEController = TextEditingController();
-  final numberController = TextEditingController();
+  final addressController = TextEditingController();
+  final phoneController = TextEditingController();
 
-  final bookingController = Get.put(CreateBookingController());
-
-  /// Find controllers
-  final hireController = Get.find<HireDetailsController>();
-  final navController = Get.find<NavController>();
-  final authController = Get.find<AuthController>();
-
-  late final String id;
-  final icon = Assets.icons;
-  final image = Assets.images;
-
-  bool _isClickedBookButton = false;
   DateTime? startDate;
   DateTime? endDate;
-  String? _phoneCountryCode = 'BD'; // Store country code
 
-  /// Show error message
-  void _showError(String title, String message) {
+  late StripePaymentHelper _stripeHelper;
+
+  late String hireId;
+
+  @override
+  void initState() {
+    super.initState();
+    tabController = TabController(length: 2, vsync: this);
+
+    final args = Get.arguments;
+    hireId = args['id'] ?? '';
+
+    _fetchHireDetails();
+    _initializeStripe();
+  }
+
+  void _initializeStripe() {
+    final config = StripeConfig(
+      secretKey:
+      'sk_test_REDACTED_ROTATE_ME',
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _stripeHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: _onPaymentSuccess,
+      onPaymentFailure: _onPaymentFailure,
+      onLog: (msg) => debugPrint("StripeLog: $msg"),
+    );
+  }
+
+  void _showSnackBar(String title, String message, Color bgColor) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
+        backgroundColor: bgColor,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  /// Validate phone number format
-  bool _isValidPhoneNumber(String phoneNumber) {
-    if (phoneNumber.isEmpty) return false;
+  void _onPaymentSuccess(PaymentResult result) async {
+    final itemList = hireController.selectedItems.entries
+        .map((e) => {
+      "itemId": e.key,
+      "quantity": e.value,
+    })
+        .toList();
 
+    final reqBody = {
+      "userId": authController.userModel!.id,
+      "productId": hireId,
+      "bookingItems": itemList,
+      "address": addressController.text.trim(),
+      "phoneNumber": phoneController.text.trim(),
+      "startDateAndTime": startDate!.toUtc().toIso8601String(),
+      "endDateAndTime": endDate!.toUtc().toIso8601String(),
+      "transactionId": result.paymentData?['transactionId'],
+    };
 
-    String digitsOnly = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final success = await bookingController.proceedBooking(reqBody);
 
-    // Check if it has at least 7 digits and max 15 digits (international standard)
-    if (digitsOnly.length < 7 || digitsOnly.length > 15) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /// Pick date and time
-  Future<void> _datePicker({required bool isStart}) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (pickedDate == null) return;
-
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (pickedTime == null) return;
-
-    final combined = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-
-    if (!isStart && startDate != null) {
-      if (combined.isBefore(startDate!)) {
-        _showError(
-          "Invalid End Time",
-          "End time cannot be earlier than start time.",
-        );
-        return;
-      }
-    }
+    if (!mounted) return;
 
     setState(() {
-      if (isStart) {
-        startDate = combined;
-        if (endDate != null && endDate!.isBefore(startDate!)) {
-          endDate = null;
-        }
-      } else {
-        endDate = combined;
-      }
+      _isProcessingPayment = false; // STOP loader ONLY here
     });
-  }
-
-
-
-  /// create new booking
-  Future<void> _createBooking(Map<String, dynamic> reqBody) async {
-    bool success = await bookingController.proceedBooking(reqBody);
 
     if (success) {
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -171,755 +145,487 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         },
       );
 
-      await Future.delayed(Duration(seconds: 2));
 
+
+      await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
-        Navigator.of(context).pop();
-        Get.back();
+        Navigator.of(context).pop(); // Close dialog
+        Navigator.pop(context);
+
       }
+
+    } else {
+      _showSnackBar(
+        "Booking Failed",
+        "Please try again",
+        Colors.red,
+      );
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    tabController = TabController(length: 2, vsync: this);
 
-    var argument = Get.arguments;
-    id = argument["id"];
+  void _onPaymentFailure(PaymentResult result) {
+    setState(() => _isProcessingPayment = false);
 
-    _fetchDetails();
-    _initializeStripeHelper();
-  }
-
-
-
-
-  void _initializeStripeHelper() {
-    final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
-      merchantDisplayName: 'Harry Service',
-      paymentSheetTheme: ThemeMode.light,
-      allowsDelayedPaymentMethods: true,
-    );
-
-    _paymentHelper = StripePaymentHelper(
-      config: config,
-      onPaymentSuccess: _handlePaymentSuccess,
-      onPaymentFailure: _handlePaymentFailure,
-      onLog: (message) => debugPrint('StripeLog: $message'),
+    _showSnackBar(
+      "Payment Failed",
+      "Please try again",
+      Colors.red,
     );
   }
 
 
-
-
-  void _handlePaymentSuccess(PaymentResult result) {
-    ///  Don't show snackbar immediately - wait for sheet to close
-    setState(() {
-
-      _isProcessingPayment = false;
-    });
+  Future<void> _fetchHireDetails() async {
+    await hireController.fetchHireDetails(hireId);
   }
 
-  void _handlePaymentFailure(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
+  bool _isValidPhone(String phone) {
+    if (phone.isEmpty) return false;
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    return digits.length >= 7 && digits.length <= 15;
   }
 
+  Future<void> _pickDate({required bool isStart}) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2100),
+    );
+    if (pickedDate == null) return;
 
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime == null) return;
 
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    if (!isStart && startDate != null && combined.isBefore(startDate!)) {
+      _showSnackBar(
+        "Invalid",
+        "End time cannot be before start time",
+        Colors.red,
+      );
+      return;
+    }
+
+    setState(() {
+      if (isStart)
+        startDate = combined;
+      else
+        endDate = combined;
+    });
+  }
 
   @override
   void dispose() {
     tabController.dispose();
-    addressTEController.dispose();
-    numberController.dispose();
+    addressController.dispose();
+    phoneController.dispose();
     super.dispose();
-  }
-
-  Future<void> _fetchDetails() async {
-    await hireController.fetchHireDetails(id);
   }
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.sizeOf(context);
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       body: GetBuilder<HireDetailsController>(
         builder: (controller) {
-          if (controller.isLoading) {
-            return const HireDetailsSkeleton();
-          }
-
-          if (controller.hireDetails == null) {
-            return Center(
-              child: Text(
-                "Hire details not available",
-                style: AppTextStyle.sub_h3_regular_14(),
-              ),
-            );
-          }
+          if (controller.isLoading)
+            return const Center(child: HireDetailsSkeleton());
+          if (controller.hireDetails == null)
+            return const Center(child: Text("Hire details not available"));
 
           final hireDetails = controller.hireDetails!;
 
-          return SizedBox(
-            width: size.width,
-            height: size.height,
-            child: Stack(
+          return SlidingUpPanel(
+            minHeight: size.height * 0.55,
+            maxHeight: size.height * 0.85,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+            parallaxEnabled: true,
+            parallaxOffset: 0.2,
+            body: Stack(
               children: [
-                /// Background image
-                Image.network(
-                  hireDetails.thumbnail,
-                  height: size.height * 0.48,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                SizedBox(
+                  width: size.width,
+                  height: size.height,
+                  child: Image.network(
+                    hireDetails.thumbnail,
+                    fit: BoxFit.cover,
+                  ),
                 ),
 
-                /// Overlap card part
-                Positioned(
-                  top: size.height * 0.3,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: size.width,
-                    decoration: BoxDecoration(
-                      color: const Color(0xffFDFAF6),
-                      borderRadius: BorderRadius.circular(40),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
+                // Back Button
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: CustomBackButton(
+                      onTap: () {
+                        if (mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          /// Handle indicator
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Center(
-                              child: Container(
-                                width: 50.w,
-                                height: 5.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
-                                  borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ],
+            ),
+            panelBuilder: (ScrollController sc) => Column(
+              children: [
+                // Handle
+                SizedBox(height: 12.h),
+                Center(
+                  child: Container(
+                    width: 50.w,
+                    height: 5.h,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _isCheckoutMode
+                      ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            controller: sc,
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Selected Items",
+                                  style: AppTextStyle.sub_h1_medium_18(),
                                 ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 20.h),
-
-                          if (!_isClickedBookButton) ...[
-                            /// Provider Info
-                            ProviderInfo(
-                              image: hireDetails.owner.profileUrl,
-                              providerName: hireDetails.owner.fullName,
-                              reviewCount: hireDetails.reviews.length,
-                              onTapCall: () {},
-                              onTapMessage: () {},
-                            ),
-                            SizedBox(height: 10.h),
-
-                            /// Tabs
-                            TabBar(
-                              controller: tabController,
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              labelColor: Colors.white,
-                              unselectedLabelColor: Colors.black,
-                              labelStyle: AppTextStyle.sub_h3_medium_14(),
-                              indicator: const BoxDecoration(
-                                color: Color(0xffd6c24d),
-                              ),
-                              tabs: const [
-                                Tab(text: "About"),
-                                Tab(text: "Review"),
-                              ],
-                            ),
-
-                            Expanded(
-                              child: TabBarView(
-                                controller: tabController,
-                                children: [
-                                  _aboutSection(hireDetails),
-                                  ListView(children: [ReviewScreen(reviewList: hireDetails.reviews,)]),
-                                ],
-                              ),
-                            ),
-
-                            /// Selected item + Book Now
-                            Padding(
-                              padding: EdgeInsets.only(top: 10.h, bottom: 20.h),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 100,
-                                    child: Text(
-                                      "\$${controller.totalSelectedPrice}",
-                                      style: AppTextStyle.sub_h1_medium_18(
-                                        color: AppColors.primary_1,
-                                      ),
-                                    ),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics:
+                                  const NeverScrollableScrollPhysics(),
+                                  itemCount: hireDetails.items
+                                      .where(
+                                        (item) =>
+                                    controller.getQuantity(
+                                      item.id,
+                                    ) >
+                                        0,
+                                  )
+                                      .length,
+                                  gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 1.6,
                                   ),
-                                  SizedBox(width: 30.w),
-                                  Expanded(
-                                    child: SizedBox(
-                                      height: 60,
-                                      child: ElevatedButton(
-                                        onPressed:
-                                        controller.totalSelectedPrice > 0
-                                            ? () {
-                                          setState(() {
-                                            _isClickedBookButton =
-                                            true;
-                                          });
-                                        }
-                                            : null,
-                                        style: ButtonStyle(
-                                          backgroundColor:
-                                          MaterialStateProperty.resolveWith<
-                                              Color>((states) {
-                                            if (states.contains(
-                                              MaterialState.disabled,
-                                            )) {
-                                              return Colors.grey.shade300;
-                                            }
-                                            return AppColors.primary_1;
-                                          }),
-                                          foregroundColor:
-                                          MaterialStateProperty.resolveWith<
-                                              Color>((states) {
-                                            if (states.contains(
-                                              MaterialState.disabled,
-                                            )) {
-                                              return Colors.grey.shade600;
-                                            }
-                                            return Colors.white;
-                                          }),
-                                          textStyle: MaterialStateProperty.all(
-                                            const TextStyle(fontSize: 16),
-                                          ),
-                                          shape: MaterialStateProperty.all(
-                                            RoundedRectangleBorder(
-                                              borderRadius:
-                                              BorderRadius.circular(10),
-                                            ),
-                                          ),
-                                          elevation: MaterialStateProperty.all(
-                                            4,
-                                          ),
-                                        ),
-                                        child: const Text("Book Now"),
+                                  itemBuilder: (context, index) {
+                                    final filteredItems = hireDetails
+                                        .items
+                                        .where(
+                                          (item) =>
+                                      controller.getQuantity(
+                                        item.id,
+                                      ) >
+                                          0,
+                                    )
+                                        .toList();
+                                    final item = filteredItems[index];
+                                    return SelectedItem(
+                                      productName: item.productName,
+                                      productImg: item.productPhoto,
+                                      quantity: controller.getQuantity(
+                                        item.id,
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ] else ...[
-                            /// Booking section
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                      price: item.price,
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: 20.h),
+
+                                // Date pickers
+                                Row(
                                   children: [
-                                    Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Text(
-                                        "Selected Ski Item",
-                                        style: AppTextStyle.sub_h1_medium_18(),
-                                      ),
-                                    ),
-
-                                    /// Selected products
-                                    GridView.builder(
-                                      shrinkWrap: true,
-                                      physics:
-                                      NeverScrollableScrollPhysics(),
-                                      itemCount: controller.hireDetails!.items
-                                          .where(
-                                            (item) =>
-                                        controller.getQuantity(
-                                          item.id,
-                                        ) >
-                                            0,
-                                      )
-                                          .length,
-                                      gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: 2,
-                                        mainAxisSpacing: 10,
-                                        crossAxisSpacing: 10,
-                                        childAspectRatio: 1.6,
-                                      ),
-                                      itemBuilder: (context, index) {
-                                        final filteredItems = controller
-                                            .hireDetails!
-                                            .items
-                                            .where(
-                                              (item) =>
-                                          controller.getQuantity(
-                                            item.id,
-                                          ) >
-                                              0,
-                                        )
-                                            .toList();
-                                        final item = filteredItems[index];
-
-                                        return SelectedItem(
-                                          productName: item.productName,
-                                          productImg: item.productPhoto,
-                                          quantity:
-                                          controller.getQuantity(item.id),
-                                          price: item.price,
-                                        );
-                                      },
-                                    ),
-
-                                    SizedBox(height: 20.h),
-
-                                    /// Total price container
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color:
-                                          Colors.grey.withOpacity(0.4),
-                                        ),
-                                      ),
-                                      child: SingleChildScrollView(
-                                        child: Column(
-                                          children: [
-                                            /// Header Row
-                                            Padding(
-                                              padding:
-                                              const EdgeInsets.only(
-                                                left: 20,
-                                                right: 20,
-                                                top: 15,
-                                                bottom: 10,
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    "Product Name",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14(),
-                                                  ),
-                                                  Text(
-                                                    "Unit",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14(),
-                                                  ),
-                                                  Text(
-                                                    "Price",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14(),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-
-                                            /// Selected items
-                                            ...controller.hireDetails!.items
-                                                .where(
-                                                  (item) =>
-                                              controller.getQuantity(
-                                                item.id,
-                                              ) >
-                                                  0,
-                                            )
-                                                .map((item) {
-                                              final qty = controller
-                                                  .getQuantity(item.id);
-                                              final price =
-                                                  item.price * qty;
-                                              return Padding(
-                                                padding:
-                                                const EdgeInsets
-                                                    .symmetric(
-                                                  horizontal: 20,
-                                                  vertical: 4,
-                                                ),
-                                                child: Row(
-                                                  mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      item.productName,
-                                                      style: AppTextStyle
-                                                          .sub_h3_regular_14(),
-                                                    ),
-                                                    Text(
-                                                      qty.toString(),
-                                                      style: AppTextStyle
-                                                          .sub_h3_regular_14(),
-                                                    ),
-                                                    Text(
-                                                      "\$$price",
-                                                      style: AppTextStyle
-                                                          .sub_h3_regular_14(),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            })
-                                                .toList(),
-
-                                            /// Total Row
-                                            Padding(
-                                              padding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: 20,
-                                                vertical: 10,
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    "Total",
-                                                    style: AppTextStyle
-                                                        .sub_h3_medium_14(),
-                                                  ),
-                                                  Text(
-                                                    "\$${controller.totalSelectedPrice}",
-                                                    style: AppTextStyle
-                                                        .sub_h3_regular_14(),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 10.h),
-
-                                    /// Date selection card
-                                    Card(
-                                      color: Colors.white,
-                                      child: Padding(
-                                        padding:
-                                        const EdgeInsets.symmetric(
-                                          vertical: 20,
-                                          horizontal: 10,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            /// Start & End Date
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                    CrossAxisAlignment
-                                                        .start,
-                                                    children: [
-                                                      Text(
-                                                        "Start Date & Time",
-                                                        style: AppTextStyle
-                                                            .sub_h3_medium_14()
-                                                            .copyWith(
-                                                          fontSize: 11.sp,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: 6.h),
-                                                      InkWell(
-                                                        onTap: () =>
-                                                            _datePicker(
-                                                              isStart: true,
-                                                            ),
-                                                        child: Container(
-                                                          width: 155.w,
-                                                          height: 38,
-                                                          decoration:
-                                                          BoxDecoration(
-                                                            border:
-                                                            Border.all(
-                                                              color:
-                                                              Colors.grey,
-                                                            ),
-                                                            borderRadius:
-                                                            BorderRadius
-                                                                .circular(
-                                                              8,
-                                                            ),
-                                                          ),
-                                                          padding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                            horizontal: 8,
-                                                          ),
-                                                          child: Row(
-                                                            children: [
-                                                              icon.calendarDots
-                                                                  .svg(
-                                                                width: 20,
-                                                                height: 20,
-                                                              ),
-                                                              SizedBox(
-                                                                width: 5.w,
-                                                              ),
-                                                              Text(
-                                                                startDate ==
-                                                                    null
-                                                                    ? "Date & Time"
-                                                                    : "${startDate!.day.toString().padLeft(2, '0')}/${startDate!.month.toString().padLeft(2, '0')}/${startDate!.year} ${startDate!.hour.toString().padLeft(2, '0')}:${startDate!.minute.toString().padLeft(2, '0')}",
-                                                                style: AppTextStyle
-                                                                    .c_regular_10(),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                SizedBox(width: 20.w),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                    CrossAxisAlignment
-                                                        .start,
-                                                    children: [
-                                                      Text(
-                                                        "End Date & Time",
-                                                        style: AppTextStyle
-                                                            .sub_h3_medium_14()
-                                                            .copyWith(
-                                                          fontSize: 11.sp,
-                                                        ),
-                                                      ),
-                                                      SizedBox(height: 6.h),
-                                                      InkWell(
-                                                        onTap: () =>
-                                                            _datePicker(
-                                                              isStart: false,
-                                                            ),
-                                                        child: Container(
-                                                          width: 155.w,
-                                                          height: 38,
-                                                          decoration:
-                                                          BoxDecoration(
-                                                            border:
-                                                            Border.all(
-                                                              color:
-                                                              Colors.grey,
-                                                            ),
-                                                            borderRadius:
-                                                            BorderRadius
-                                                                .circular(
-                                                              8,
-                                                            ),
-                                                          ),
-                                                          padding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                            horizontal: 8,
-                                                          ),
-                                                          child: Row(
-                                                            children: [
-                                                              icon.calendarDots
-                                                                  .svg(
-                                                                width: 20,
-                                                                height: 20,
-                                                              ),
-                                                              SizedBox(
-                                                                width: 5.w,
-                                                              ),
-                                                              Text(
-                                                                endDate == null
-                                                                    ? "Date & Time"
-                                                                    : "${endDate!.day.toString().padLeft(2, '0')}/${endDate!.month.toString().padLeft(2, '0')}/${endDate!.year} ${endDate!.hour.toString().padLeft(2, '0')}:${endDate!.minute.toString().padLeft(2, '0')}",
-                                                                style: AppTextStyle
-                                                                    .c_regular_10(),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-
-                                            SizedBox(height: 20),
-
-                                            /// Phone Field with IntlPhoneField
-                                            IntlPhoneField(
-                                              controller: numberController,
-                                              decoration: InputDecoration(
-                                                labelText: 'Phone Number',
-                                                border: OutlineInputBorder(
-                                                  borderRadius:
-                                                  BorderRadius.circular(12),
-                                                ),
-                                                hintText: 'Enter phone number',
-                                              ),
-                                              initialCountryCode: 'BD',
-                                              onChanged: (phone) {
-                                                setState(() {
-                                                  _phoneCountryCode =
-                                                      phone.countryCode;
-                                                });
-                                                print(
-                                                    'Complete: ${phone.completeNumber}');
-                                              },
-                                            ),
-
-                                            SizedBox(height: 20),
-
-                                            TextFormField(
-                                              controller:
-                                              addressTEController,
-                                              decoration: InputDecoration(
-                                                border: OutlineInputBorder(
-                                                  borderSide: BorderSide(
-                                                    color: Colors.black,
-                                                  ),
-                                                  borderRadius:
-                                                  BorderRadius.circular(12),
-                                                ),
-                                                hintText: "Address",
-                                                hintStyle: TextStyle(
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text("Select Start Date"),
+                                          SizedBox(height: 10),
+                                          InkWell(
+                                            onTap: () =>
+                                                _pickDate(isStart: true),
+                                            child: Container(
+                                              height: 38,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
                                                   color: Colors.grey,
                                                 ),
+                                                borderRadius:
+                                                BorderRadius.circular(
+                                                  8,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                startDate == null
+                                                    ? "Start Date & Time"
+                                                    : "${startDate!.day}/${startDate!.month}/${startDate!.year} ${startDate!.hour}:${startDate!.minute}",
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text("Select End Date"),
+                                          SizedBox(height: 10),
+                                          InkWell(
+                                            onTap: () =>
+                                                _pickDate(isStart: false),
+                                            child: Container(
+                                              height: 38,
+                                              alignment: Alignment.center,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                  color: Colors.grey,
+                                                ),
+                                                borderRadius:
+                                                BorderRadius.circular(
+                                                  8,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                endDate == null
+                                                    ? "End Date & Time"
+                                                    : "${endDate!.day}/${endDate!.month}/${endDate!.year} ${endDate!.hour}:${endDate!.minute}",
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-
-                            /// Checkout button
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal: 10,
-                              ),
-                              child: GetBuilder<CreateBookingController>(
-                                builder: (bookController) {
-                                  return bookController.bookingProgress
-                                      ? const Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppColors.primary_1,
+                                SizedBox(height: 20.h),
+                                IntlPhoneField(
+                                  controller: phoneController,
+                                  initialCountryCode: 'BD',
+                                  decoration: InputDecoration(
+                                    labelText: 'Phone Number',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        12,
+                                      ),
                                     ),
-                                  )
-                                      : CustomButton(
-                                    width: double.infinity,
-                                    text: "Checkout",
-                                    onTap: () async {
+                                  ),
+                                ),
 
-                                      if (_isProcessingPayment) return;
+                                Text("Address"),
+                                SizedBox(height: 10),
+                                TextFormField(
+                                  controller: addressController,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        12,
+                                      ),
+                                    ),
+                                    hintText: "Address",
+                                  ),
+                                ),
+                                SizedBox(height: 20.h),
 
-                                      /// ---------- VALIDATION ----------
-                                      final phoneNumber = numberController.text.trim();
-                                      final address = addressTEController.text.trim();
+                                SizedBox(height: 80.h),
+                              ],
+                            ),
+                          ),
+                        ),
 
-                                      if (!_isValidPhoneNumber(phoneNumber)) {
-                                        _showError("Invalid Phone", "Enter valid phone number");
-                                        return;
-                                      }
+                        SafeArea(
+                          child: Center(
+                            child: SizedBox(
+                              width: 300,
+                              height: 60,
+                              child: ElevatedButton(
+                                onPressed: bookingController.bookingProgress
+                                    ? null
+                                    : () async {
+                                  final phone = phoneController.text.trim();
+                                  final address = addressController.text.trim();
 
-                                      if (address.isEmpty || startDate == null || endDate == null) {
-                                        _showError("Validation Error", "Fill all required fields");
-                                        return;
-                                      }
+                                  if (!_isValidPhone(phone) ||
+                                      startDate == null ||
+                                      endDate == null ||
+                                      address.isEmpty) {
+                                    _showSnackBar(
+                                      "Validation Error",
+                                      "Fill all required fields",
+                                      Colors.red,
+                                    );
+                                    return;
+                                  }
 
-                                      setState(() => _isProcessingPayment = true);
+                                  setState(() => _isProcessingPayment = true);
 
-                                      /// ---------- STRIPE PAYMENT ----------
-                                      final PaymentResult paymentResult =
-                                      await _paymentHelper.processPayment(
-                                        context: context,
-                                        amount: hireController.totalSelectedPrice.toDouble(),
-                                        currency: "USD",
-                                        description: "Hire Booking Payment",
-                                        metadata: {
-                                          "userId": authController.userModel?.id ?? "",
-                                          "productId": id,
-                                        },
-                                      );
-
-                                      setState(() => _isProcessingPayment = false);
-
-                                      /// Wait a moment for the payment sheet to fully close
-                                      await Future.delayed(const Duration(milliseconds: 500));
-
-                                      /// ---------- CREATE BOOKING ----------
-                                      final itemList = hireController.selectedItems.entries
-                                          .map((e) => {
-                                        "itemId": e.key,
-                                        "quantity": e.value,
-                                      })
-                                          .toList();
-
-
-
-                                      /// if payment succesfull
-
-                                      if(paymentResult.isSuccess){
-
-                                        final reqBody = {
-                                          "userId": authController.userModel?.id ?? "",
-                                          "productId": id,
-                                          "bookingItems": itemList,
-                                          "address": address,
-                                          "phoneNumber": phoneNumber,
-                                          "startDateAndTime": startDate!.toUtc().toIso8601String(),
-                                          "endDateAndTime": endDate!.toUtc().toIso8601String(),
-                                          "transactionId": paymentResult.paymentData?['transactionId'],
-                                        };
-
-
-                                        await _createBooking(reqBody);
-
-
-                                      }
-
-
-
-
-
+                                  await _stripeHelper.processPayment(
+                                    context: context,
+                                    amount: controller.totalSelectedPrice.toDouble(),
+                                    currency: "USD",
+                                    description: "Hire Booking Payment",
+                                    metadata: {
+                                      "userId": authController.userModel!.id,
+                                      "productId": hireId,
                                     },
-
                                   );
                                 },
-                              ),
-                            )
+
+
+                                child: bookingController.bookingProgress || _isProcessingPayment
+                                    ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                    : const Text("Checkout"),
+
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary_1,
+                                      disabledBackgroundColor: AppColors.primary_1, // ← key fix
+                                      foregroundColor: Colors.white,
+                                      disabledForegroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+
+
+                              )
+
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                      : ListView(
+                    controller: sc,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    children: [
+                      ProviderInfo(
+                        image: hireDetails.owner.profileUrl,
+                        providerName: hireDetails.owner.fullName,
+                        reviewCount: hireDetails.reviews.length,
+                        onTapCall: () {},
+                        onTapMessage: () {},
+                      ),
+                      SizedBox(height: 10.h),
+                      TabBar(
+                        controller: tabController,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.black,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        indicator: const BoxDecoration(
+                          color: Color(0xffd6c24d),
+                          borderRadius: BorderRadius.all(
+                            Radius.circular(8),
+                          ),
+                        ),
+                        tabs: const [
+                          Tab(text: "About"),
+                          Tab(text: "Review"),
+                        ],
+                      ),
+                      SizedBox(
+                        height: 400.h,
+                        child: TabBarView(
+                          controller: tabController,
+                          children: [
+                            _aboutSection(hireDetails),
+                            ReviewScreen(reviewList: hireDetails.reviews),
                           ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Bottom button row
+                if (!_isCheckoutMode)
+                  SafeArea(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      color: Colors.white,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+
+                            child: Text(
+                              "\$${controller.totalSelectedPrice}",
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Expanded(
+                            flex: 3,
+                            child: SizedBox(
+                              height: 50,
+
+                              child: ElevatedButton(
+                                onPressed: controller.totalSelectedPrice > 0
+                                    ? () =>
+                                    setState(() => _isCheckoutMode = true)
+                                    : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary_1,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+
+                                child: const Text("Book Now"),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
-
-                /// Back button
-                Positioned(
-                  top: 20.h,
-                  left: 20.w,
-                  child: CustomBackButton(onTap: () => Get.back()),
-                ),
               ],
             ),
           );
@@ -928,38 +634,32 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
   }
 
-  /// About section
   Widget _aboutSection(hireDetails) {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
-      child: GetBuilder<HireDetailsController>(
-        builder: (controller) {
-          return GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: controller.hireDetails!.items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 0.77,
-            ),
-            itemBuilder: (context, index) {
-              final item = controller.hireDetails!.items[index];
-
-              return HireCardItem(
-                productImg: item.productPhoto,
-                itemName: item.productName,
-                productPrice: item.price,
-                quantity: controller.getQuantity(item.id),
-                addOnTap: () => controller.addItem(item.id),
-                removeOnTap: () => controller.removeItem(item.id),
-              );
-            },
-          );
-        },
-      ),
+    return GetBuilder<HireDetailsController>(
+      builder: (controller) {
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: hireDetails.items.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.77,
+          ),
+          itemBuilder: (context, index) {
+            final item = hireDetails.items[index];
+            return HireCardItem(
+              productImg: item.productPhoto,
+              itemName: item.productName,
+              productPrice: item.price,
+              quantity: controller.getQuantity(item.id),
+              addOnTap: () => controller.addItem(item.id),
+              removeOnTap: () => controller.removeItem(item.id),
+            );
+          },
+        );
+      },
     );
   }
 }
