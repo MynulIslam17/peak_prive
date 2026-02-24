@@ -12,6 +12,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
+import '../../../../core/constants/env_config.dart';
 
 class BookingRequest extends StatefulWidget {
   const BookingRequest({super.key});
@@ -68,7 +69,7 @@ class _BookingRequestState extends State<BookingRequest> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

@@ -18,6 +18,7 @@ import '../../../../modules/user/massage/views/review_screen.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
+import '../../../../core/constants/env_config.dart';
 
 class HireDetailsScreen extends StatefulWidget {
   const HireDetailsScreen({super.key});
@@ -60,8 +61,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   void _initializeStripe() {
     final config = StripeConfig(
-      secretKey:
-      'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

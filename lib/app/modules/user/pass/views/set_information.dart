@@ -7,6 +7,7 @@ import 'package:harry_service_app/app/core/widgets/custome_button.dart';
 import 'package:harry_service_app/app/data/services/stripe/payment_result.dart';
 import 'package:harry_service_app/app/data/services/stripe/stripe_config.dart';
 import 'package:harry_service_app/app/data/services/stripe/stripe_helper.dart';
+import 'package:harry_service_app/app/core/constants/env_config.dart';
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/pass/models/pass_booking_request_model.dart';
 import 'package:intl/intl.dart';
@@ -237,7 +238,7 @@ class _SetInformationState extends State<SetInformation> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

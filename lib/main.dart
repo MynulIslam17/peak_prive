@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/bindings/app_bindings.dart';
+import 'package:harry_service_app/app/core/constants/env_config.dart';
 
 import 'package:harry_service_app/app/routes/app_pages.dart';
 
@@ -14,8 +15,8 @@ import 'gen/assets.gen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Stripe with publishable key
-  Stripe.publishableKey = "pk_test_51QitDCEAiMVp9XTIp6HoMKcDlA10mMu2lBfnMFvx2RysXjSLTtXizIUFKla2Xbr6FAosWqN4oMsmWgb0aQGkObQi00fshLDYmv";
+  // Initialize Stripe with compile-time injected publishable key
+  Stripe.publishableKey = EnvConfig.stripePk;
 
   runApp(HarryServiceApp());
 }

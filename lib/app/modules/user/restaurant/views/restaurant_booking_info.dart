@@ -9,6 +9,7 @@ import '../../../../core/constants/text-style.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
+import '../../../../core/constants/env_config.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/controllers/pass_booking_controller.dart';
 
@@ -64,7 +65,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

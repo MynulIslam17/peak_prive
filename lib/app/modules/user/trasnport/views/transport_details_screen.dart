@@ -18,6 +18,7 @@ import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
+import '../../../../core/constants/env_config.dart';
 
 class TransportDetailsScreen extends StatefulWidget {
   const TransportDetailsScreen({super.key});
@@ -164,7 +165,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
