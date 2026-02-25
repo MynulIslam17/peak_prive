@@ -31,7 +31,21 @@ abstract class AppColors {
   end: Alignment.bottomLeft,
   stops: [0.0, 1.0],  // Brown to blue blend from top to bottom
  );
+ 
+ 
+ /// gradient for splash
 
+ static const LinearGradient splashGradient = LinearGradient(
+   begin: Alignment.topLeft,
+   end: Alignment.bottomRight,
+   colors: [
+     Color(0xFF093825), // Darkest
+     Color(0xFF093F29),
+     Color(0xFF08523C), // Lighter highlight
+     Color(0xFF024E35), // Deep base
+   ],
+   stops: [0.0, 0.3, 0.7, 1.0],
+ );
 
  /// card background
  static LinearGradient cardBackground = LinearGradient(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/widgets/seat_amount_section.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/provider/details_simmer.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_status_controller.dart';
 import 'package:intl/intl.dart';
@@ -24,7 +23,7 @@ class RestaurantBookingDetails extends StatefulWidget {
 class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
   final PanelController _panelController = PanelController();
   final ItemController itemController = Get.put(ItemController());
-  final statusController  = Get.put(BookingStatusController());
+  final statusController = Get.put(BookingStatusController());
 
   late final String bookingId;
 
@@ -33,17 +32,15 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
     super.initState();
 
     final args = Get.arguments;
-    bookingId = args["bookingId"];
+    bookingId = args["bookingId"] ?? "";
     if (bookingId.isNotEmpty) {
-
       itemController.fetchBookingById(
         bookingId: bookingId,
         providerType: ProviderType.Restaurant,
-      ).then((_){
-        if(itemController.restaurantItem!=null){
+      ).then((_) {
+        if (itemController.restaurantItem != null) {
           itemController.restaurantItem!.data!.isPermitted ?? false;
         }
-
       });
     } else {
       debugPrint(" bookingId not found in Get.arguments");
@@ -79,38 +76,53 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
               ? data.bookingItems!.first.quantity.toString()
               : "0";
 
+          final imageUrl = product?.thumbnail;
+
           return SlidingUpPanel(
             controller: _panelController,
-            maxHeight: size.height * 0.75,
+            // Adjusted minHeight to account for the fixed header height (0.5 * screen)
+            // The panel will start just below the header image
+            maxHeight: size.height,
             minHeight: size.height * 0.55,
             parallaxEnabled: true,
             parallaxOffset: 0.2,
             borderRadius:
             const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
 
             /// PANEL CONTENT
             panelBuilder: (ScrollController sc) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
                 child: Column(
                   children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        height: 4,
+                        width: 40,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade400,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
                     Expanded(
                       child: ListView(
                         controller: sc,
                         children: [
-                          // Drag handle
-                          Center(
-                            child: Container(
-                              height: 4,
-                              width: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade400,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
                           // User card
                           ModernUserCard(
                             profileUrl: user?.profileUrl ?? "",
@@ -175,17 +187,19 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                             icon: Icons.calendar_today,
                             color: Colors.blue,
                           ),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
-
 
                     // Approve button
                     SafeArea(
                       child: GetBuilder<BookingStatusController>(
                         builder: (statusController) {
                           final isLoading = statusController.isLoading;
-                          final approved = itemController.restaurantItem?.data?.isPermitted ?? false;
+                          final approved =
+                              itemController.restaurantItem?.data?.isPermitted ??
+                                  false;
 
                           return SizedBox(
                             width: double.infinity,
@@ -199,12 +213,14 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
 
                                 // Call API to approve
                                 await statusController.changeStatus(
-                                  apiUrl: AppUrls.changeBookingStatus(bookingId),
+                                  apiUrl:
+                                  AppUrls.changeBookingStatus(bookingId),
                                   status: true,
                                 );
 
                                 // Update local model
-                                itemController.restaurantItem?.data?.isPermitted = true;
+                                itemController.restaurantItem?.data
+                                    ?.isPermitted = true;
 
                                 // Stop loading
                                 statusController.setLoading(false);
@@ -213,12 +229,15 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                                 statusController.update();
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: approved ? Colors.green : AppColors.primary_1,
+                                backgroundColor:
+                                approved ? Colors.green : AppColors.primary_1,
                                 foregroundColor: Colors.white,
                                 disabledBackgroundColor: Colors.green,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                elevation: 4,
+                                shadowColor: AppColors.primary_1.withOpacity(0.3),
                               ),
                               child: isLoading
                                   ? const SizedBox(
@@ -242,62 +261,95 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                         },
                       ),
                     ),
-
                   ],
                 ),
               );
             },
 
-            /// HEADER
+            /// HEADER - Using your requested _buildHeader logic
             body: SafeArea(
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: size.height * 0.5,
-                    width: double.infinity,
-                    child: Image.network(
-                      product?.thumbnail ?? "",
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                      const Center(child: Icon(Icons.image_not_supported)),
-                    ),
-                  ),
-                  Positioned(
-                    top: 60,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(
-                        "Request Details",
-                        style: AppTextStyle.h2_semibold_22(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 50,
-                    left: 16,
-                    child: GestureDetector(
-                      onTap: () => Get.back(),
-                      child: Container(
-                        height: 42,
-                        width: 42,
-                        decoration: const BoxDecoration(
-                          color: Colors.black38,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new,
-                          color: Colors.white,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              top: false, // Disable SafeArea here so _buildHeader handles the full height
+              child: _buildHeader(size, imageUrl),
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// header with image
+  Widget _buildHeader(Size size, String? imageUrl) {
+    return Stack(
+      children: [
+        Container(
+          height: size.height * 0.5,
+          width: double.infinity,
+          color: Colors.grey[300],
+          child: imageUrl != null
+              ? Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                Container(color: Colors.grey[300]),
+          )
+              : Container(color: Colors.grey[300]),
+        ),
+        Positioned(
+          top: 45, // Adjusted based on typical status bar height + padding
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _backButton(),
+              const Text(
+                "Request Details",
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black45,
+                        blurRadius: 4.0,
+                        offset: Offset(0, 2),
+                      )
+                    ]),
+              ),
+              const SizedBox(width: 48), // Spacer to balance the back button
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _backButton() {
+    return GestureDetector(
+      onTap: () => Get.back(),
+      child: Container(
+        height: 48,
+        width: 48,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
     );
   }
@@ -317,12 +369,19 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
         gradient: LinearGradient(
           colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: color.withOpacity(0.2),
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -331,11 +390,15 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
               children: [
                 Text(label,
                     style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade700)),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700)),
                 const SizedBox(height: 4),
                 Text(value,
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2C3E50))),
               ],
             ),
           ),
@@ -344,29 +407,15 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
     );
   }
 
-
-
-
   String formatDateTime(String? dateString) {
     if (dateString == null || dateString.isEmpty) return "N/A";
 
     try {
-      // Parse the string to DateTime
       DateTime dateTime = DateTime.parse(dateString).toLocal();
-
-      // Format the DateTime
       final formatter = DateFormat('dd MMM yyyy, hh:mm a');
       return formatter.format(dateTime);
     } catch (e) {
       return "Invalid date";
     }
   }
-
-
-
-
-
-
-
-
 }

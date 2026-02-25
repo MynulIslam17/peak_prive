@@ -21,6 +21,8 @@ class HireBookingDetails extends StatefulWidget {
   State<HireBookingDetails> createState() => _HireBookingDetailsState();
 }
 
+
+
 class _HireBookingDetailsState extends State<HireBookingDetails>
     with SingleTickerProviderStateMixin {
   final PanelController _panelController = PanelController();
@@ -41,10 +43,15 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
     );
 
     final arguments = Get.arguments;
-    bookingId = arguments["bookingId"];
+    bookingId = arguments["bookingId"] ?? "";
 
     if (bookingId.isNotEmpty) {
-      itemController.fetchBookingById(bookingId: bookingId,providerType: ProviderType.Ski_Hire).then((_) {
+      itemController
+          .fetchBookingById(
+        bookingId: bookingId,
+        providerType: ProviderType.Ski_Hire,
+      )
+          .then((_) {
         if (itemController.hireItem != null) {
           statusController.setInitialStatus(
             itemController.hireItem!.data!.isPermitted ?? false,
@@ -60,15 +67,139 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
     super.dispose();
   }
 
+
+  Widget _buildHeader(Size size, String? imageUrl) {
+    return Stack(
+      children: [
+        // Background Image Container
+        Container(
+          height: size.height * 0.5,
+          width: double.infinity,
+          color: Colors.grey[300],
+          child: imageUrl != null && imageUrl.isNotEmpty
+              ? Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Colors.grey[300],
+                child: const Icon(
+                  Icons.broken_image,
+                  color: Colors.grey,
+                  size: 40,
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                      : null,
+                  color: Colors.white70,
+                ),
+              );
+            },
+          )
+              : Container(
+            color: Colors.grey[300],
+            child: const Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+              size: 40,
+            ),
+          ),
+        ),
+        // Gradient Overlay for better text readability
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.5),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.7],
+              ),
+            ),
+          ),
+        ),
+        // Header Content: Back Button + Title
+        Positioned(
+          top: 45,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Back Button
+              GestureDetector(
+                onTap: () => Get.back(),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              // Title
+              const Text(
+                "Request Details",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              // Spacer for balance (or add menu icon here if needed)
+              const SizedBox(width: 48),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ Helper: Back button widget (optional, can inline as above)
+  Widget _backButton() {
+    return GestureDetector(
+      onTap: () => Get.back(),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double height = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final screenSize = Size(screenWidth, height);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
       body: GetBuilder<ItemController>(
         builder: (controller) {
-          if (controller.isLoading) return RestaurantDetailsShimmer();
+          if (controller.isLoading) return const RestaurantDetailsShimmer();
 
           if (controller.errorMessage != null) {
             return Center(
@@ -81,85 +212,98 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                     color: Colors.grey.shade400,
                   ),
                   const SizedBox(height: 16),
-                  Text(controller.errorMessage!),
+                  Text(
+                    controller.errorMessage!,
+                    style: const TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      itemController.fetchBookingById(
+                        bookingId: bookingId,
+                        providerType: ProviderType.Ski_Hire,
+                      );
+                    },
+                    child: const Text("Retry"),
+                  )
                 ],
               ),
             );
           }
 
-          final data = controller.hireItem!.data;
-          final user = data!.user;
+          final data = controller.hireItem?.data;
+          if (data == null) return const SizedBox.shrink();
+
+          final user = data.user;
           final product = data.product;
           final bookingItems = data.bookingItems;
 
-
           return SlidingUpPanel(
             controller: _panelController,
-            maxHeight: height * 0.75,
+            maxHeight: height * 0.99,
             minHeight: height * 0.55,
             parallaxEnabled: true,
             parallaxOffset: 0.2,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             panelBuilder: (ScrollController scController) {
               return Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        height: 4,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 4,
+                      width: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: ListView(
-                          controller: scController,
-                          children: [
-                            ModernUserCard(
-                              profileUrl: user!.profileUrl,
-                              fullName: user.fullName,
-                              serviceArea: product!.serviceArea,
-                              onCallTap: () {},
-                              onMessageTap: () {},
-                            ),
-                            const SizedBox(height: 20),
-                            if (bookingItems != null && bookingItems.isNotEmpty)
-                              _buildItemsSection(bookingItems),
-                            const SizedBox(height: 20),
-                            PricingSection(
-                              extraChargePerHour:
-                                  product.extraChargePerHour ?? 0,
-                              totalPrice: data!.totalPrice ?? 0,
-                            ),
-                            const SizedBox(height: 20),
-                            ContactDetailsSection(
-                              address: user.address ?? "N/A",
-                              phoneNumber: user.phoneNumber ?? "N/A",
-                            ),
-                            const SizedBox(height: 20),
-                            TimeScheduleSection(
-                              startDateTime: data.startDateAndTime!,
-                              endDateTime: data.endDateAndTime!,
-                            ),
-                            const SizedBox(height: 20),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: ListView(
+                        controller: scController,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          ModernUserCard(
+                            profileUrl: user?.profileUrl,
+                            fullName: user?.fullName ?? "Unknown User",
+                            serviceArea: product?.serviceArea ?? "N/A",
+                            onCallTap: () {},
+                            onMessageTap: () {},
+                          ),
+                          const SizedBox(height: 20),
+                          if (bookingItems != null && bookingItems.isNotEmpty)
+                            _buildItemsSection(bookingItems),
+                          const SizedBox(height: 20),
+                          PricingSection(
+                            extraChargePerHour: product?.extraChargePerHour ?? 0,
+                            totalPrice: data.totalPrice ?? 0,
+                          ),
+                          const SizedBox(height: 20),
+                          ContactDetailsSection(
+                            address: user?.address ?? "N/A",
+                            phoneNumber: user?.phoneNumber ?? "N/A",
+                          ),
+                          const SizedBox(height: 20),
+                          TimeScheduleSection(
+                            startDateTime: data.startDateAndTime ?? "",
+                            endDateTime: data.endDateAndTime ?? "",
+                          ),
+                          const SizedBox(height: 30),
+                        ],
                       ),
-                      SafeArea(
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
                         child: SizedBox(
                           width: double.infinity,
-                          height: 60,
+                          height: 56,
                           child: GetBuilder<BookingStatusController>(
                             builder: (sController) => OutlinedButton(
                               onPressed: () async {
@@ -173,119 +317,59 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                                 }
                               },
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
-                                backgroundColor: sController.isPermitted! ? Colors.green :  AppColors.primary_1,
+                                backgroundColor:
+                                sController.isPermitted! ? Colors.green : AppColors.primary_1,
                                 foregroundColor: Colors.white,
-                                side: BorderSide(
-                                  color: Colors.grey.shade300,
-                                  width: 1.5,
-                                ),
+                                side: BorderSide.none,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: sController.isLoading
-                                  ? Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                      ),
-                                    )
+                                  ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                                   : Text(
-                                      sController.isPermitted == true
-                                          ? "✓ Approved"
-                                          : "Approve",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                      ),
-                                    ),
+                                sController.isPermitted == true
+                                    ? "✓ Approved"
+                                    : "Approve Booking",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               );
             },
-            body: _buildModernHeader(height, product),
+
+            body: _buildHeader(
+              screenSize,
+              product?.thumbnail ?? "",
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildModernHeader(double height, product) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                height: height * 0.5,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF1a1a2e).withOpacity(0.7),
-                      const Color(0xFF16213e).withOpacity(0.7),
-                    ],
-                  ),
-                ),
-                child: Image.network(product?.thumbnail ?? "", fit: BoxFit.cover),
-              ),
-              Positioned(
-                top: 66,
-                child: Text(
-                  "Request Details",
-                  style: AppTextStyle.h2_semibold_22(color: Colors.white),
-                ),
-              ),
-              Positioned(
-                top: 66,
-                left: 16,
-                child: GestureDetector(
-                  onTap: () => Get.back(),
-                  child: Container(
-                    height: 42,
-                    width: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.black38,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildItemsSection(bookingItems) {
+  // ... (_buildItemsSection remains unchanged)
+  Widget _buildItemsSection(List<dynamic> bookingItems) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Items",
+          "Rented Items",
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -294,50 +378,52 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 90,
+          height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: bookingItems.length,
             itemBuilder: (context, index) {
-              final item = bookingItems[index];
+              final itemData = bookingItems[index];
+              final item = itemData.item;
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: Container(
-                  width: 75,
+                  width: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.grey.shade200, width: 1),
+                    color: Colors.white,
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Column(
-                      children: [
-                        Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(11)),
                           child: Image.network(
-                            item.item?.productPhoto ?? "",
+                            item?.productPhoto ?? "",
                             fit: BoxFit.cover,
                             width: double.infinity,
+                            errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported, size: 30),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(6.0),
+                        child: Text(
+                          item?.productName ?? "Item",
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
                           ),
-                          child: Text(
-                            item.item?.productName ?? "Item",
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               );

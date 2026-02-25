@@ -65,12 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (isSuccess) {
 
-        // Get.snackbar(
-        //   "Success",
-        //   "Login successful",
-        //   snackPosition: SnackPosition.TOP,
-        //   backgroundColor: AppColors.primary_1,
-        // );
+
 
         final role = loginController.getUserModel!.role;
         if (role == "User") {
@@ -131,7 +126,13 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: 50.h),
-              images.skiPass9.image(),
+             
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset("assets/images/app_logo.png"),
+                
+              ),
+              
               SizedBox(height: 100.h),
 
               // Email Field

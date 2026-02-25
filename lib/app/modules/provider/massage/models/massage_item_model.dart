@@ -1,4 +1,30 @@
 // =======================
+// Safe Parser Helper
+// =======================
+class SafeParser {
+  static Category? parseCategory(dynamic value) {
+    if (value == null) return null;
+
+    // Case 1: It's already a Map (Object)
+    if (value is Map<String, dynamic>) {
+      return Category.fromJson(value);
+    }
+
+    // Case 2: It's a String (ID only)
+    if (value is String) {
+      return Category(id: value, name: null);
+    }
+
+    return null;
+  }
+
+  static String? getString(dynamic value) {
+    if (value == null) return null;
+    return value.toString().trim();
+  }
+}
+
+// =======================
 // Helper for flexibility
 // =======================
 Map<String, dynamic> extractExtra(
@@ -185,7 +211,7 @@ class User {
       id: json['_id'],
       fullName: json['fullName'],
       email: json['email'],
-      profileUrl: json['profileUrl'],
+      profileUrl: SafeParser.getString(json['profileUrl']),
       address: json['address'],
       status: json['status'],
       phoneNumber: json['phoneNumber'],
@@ -248,9 +274,9 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['_id'],
-      category:
-      json['category'] != null ? Category.fromJson(json['category']) : null,
-      thumbnail: json['thumbnail'],
+      // FIX: Use SafeParser to handle both String and Map for category
+      category: SafeParser.parseCategory(json['category']),
+      thumbnail: SafeParser.getString(json['thumbnail']),
       title: json['title'],
       openTime: json['openTime'],
       closeTime: json['closeTime'],
@@ -313,7 +339,7 @@ class Category {
     return Category(
       id: json['_id'],
       name: json['name'],
-      categoryPhoto: json['categoryPhoto'],
+      categoryPhoto: SafeParser.getString(json['categoryPhoto']),
       extra: extractExtra(json, ['_id', 'name', 'categoryPhoto']),
     );
   }

@@ -68,7 +68,6 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
 
           final transport = controller.transportItem?.data;
           if (transport == null) {
-
             return const Center(child: Text("No data found"));
           }
 
@@ -78,8 +77,10 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
 
           return SlidingUpPanel(
             controller: _panelController,
-            maxHeight: size.height * 0.75,
+            maxHeight: size.height * 0.99,
             minHeight: size.height * 0.55,
+            parallaxEnabled: true,
+            parallaxOffset: 0.2,
             borderRadius:
             const BorderRadius.vertical(top: Radius.circular(24)),
             panelBuilder: (sc) {
@@ -108,7 +109,7 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                           if (user != null)
                             ModernUserCard(
                               fullName: user.fullName ?? "N/A",
-                              serviceArea: user.address?? "N/A",
+                              serviceArea: user.address ?? "N/A",
                               profileUrl: user.profileUrl ?? "N/A",
                             ),
 
@@ -185,34 +186,36 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                             height: 60,
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: ()async{
-
-                                if(!isPermitted){
-
-
+                              onPressed: () async {
+                                if (!isPermitted) {
                                   await statusController.changeStatus(
                                     apiUrl: AppUrls.changeBookingStatus(
                                       bookingId,
                                     ),
                                     status: true,
                                   );
-
                                 }
-
-
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:statusCtrl.isPermitted! ? Colors.green :  AppColors.primary_1 ,
+                                backgroundColor: statusCtrl.isPermitted!
+                                    ? Colors.green
+                                    : AppColors.primary_1,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: statusCtrl.isLoading ? Center(child: CircularProgressIndicator(color: Colors.white,)) : Text(
+                              child: statusCtrl.isLoading
+                                  ? Center(
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                ),
+                              )
+                                  : Text(
                                 statusCtrl.isPermitted == true
                                     ? "✓ Approved"
                                     : "Approve",
-                              )
+                              ),
                             ),
                           );
                         },
@@ -229,47 +232,68 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
     );
   }
 
-  /// HEADER
+  /// ✅ UPDATED HEADER - Simple with image, back button & title
   Widget _buildHeader(Size size, String? imageUrl) {
-    return SafeArea(
-      child: Stack(
-        children: [
-          Container(
-            height: size.height * 0.5,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
-              ),
-            ),
-            child: imageUrl != null
-                ? Image.network(imageUrl, fit: BoxFit.cover)
-                : const SizedBox(),
-          ),
-          Positioned(
-            top: 50,
-            left: 16,
-            child: GestureDetector(
-              onTap: Get.back,
-              child: const CircleAvatar(
-                backgroundColor: Colors.black38,
-                child: Icon(Icons.arrow_back_ios_new,
-                    color: Colors.white, size: 18),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 50,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Text(
+    return Stack(
+      children: [
+        Container(
+          height: size.height * 0.5,
+          width: double.infinity,
+          color: Colors.grey[300],
+          child: imageUrl != null
+              ? Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) =>
+                Container(color: Colors.grey[300]),
+          )
+              : Container(color: Colors.grey[300]),
+        ),
+        Positioned(
+          top: 45, // Adjusted based on typical status bar height + padding
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _backButton(),
+              const Text(
                 "Request Details",
-                style: AppTextStyle.h2_semibold_22(color: Colors.white),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black45,
+                        blurRadius: 4.0,
+                        offset: Offset(0, 2),
+                      )
+                    ]),
               ),
-            ),
+              const SizedBox(width: 48), // Spacer to balance the back button
+            ],
           ),
-        ],
+        ),
+      ],
+    );
+  }
+
+  /// ✅ Helper: Back button widget
+  Widget _backButton() {
+    return GestureDetector(
+      onTap: () => Get.back(),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
     );
   }
@@ -280,8 +304,8 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         text,
-        style:
-        TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+        style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
@@ -323,9 +347,21 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey[600])),
+                Text(
+                  label,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[600]),
+                ),
                 const SizedBox(height: 6),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF2C3E50))),
+                Text(
+                  value,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C3E50)),
+                ),
               ],
             ),
           ),
@@ -333,13 +369,6 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
       ),
     );
   }
-
-
-
-
-
-
-
 
   String calculateDuration(String? start, String? end) {
     if (start == null || end == null) return "N/A";
@@ -351,7 +380,6 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
       Duration diff = endDate.difference(startDate);
 
       if (diff.isNegative) {
-        // Handle if endDate is before startDate
         diff = diff.abs();
       }
 
@@ -369,11 +397,4 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
       return "Invalid date";
     }
   }
-
-
-
-
-
-
-
 }

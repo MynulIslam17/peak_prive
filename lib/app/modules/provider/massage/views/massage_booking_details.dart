@@ -60,12 +60,13 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
           }
 
           final user = data.user;
+          final imageUrl = data.product?.thumbnail;
 
           return Stack(
             children: [
               SlidingUpPanel(
                 controller: _panelController,
-                maxHeight: size.height * 0.75,
+                maxHeight: size.height * 0.99,
                 minHeight: size.height * 0.55,
                 parallaxEnabled: true,
                 parallaxOffset: 0.2,
@@ -79,7 +80,7 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                 ],
                 panelBuilder: (ScrollController sc) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -250,81 +251,75 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                     ),
                   );
                 },
-                body: SafeArea(
-                  child: Stack(
-                    children: [
-                      // Header image
-                      Container(
-                        height: size.height * 0.5,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              const Color(0xFF1a1a2e).withOpacity(0.5),
-                              const Color(0xFF16213e).withOpacity(0.5),
-                            ],
-                          ),
-                        ),
-                        child: data.product?.thumbnail != null
-                            ? Image.network(
-                          data.product!.thumbnail!,
-                          fit: BoxFit.cover,
-                        )
-                            : Container(color: Colors.grey[300]),
-                      ),
-
-                      // Back button + Title
-                      Positioned(
-                        top: 45,
-                        left: 16,
-                        right: 16,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            GestureDetector(
-                              onTap: () => Get.back(),
-                              child: Container(
-                                height: 48,
-                                width: 48,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.4),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.15),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.2),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              "Request Details",
-                              style: AppTextStyle.h2_semibold_22(color: Colors.white),
-                            ),
-                            const SizedBox(width: 48),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // --- UPDATED HEADER SECTION ---
+                body: _buildHeader(size, imageUrl),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  // --- NEW HEADER METHOD ---
+  Widget _buildHeader(Size size, String? imageUrl) {
+    return Stack(
+      children: [
+        Container(
+          height: size.height * 0.5,
+          width: double.infinity,
+          color: Colors.grey[300],
+          child: imageUrl != null
+              ? Image.network(imageUrl, fit: BoxFit.cover)
+              : Container(color: Colors.grey[300]),
+        ),
+        Positioned(
+          top: 45,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _backButton(),
+              const Text(
+                "Request Details",
+                style: TextStyle(
+                    color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _backButton() {
+    return GestureDetector(
+      onTap: () => Get.back(),
+      child: Container(
+        height: 48,
+        width: 48,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.4),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Colors.white,
+          size: 20,
+        ),
       ),
     );
   }

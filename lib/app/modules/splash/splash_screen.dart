@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,14 +71,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+    
 
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(child: Text("Logo", style: AppTextStyle.h2_semibold_22())),
-        ],
-      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.splashGradient
+        ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset("assets/images/app_logo2.png"),
+            ),
+          ),
+        )
+      )
     );
   }
 }

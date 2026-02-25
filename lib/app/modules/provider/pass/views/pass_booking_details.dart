@@ -76,7 +76,7 @@ class _PassBookingDetailsState extends State<PassBookingDetails> {
 
         return SlidingUpPanel(
           controller: _panelController,
-          maxHeight: size.height * 0.75,
+          maxHeight: size.height * 0.99,
           minHeight: size.height * 0.55,
           parallaxEnabled: true,
           parallaxOffset: 0.2,
@@ -186,7 +186,7 @@ class _PassBookingDetailsState extends State<PassBookingDetails> {
               ),
             );
           },
-          body: SafeArea(child: _buildHeader(size, product?.thumbnail)),
+          body: _buildHeader(size, product?.thumbnail),
         );
       }),
     );

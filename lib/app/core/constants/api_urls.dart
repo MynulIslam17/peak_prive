@@ -3,7 +3,7 @@ class AppUrls{
   //https://qwkbmjl3-5000.inc1.devtunnels.ms/api/v1
 
 /// base url
-  static const baseUrl="https://qwkbmjl3-5000.inc1.devtunnels.ms/api/v1";
+  static const baseUrl="https://api.peakprivee.com/api/v1";
 
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
@@ -194,7 +194,7 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   ///======================hire Provider=======================
 
-  static String providerHireUrl="$baseUrl/ski-hire/all";
+  static String providerHireUrl="$baseUrl/ski-hire/my-all";
   static String createHireUrl="$baseUrl/ski-hire/create";
   static String deleteHireServiceUrl(String id)=>"$baseUrl/ski-hire/delete/$id";
   static String updateHireServiceUrl(String id)=>"$baseUrl/ski-hire/update/$id";

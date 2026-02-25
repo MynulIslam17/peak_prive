@@ -37,9 +37,12 @@ class Data {
   String? phoneNumber;
   String? address;
   bool? isPermitted;
+  bool? isHandOver;
   String? createdAt;
   String? updatedAt;
   int? iV;
+  String? timeLabel;
+  double? overTimeAmount;
 
   Data({
     this.sId,
@@ -56,9 +59,12 @@ class Data {
     this.phoneNumber,
     this.address,
     this.isPermitted,
+    this.isHandOver,
     this.createdAt,
     this.updatedAt,
     this.iV,
+    this.timeLabel,
+    this.overTimeAmount,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) {
@@ -80,9 +86,14 @@ class Data {
       phoneNumber: json['phoneNumber'],
       address: json['address'],
       isPermitted: json['isPermitted'],
+      isHandOver: json['isHandOver'],
       createdAt: json['createdAt'],
       updatedAt: json['updatedAt'],
       iV: json['__v'],
+      timeLabel: json['timeLabel'],
+      overTimeAmount: json['overTimeAmount'] is num
+          ? (json['overTimeAmount'] as num).toDouble()
+          : null,
     );
   }
 
@@ -102,9 +113,12 @@ class Data {
     json['phoneNumber'] = phoneNumber;
     json['address'] = address;
     json['isPermitted'] = isPermitted;
+    json['isHandOver'] = isHandOver;
     json['createdAt'] = createdAt;
     json['updatedAt'] = updatedAt;
     json['__v'] = iV;
+    json['timeLabel'] = timeLabel;
+    json['overTimeAmount'] = overTimeAmount;
     return json;
   }
 }
@@ -133,7 +147,7 @@ class User {
       sId: json['_id'],
       fullName: json['fullName'],
       email: json['email'],
-      profileUrl: json['profileUrl'],
+      profileUrl: json['profileUrl']?.toString().trim(),
       address: json['address'],
       status: json['status'],
       phoneNumber: json['phoneNumber'],
@@ -171,11 +185,19 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    String? catValue;
+    final catRaw = json['category'];
+    if (catRaw is String) {
+      catValue = catRaw;
+    } else if (catRaw is Map<String, dynamic>) {
+      catValue = catRaw['name'];
+    }
+
     return Product(
       sId: json['_id'],
-      category: json['category'],
+      category: catValue,
       title: json['title'],
-      thumbnail: json['thumbnail'],
+      thumbnail: json['thumbnail']?.toString().trim(),
       extraChargePerHour: json['extraChargePerHour'],
       serviceArea: json['serviceArea'],
     );
@@ -237,7 +259,7 @@ class Item {
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
       productName: json['productName'],
-      productPhoto: json['productPhoto'],
+      productPhoto: json['productPhoto']?.toString().trim(),
       price: json['price'],
       totalQty: json['totalQty'],
       availableQty: json['availableQty'],
