@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Harry Service App</string>
+	<string>Peak Privee</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -27,9 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Harry Service App needs camera access to take photos for your profile and service listings.</string>
+	<string>Peak Privee needs camera access to take photos for your profile and service listings.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Harry Service App needs access to your photo library to select images for your profile and service listings.</string>
+	<string>Peak Privee needs access to your photo library to select images for your profile and service listings.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
