@@ -36,6 +36,7 @@ import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/hire/views/user_hire_booking_info.dart';
+import 'package:harry_service_app/app/modules/user/itinerary/itinerary_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/bindings/message_details_binding.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
@@ -373,6 +374,14 @@ abstract class AppPages {
     GetPage(name: Routes.hireDetailsService, /// show booking user data to provider
         page: ()=>HireBookingDetails()
      ),
+
+
+    GetPage(name: Routes.itinerary,
+        page: ()=>ItineraryScreen()
+     ),
+
+
+
 
 
 

@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
       body: Container(
         decoration: BoxDecoration(
-          gradient: AppColors.splashGradient
+         color: Color(0xff08523C)
         ),
         child: Center(
           child: Padding(

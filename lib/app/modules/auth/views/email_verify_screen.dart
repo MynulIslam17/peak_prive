@@ -20,14 +20,12 @@ class EmailVerifyScreen extends StatefulWidget {
 }
 
 class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
-
-
   /// textEditingController
 
-  final emailTEController=TextEditingController();
+  final emailTEController = TextEditingController();
 
   ///getx controllers
-  final emailController=Get.find<EmailVerifyController>();
+  final emailController = Get.find<EmailVerifyController>();
 
   @override
   void dispose() {
@@ -36,9 +34,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
     emailTEController.dispose();
 
     super.dispose();
-
   }
-
 
   final icons = Assets.icons;
   final images = Assets.images;
@@ -52,53 +48,54 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
         title: "E-mail Verification",
       ),
 
-
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
-
           children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                height: 100,
+                width: 260,
+                "assets/images/app_logo2.png",
+              ),
+            ),
 
-            images.skiAccories3.image(),
-
-
-            SizedBox(height: 50,),
+            SizedBox(height: 50),
 
             CustomTextField(
               controller: emailTEController,
               hintText: "Email",
               filledColor: Color(0xffF0F0F0),
               prefixIcon: Icons.email,
-
-
             ),
-            SizedBox(height: 40,),
-            
+            SizedBox(height: 40),
+
             /// send otp button
-            GetBuilder<EmailVerifyController>(builder: (controller){
-
-              return controller.emailVerifyProgress
-                  ?CircularProgressIndicator(color: AppColors.primary_1,)
-                  :Flexible(
-                child: CustomButton(
-
-                    onTap: _verifyEmailHandler, text: "Send OTP", backgroundColor:AppColors.primary_1),
-              );
-
-            })
-
-
+            GetBuilder<EmailVerifyController>(
+              builder: (controller) {
+                return controller.emailVerifyProgress
+                    ? CircularProgressIndicator(color: AppColors.primary_1)
+                    : Flexible(
+                        child: CustomButton(
+                          onTap: _verifyEmailHandler,
+                          text: "Send OTP",
+                          backgroundColor: AppColors.primary_1,
+                        ),
+                      );
+              },
+            ),
           ],
         ),
       ),
     );
   }
-  
-  
+
   /// send otp handler event
-  
-  void _verifyEmailHandler()async {
+
+  void _verifyEmailHandler() async {
+
+
     final email = emailTEController.text.trim();
 
     if (email.isEmpty) {
@@ -112,7 +109,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
       return;
     }
 
-    if(!EmailValidator.validate(email)){
+    if (!EmailValidator.validate(email)) {
       Get.snackbar(
         "Error",
         "Not a valid email",
@@ -123,33 +120,34 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
       return;
     }
 
-
     /// if everyThings ok call api
 
     bool response = await emailController.emailVerify(email);
 
-    if(response){ /// if successful
-      Get.snackbar("Otp", "A Otp send to your email",snackPosition: SnackPosition.TOP,backgroundColor: AppColors.primary_1);
+    if (response) {
+      /// if successful
+      Get.snackbar(
+        "Otp",
+        "A Otp send to your email",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppColors.primary_1,
+      );
 
       Get.toNamed(
         Routes.otpVerify,
+
         /// pass email and flag to otp verify class
-        arguments: {
-          "isFromSignUp": false,
-          "email" : email
-        },
+        arguments: {"isFromSignUp": false, "email": email},
       );
-    }else{ /// if Umsuccessful
+    } else {
+      /// if Umsuccessful
 
-      Get.snackbar("Error","${emailController.errorMessage},",snackPosition: SnackPosition.BOTTOM,backgroundColor: Colors.red);
-
+      Get.snackbar(
+        "Error",
+        "${emailController.errorMessage},",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+      );
     }
-
-
-
   }
-
-
-
-  
 }

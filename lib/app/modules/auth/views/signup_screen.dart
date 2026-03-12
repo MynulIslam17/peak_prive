@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/user_singup_controller.dart';
 import 'package:harry_service_app/app/modules/auth/models/signup_request_model.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/text-style.dart';
 import '../../../core/widgets/appbar_with_title.dart';
@@ -22,6 +23,9 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final icons = Assets.icons;
   final image = Assets.images;
+
+  String phoneNumber = "";
+
   bool _isAgree = false;
 
   final nameTEController = TextEditingController();
@@ -31,9 +35,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   final _formKey = GlobalKey<FormState>();
 
-  final String role="User";
+  final String role = "User";
 
-  final signUpController=Get.find<UserSignupController>();
+  final signUpController = Get.find<UserSignupController>();
 
   @override
   void dispose() {
@@ -63,22 +67,32 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  image.skiPass9.image(width: double.infinity),
+
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      height: 100,
+                      width: 260,
+                      "assets/images/app_logo2.png",
+                    ),
+                  ),
                   SizedBox(height: 5.h),
                   Text(
                     "Create Account",
-                    style: AppTextStyle.c_regular_12(color: AppColors.primary_1)
-                        .copyWith(fontSize: 20),
+                    style: AppTextStyle.c_regular_12(
+                      color: AppColors.primary_1,
+                    ).copyWith(fontSize: 20),
                   ),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 2.h),
                   Text(
                     "Enter this information properly and get excited service properly!",
-                    style: AppTextStyle.c_regular_12(color: AppColors.primary_1)
-                        .copyWith(fontSize: 14),
+                    style: AppTextStyle.c_regular_12(
+                      color: AppColors.primary_1,
+                    ).copyWith(fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 10.h),
-          
+
                   /// Name
                   CustomTextField(
                     controller: nameTEController,
@@ -93,7 +107,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
                   SizedBox(height: 9.h),
-          
+
                   /// Email
                   CustomTextField(
                     controller: emailTEController,
@@ -111,7 +125,54 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
                   SizedBox(height: 9.h),
-          
+
+                  IntlPhoneField(
+                    initialCountryCode: 'CA',
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue, width: 2),
+                      ),
+
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red, width: 2),
+                      ),
+                    ),
+
+                    onChanged: (phone) {
+                      phoneNumber = phone.completeNumber;
+                    },
+
+                    validator: (phone) {
+                      if (phone == null || phone.number.isEmpty) {
+                        return "Phone number required";
+                      }
+
+                      if (!phone.isValidNumber()) {
+                        return "Invalid phone number";
+                      }
+
+                      return null;
+                    },
+                  ),
+
                   /// Password
                   CustomTextField(
                     controller: passwordTEController,
@@ -130,7 +191,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
                   SizedBox(height: 9.h),
-          
+
                   /// Confirm Password
                   CustomTextField(
                     controller: confirmTEController,
@@ -149,7 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     },
                   ),
                   SizedBox(height: 10.h),
-          
+
                   /// Terms & Sign In Row
                   Row(
                     children: [
@@ -175,30 +236,33 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                         child: Text(
                           "Sign in",
-                          style: AppTextStyle.p_medium_12(color: AppColors.primary_1),
+                          style: AppTextStyle.p_medium_12(
+                            color: AppColors.primary_1,
+                          ),
                         ),
                       ),
                     ],
                   ),
                   SizedBox(height: 30.h),
-          
+
                   /// Submit Button
                   GetBuilder<UserSignupController>(
-                      builder: (controller){
-          
-                        return controller.signupProgress
-                            ?CircularProgressIndicator(color: AppColors.primary_1,)
-                           : SizedBox(
-                          height: 67,
-                          width: double.infinity,
-                          child: CustomButton(
-                            onTap: _submit,
-                            text: "Submit",
-                            backgroundColor: AppColors.primary_1,
-                          ),
-                        );
-          
-                  })
+                    builder: (controller) {
+                      return controller.signupProgress
+                          ? CircularProgressIndicator(
+                              color: AppColors.primary_1,
+                            )
+                          : SizedBox(
+                              height: 67,
+                              width: double.infinity,
+                              child: CustomButton(
+                                onTap: _submit,
+                                text: "Submit",
+                                backgroundColor: AppColors.primary_1,
+                              ),
+                            );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -209,65 +273,78 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   /// Submit logic
-  void _submit()async {
+  void _submit() async {
 
-    if (_formKey.currentState!.validate()) {
-
-
-
-      if (!_isAgree) {
-        Get.snackbar("Terms Required", "Please agree to terms and conditions",backgroundColor: Colors.red,colorText: Colors.white,snackPosition: SnackPosition.BOTTOM);
-        return;
-      }
-
-
-
-      /// get String  from user
-
-     String name=nameTEController.text.trim();
-     String email=emailTEController.text.trim();
-     String password=passwordTEController.text.trim();
-     String confirmPassword=confirmTEController.text.trim();
-
-
-     /// call api part ========
-
-      SignupRequestModel model=SignupRequestModel(fullName: name, email: email, password: password, confirmPassword: confirmPassword, role: role);
-
-
-         bool isSuccess = await signUpController.signup(model);
-
-
-
-       /// check api result
-         if(isSuccess){
-           Get.snackbar("Otp", "A Otp send to your email",snackPosition: SnackPosition.TOP,backgroundColor: AppColors.primary_1);
-           /// navigate to otp verify screen
-           Get.toNamed(
-               Routes.otpVerify,
-               arguments: {
-                 "isFromSignUp" : true,
-                 "email" : email,
-               }
-           );
-
-
-
-         }else{
-           Get.snackbar("Error","${signUpController.errorMessage},",snackPosition: SnackPosition.BOTTOM,backgroundColor: Colors.red);
-         }
-
-
-
-
-
-
-
-
+    /// Validate all form fields
+    if (!_formKey.currentState!.validate()) {
+      return; // stop if any field has error
     }
 
+    /// Check phone number
+    if (phoneNumber.isEmpty) {
+      Get.snackbar(
+        "Phone Required",
+        "Please enter a valid phone number",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
 
+    /// Check terms agreement
+    if (!_isAgree) {
+      Get.snackbar(
+        "Terms Required",
+        "Please agree to terms and conditions",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
 
+    /// get user input
+    String name = nameTEController.text.trim();
+    String email = emailTEController.text.trim();
+    String password = passwordTEController.text.trim();
+    String confirmPassword = confirmTEController.text.trim();
 
+    /// create request model
+    SignupRequestModel model = SignupRequestModel(
+      fullName: name,
+      email: email,
+      phoneNumber: phoneNumber,
+      password: password,
+      confirmPassword: confirmPassword,
+      role: role,
+    );
+
+    /// call API
+    bool isSuccess = await signUpController.signup(model);
+
+    /// check result
+    if (isSuccess) {
+      Get.snackbar(
+        "Otp",
+        "An OTP was sent to your email",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: AppColors.primary_1,
+      );
+
+      /// navigate to OTP screen
+      Get.toNamed(
+        Routes.otpVerify,
+        arguments: {"isFromSignUp": true, "email": email},
+      );
+
+    } else {
+      Get.snackbar(
+        "Error",
+        signUpController.errorMessage!,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+      );
+    }
   }
 }

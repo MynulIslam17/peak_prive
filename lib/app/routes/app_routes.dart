@@ -141,6 +141,13 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
   static const hireDetailsService="/hireDetailsService";/// show booking user data to provider
 
 
+//itinerary
+  static const itinerary="/itinerary";
+
+
+
+
+
 
 
 

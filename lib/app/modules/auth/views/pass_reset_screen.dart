@@ -115,6 +115,18 @@ class _PassResetScreenState extends State<PassResetScreen> {
               children: [
 
 
+                ClipRRect(
+
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+
+                      height: 100,
+                      width: 260,
+                      "assets/images/app_logo2.png"),
+
+                ),
+
+
                 /// New Password
                 CustomTextField(
                   controller: passTEController,

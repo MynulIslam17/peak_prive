@@ -128,8 +128,13 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 50.h),
              
               ClipRRect(
+
                 borderRadius: BorderRadius.circular(12),
-                child: Image.asset("assets/images/app_logo.png"),
+                child: Image.asset(
+
+                    height: 100,
+                    width: 260,
+                    "assets/images/app_logo2.png"),
                 
               ),
               

@@ -29,7 +29,8 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
     "Ski Hire",
     "Transport",
     "Restaurant Booking",
-    "Message",
+    "Massage",
+    "Itinerary"
   ];
 
 
@@ -88,6 +89,11 @@ class _AllServiceScreenState extends State<AllServiceScreen> {
                             navController.resetIndex();
                             navController.addType("massage");
                             Get.toNamed(Routes.bottomNav);
+                          case 5:
+                            navController.resetIndex();
+                            Get.toNamed(Routes.itinerary);
+
+
                           default:
                             print("execute default conditions");
                             break;

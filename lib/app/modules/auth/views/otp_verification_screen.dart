@@ -131,6 +131,16 @@ class _OtpVerificationState extends State<OtpVerification> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    height: 100,
+                    width: 260,
+                    "assets/images/app_logo2.png",
+                  ),
+                ),
+
                 // Top illustration or info text
                 Text(
                   "Enter the 6-digit verification code sent to your email or phone.",
@@ -223,21 +233,20 @@ class _OtpVerificationState extends State<OtpVerification> {
 
   /// Verify OTP event
   void _verifyOtpButton() async {
-
-
     /// hide the keyboard
     FocusScope.of(context).unfocus();
 
-    String otp=otpTEController.text;
+    String otp = otpTEController.text;
 
-    if(otp.length<6){
-      Get.snackbar("Error", "Otp must be 6 character",backgroundColor: Colors.red,snackPosition: SnackPosition.BOTTOM);
+    if (otp.length < 6) {
+      Get.snackbar(
+        "Error",
+        "Otp must be 6 character",
+        backgroundColor: Colors.red,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
-
-
-
-
 
     /// Create model with the necessary value
     OtpRequestModel model = OtpRequestModel(otp: otp, email: email);
@@ -248,18 +257,19 @@ class _OtpVerificationState extends State<OtpVerification> {
     /// If success, navigate to the next page
     if (response) {
       if (fromSignup == false) {
-
         Get.toNamed(
-            Routes.passReset,        /// Navigate to password reset
-            arguments: {"email": email}
+          Routes.passReset,
+
+          /// Navigate to password reset
+          arguments: {"email": email},
         );
-
-
       } else {
-        Get.toNamed(Routes.login); ///  Navigate to login
+        Get.toNamed(Routes.login);
+
+        ///  Navigate to login
       }
-    }
-    else { /// is unsuccessful
+    } else {
+      /// is unsuccessful
       Get.snackbar(
         "Error",
         otpController.errorMessage!,
@@ -268,8 +278,4 @@ class _OtpVerificationState extends State<OtpVerification> {
       );
     }
   }
-
-
-
-
 }

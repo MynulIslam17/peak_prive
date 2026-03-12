@@ -23,6 +23,7 @@ class SignupRequestModel {
       "email": email,
       "password": password,
       "confirmPassword": confirmPassword,
+      "phoneNumber":phoneNumber,
       "role": role,
     };
 
