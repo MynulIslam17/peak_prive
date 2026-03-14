@@ -143,6 +143,7 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
 
 //itinerary
   static const itinerary="/itinerary";
+  static const itineraryDetails="/itineraryDetails";
 
 
 

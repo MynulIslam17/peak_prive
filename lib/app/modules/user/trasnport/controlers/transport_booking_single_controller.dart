@@ -36,7 +36,7 @@ class SingleTransportBookingItem extends GetxController {
     }
   }
 
-  /// Clear controller state
+  /// Clear controllers state
   void clear() {
     getSingleTransport = null;
     errorMessage = null;

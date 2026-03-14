@@ -87,7 +87,7 @@ class ItemController extends GetxController {
     }
   }
 
-  /// Clear controller state
+  /// Clear controllers state
   void clearAll() {
     hireItem = null;
     restaurantItem = null;

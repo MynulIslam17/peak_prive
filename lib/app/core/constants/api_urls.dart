@@ -3,7 +3,7 @@ class AppUrls{
   //https://qwkbmjl3-5000.inc1.devtunnels.ms/api/v1
 
 /// base url
-  static const baseUrl="https://api.peakprivee.com/api/v1";
+  static const baseUrl="https://wn85j8p6-5000.asse.devtunnels.ms/api/v1";
 
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
@@ -136,6 +136,8 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   /// restaurant category list
   static String restaurantCategoryUrl="$baseUrl/common/category/restaurant";
+
+  static String myItineraryUrl="$baseUrl/booking/itinerary";
 
 
 

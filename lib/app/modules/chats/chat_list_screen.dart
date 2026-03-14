@@ -6,19 +6,19 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 
-import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/widgets/chats_container.dart';
-import '../../../../routes/app_routes.dart';
+import '../../../gen/assets.gen.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/widgets/chats_container.dart';
+import '../../routes/app_routes.dart';
 
-class ProviderChatScreen extends StatefulWidget {
-  const ProviderChatScreen({super.key});
+class ChatListScreen extends StatefulWidget {
+  const ChatListScreen({super.key});
 
   @override
-  State<ProviderChatScreen> createState() => _ProviderChatScreenState();
+  State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
-class _ProviderChatScreenState extends State<ProviderChatScreen> {
+class _ChatListScreenState extends State<ChatListScreen> {
 
 
   final icons=Assets.icons;

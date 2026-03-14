@@ -28,7 +28,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   late final Map<String, dynamic> productInfo;
 
-  ///finds controller
+  ///finds controllers
   final createBookingController = Get.find<CreateBookingController>();
   final authController = Get.find<AuthController>();
   final _formKey = GlobalKey<FormState>();

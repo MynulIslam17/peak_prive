@@ -1,8 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
-import '../../../../../gen/assets.gen.dart';
-import '../../../../core/constants/app_colors.dart';
+import '../../../gen/assets.gen.dart';
+import '../../core/constants/app_colors.dart';
 
 
 
@@ -94,25 +95,32 @@ class _MessagingScreenState extends State<MessagingScreen> {
         icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
         onPressed: () => Navigator.pop(context),
       ),
-      title: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
         children: [
-          Text(
-            "Gustaf Chef Cleaner",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+          CustomCachedImage(
+            imageUrl: "assets/images/user2.png",
+            width: 30,
+            height: 30,
+            fit: BoxFit.cover,
           ),
-          Text(
-            "Active 2 hours ago",
-            style: TextStyle(color: Colors.grey, fontSize: 10),
+          const SizedBox(width: 10,),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              Text(
+                "Gustaf Chef Cleaner",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              Text(
+                "Active 2 hours ago",
+                style: TextStyle(color: Colors.grey, fontSize: 10),
+              ),
+            ],
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.black),
-          onPressed: () {},
-        ),
-      ],
+
     );
   }
 }
@@ -207,10 +215,6 @@ class MessageInputField extends StatelessWidget {
       color: Colors.white,
       child: Row(
         children: [
-          IconButton( /// attachedfiled icon
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary_1),
-            onPressed: () {},
-          ),
 
           /// Text field
           Expanded(
@@ -231,7 +235,7 @@ class MessageInputField extends StatelessWidget {
                 fillColor: Colors.grey.shade200,
                 contentPadding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                suffixIcon: Icon(Icons.face_6_sharp,color:Colors.black,)
+
               ),
             ),
           ),

@@ -40,7 +40,7 @@ class SinglePassBookingItem extends GetxController {
   }
 
 
-  /// Clear controller state
+  /// Clear controllers state
   void clear() {
     getSinglePass = null;
     errorMessage = null;

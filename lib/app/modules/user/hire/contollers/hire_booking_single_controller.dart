@@ -41,7 +41,7 @@ class SingleHireBookingItem extends GetxController {
   }
 
 
-  /// Clear controller state
+  /// Clear controllers state
   void clear() {
     getSingleHire = null;
     errorMessage = null;

@@ -70,7 +70,7 @@ class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
   final int totalPaid = 2000;
 
 
-  /// find controller
+  /// find controllers
   final massageController = Get.put(SingleMassageBookingItem());
 
   late final String bookingId;
