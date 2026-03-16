@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
 class SelectedItem extends StatelessWidget {
   final String productName;
@@ -32,15 +33,14 @@ class SelectedItem extends StatelessWidget {
       child: Row(
         children: [
           // Left: Product Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              productImg,
-              width: 40,
-              height: 50,
-              fit: BoxFit.cover,
-            ),
+
+          CustomCachedImage(
+            imageUrl: productImg,
+            height: 70,
+            width: 60,
+            fit: BoxFit.cover,
           ),
+
 
           const SizedBox(width: 12),
 

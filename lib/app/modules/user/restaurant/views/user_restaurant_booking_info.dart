@@ -4,6 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../controllers/restaurant_booking_single_controler.dart';
 import '../models/get_single_restarant.dart';
 
@@ -55,29 +57,13 @@ class _UserRestaurantBookingInfoState extends State<UserRestaurantBookingInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF9F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF9F7F3),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Restaurant Booking Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: SvgPicture.asset(
-            "assets/icons/back_icon.svg",
-            width: 28.w,
-            height: 28.h,
-            colorFilter:
-            const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-          ),
-        ),
-      ),
+     appBar: CustomAppBar(title: "Restaurant booking details",onBackPressed: (){
+      Get.back();
+    },),
       body: GetBuilder<SingleRestaurantBookingItem>(
         builder: (_) {
           if (controller.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary_1,));
           }
 
           if (controller.errorMessage != null) {

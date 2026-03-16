@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/pass_reset_controller.dart';
 import 'package:harry_service_app/app/modules/auth/models/reset_pass_request_model.dart';
 import '../../../../gen/assets.gen.dart';
@@ -19,6 +21,7 @@ class PassResetScreen extends StatefulWidget {
 }
 
 class _PassResetScreenState extends State<PassResetScreen> {
+  final authController=Get.find<AuthController>();
   final icons = Assets.icons;
   final images = Assets.images;
 
@@ -80,8 +83,15 @@ class _PassResetScreenState extends State<PassResetScreen> {
           colorText: Colors.black,
         );
 
-        // Redirect to login page after success
-        Get.offAllNamed(Routes.login);
+        if(authController.isLoggedIn){
+          Get.find<NavController>().changeIndex(3);
+          Get.offAllNamed(Routes.bottomNav);
+
+        }else{
+          // Redirect to login page after success
+          Get.offAllNamed(Routes.login);
+        }
+
       } else {
         ///  If the API call fails
         Get.snackbar(

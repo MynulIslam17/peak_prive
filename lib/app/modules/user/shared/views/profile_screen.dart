@@ -7,6 +7,8 @@ import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/update_profile_controller.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/controllers/nav_controller.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -78,21 +80,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20.sp,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        elevation: 0,
-        leading: const SizedBox.shrink(),
-      ),
+      appBar: CustomAppBar(title: "Profile",onBackPressed: (){
+        Get.find<NavController>().changeIndex(0);
+      },),
       body: GetBuilder<UpdateProfileController>(
         builder: (controller) {
           return SingleChildScrollView(

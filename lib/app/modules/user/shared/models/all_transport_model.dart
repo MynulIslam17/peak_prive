@@ -1,4 +1,6 @@
 import 'dart:convert';
+import '../../../../core/utils/json_helper.dart';
+
 
 class TransportModel {
   final Pagination? pagination;
@@ -46,10 +48,10 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json["total"] ?? 0,
-      page: json["page"] ?? 0,
-      limit: json["limit"] ?? 0,
-      totalPages: json["totalPages"] ?? 0,
+      total: JsonHelper.getInt(json["total"]),
+      page: JsonHelper.getInt(json["page"]),
+      limit: JsonHelper.getInt(json["limit"]),
+      totalPages: JsonHelper.getInt(json["totalPages"]),
     );
   }
 
@@ -72,10 +74,10 @@ class TransportItem {
   final Category? category;
   final String thumbnail;
   final String title;
-  final String personCount;
-  final String milage;
-  final String power;
-  final String extraChargePerHours;
+  final int personCount;
+  final int milage;
+  final int power;
+  final int extraChargePerHours;
   final int insuranceFee;
   final int maintainCharge;
   final String serviceArea;
@@ -93,10 +95,10 @@ class TransportItem {
     this.category,
     this.thumbnail = "",
     this.title = "",
-    this.personCount = "0",
-    this.milage = "0",
-    this.power = "0",
-    this.extraChargePerHours = "0",
+    this.personCount = 0,
+    this.milage = 0,
+    this.power = 0,
+    this.extraChargePerHours = 0,
     this.insuranceFee = 0,
     this.maintainCharge = 0,
     this.serviceArea = "",
@@ -111,30 +113,29 @@ class TransportItem {
 
   factory TransportItem.fromJson(Map<String, dynamic> json) {
     return TransportItem(
-      id: json["_id"] ?? "",
-      owner: json["owner"] ?? "",
+      id: JsonHelper.getString(json["_id"]),
+      owner: JsonHelper.getString(json["owner"]),
       category:
-      json["category"] != null ? Category.fromJson(json["category"]) : null,
-      thumbnail: json["thumbnail"] ?? "",
-      title: json["title"] ?? "",
-      personCount: json["personCount"] ?? "0",
-      milage: json["milage"] ?? "0",
-      power: json["power"] ?? "0",
-      extraChargePerHours: json["extraChargePerHours"] ?? "0",
-      insuranceFee: json["insuranceFee"] ?? 0,
-      maintainCharge: json["maintainCharge"] ?? 0,
-      serviceArea: json["serviceArea"] ?? "",
-      amount: json["amount"] ?? 0,
-      description: json["description"] ?? "",
-      averageRating:
-      (json["averageRating"] is int) ? (json["averageRating"] + 0.0) : (json["averageRating"] ?? 0.0),
-      reviews: json["reviews"] ?? [],
-      refunds: json["refunds"] ?? [],
+      JsonHelper.getMap(json["category"]) != null ? Category.fromJson(json["category"]) : null,
+      thumbnail: JsonHelper.getString(json["thumbnail"]),
+      title: JsonHelper.getString(json["title"]),
+      personCount: JsonHelper.getInt(json["personCount"]),
+      milage: JsonHelper.getInt(json["milage"]),
+      power: JsonHelper.getInt(json["power"]),
+      extraChargePerHours: JsonHelper.getInt(json["extraChargePerHours"]),
+      insuranceFee: JsonHelper.getInt(json["insuranceFee"]),
+      maintainCharge: JsonHelper.getInt(json["maintainCharge"]),
+      serviceArea: JsonHelper.getString(json["serviceArea"]),
+      amount: JsonHelper.getInt(json["amount"]),
+      description: JsonHelper.getString(json["description"]),
+      averageRating: JsonHelper.getDouble(json["averageRating"]),
+      reviews: JsonHelper.getList(json["reviews"]),
+      refunds: JsonHelper.getList(json["refunds"]),
       createdAt: json["createdAt"] != null
-          ? DateTime.tryParse(json["createdAt"])
+          ? DateTime.tryParse(JsonHelper.getString(json["createdAt"]))
           : null,
       updatedAt: json["updatedAt"] != null
-          ? DateTime.tryParse(json["updatedAt"])
+          ? DateTime.tryParse(JsonHelper.getString(json["updatedAt"]))
           : null,
     );
   }
@@ -180,9 +181,9 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      name: json["name"] ?? "",
-      categoryPhoto: json["categoryPhoto"] ?? "",
-      id: json["_id"] ?? "",
+      name: JsonHelper.getString(json["name"]),
+      categoryPhoto: JsonHelper.getString(json["categoryPhoto"]),
+      id: JsonHelper.getString(json["_id"]),
     );
   }
 

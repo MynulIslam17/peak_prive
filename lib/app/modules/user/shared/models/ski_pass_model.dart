@@ -1,3 +1,67 @@
+
+class SkiPassResponse {
+  final int code;
+  final String message;
+  final SkiPassData data;
+
+  SkiPassResponse({
+    required this.code,
+    required this.message,
+    required this.data,
+  });
+
+  factory SkiPassResponse.fromJson(Map<String, dynamic> json) {
+    return SkiPassResponse(
+      code: json['code'] ?? 0,
+      message: json['message']?.toString() ?? "",
+      data: SkiPassData.fromJson(json['data'] ?? {}),
+    );
+  }
+}
+
+class SkiPassData {
+  final Pagination pagination;
+  final List<SkiPass> result;
+
+  SkiPassData({
+    required this.pagination,
+    required this.result,
+  });
+
+  factory SkiPassData.fromJson(Map<String, dynamic> json) {
+    return SkiPassData(
+      pagination: Pagination.fromJson(json['pagination'] ?? {}),
+      result: (json['result'] as List<dynamic>? ?? [])
+          .map((e) => SkiPass.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class Pagination {
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+
+  Pagination({
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 1,
+      limit: json['limit'] ?? 10,
+      totalPages: json['totalPages'] ?? 1,
+    );
+  }
+}
+
+
 class SkiPass {
   final String id;
   final String title;

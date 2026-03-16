@@ -72,14 +72,15 @@ class ServiceItineraryCard extends StatelessWidget {
                   // Flexible Middle Row (icon + text)
                   Row(
                     children: [
-                      Icon(middleIcon, size: 20, color: Colors.black),
-                      const SizedBox(width: 8),
+                      Icon(middleIcon, size: 15, color: Colors.black),
+                      const SizedBox(width: 3),
                       Text(
                         middleText,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 12,
                           fontWeight: FontWeight.w400,
-                          color: Colors.black,
+                          color: Colors.black54,
+
                         ),
                       ),
                     ],

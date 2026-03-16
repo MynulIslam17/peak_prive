@@ -489,7 +489,7 @@ class _BookingScreenState extends State<BookingScreen>
       appBar: AppBar(
         backgroundColor: const Color(0xffFDFAF6),
         elevation: 0,
-        title: Text("Bookings", style: AppTextStyle.sub_h1_medium_18()),
+        title: Text("Bookings", style: AppTextStyle.sub_h2_medium_16()),
         centerTitle: true,
         leading: IconButton(
           onPressed: () => _navController.changeIndex(0),

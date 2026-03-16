@@ -39,162 +39,148 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final totalReviews = widget.reviewList.length;
     final avgRating = getAverageRating();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// ================= RATING SUMMARY =================
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// Rating bars
-            SizedBox(
-              width: 170.w,
-              child: Column(
-                children: List.generate(5, (i) {
-                  return RatingBarRow(
-                    starCount: 5 - i,
-                    reviewCount: countByStar(5 - i),
-                    totalReviews: totalReviews,
-                  );
-                }),
-              ),
-            ),
-
-            const Spacer(),
-
-            /// Average rating
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      avgRating.toStringAsFixed(1),
-                      style: AppTextStyle.h1_smibold()
-                          .copyWith(fontSize: 40.sp),
-                    ),
-                    Text(
-                      "/5",
-                      style: AppTextStyle.h1_smibold()
-                          .copyWith(fontSize: 16.sp),
-                    ),
-                  ],
-                ),
-                Row(
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ================= RATING SUMMARY =================
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 170.w,
+                child: Column(
                   children: List.generate(5, (i) {
-                    return Icon(
-                      i < avgRating.round()
-                          ? Icons.star
-                          : Icons.star_border,
-                      color: Colors.amber,
-                      size: 18,
+                    return RatingBarRow(
+                      starCount: 5 - i,
+                      reviewCount: countByStar(5 - i),
+                      totalReviews: totalReviews,
                     );
                   }),
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  "$totalReviews reviews",
-                  style: AppTextStyle.c_regular_12().copyWith(fontSize: 11),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-        SizedBox(height: 20.h),
-
-        /// ================= REVIEW LIST =================
-        if (widget.reviewList.isEmpty)
-          Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 30.h),
-              child: Text(
-                "No reviews available",
-                style: AppTextStyle.c_regular_12(),
               ),
-            ),
-          )
-        else
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: widget.reviewList.length,
-            itemBuilder: (context, index) {
-              final review = widget.reviewList[index];
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        avgRating.toStringAsFixed(1),
+                        style: AppTextStyle.h1_smibold()
+                            .copyWith(fontSize: 40.sp),
+                      ),
+                      Text(
+                        "/5",
+                        style: AppTextStyle.h1_smibold()
+                            .copyWith(fontSize: 16.sp),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: List.generate(5, (i) {
+                      return Icon(
+                        i < avgRating.round() ? Icons.star : Icons.star_border,
+                        color: Colors.amber,
+                        size: 18,
+                      );
+                    }),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "$totalReviews reviews",
+                    style: AppTextStyle.c_regular_12().copyWith(fontSize: 11),
+                  ),
+                ],
+              ),
+            ],
+          ),
 
-              return Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.h),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// User image
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: review.user.profileUrl != null
-                              ? NetworkImage(review.user.profileUrl!)
-                              : image.profile.provider(),
-                        ),
+          SizedBox(height: 20.h),
 
-                        SizedBox(width: 12.w),
+          /// ================= REVIEW LIST =================
+          if (widget.reviewList.isEmpty)
+            Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 30.h),
+                child: Text(
+                  "No reviews available",
+                  style: AppTextStyle.c_regular_12(),
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: widget.reviewList.length,
+              itemBuilder: (context, index) {
+                final review = widget.reviewList[index];
 
-                        /// Review content
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              /// User name
-                              Text(
-                                review.user.fullName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTextStyle.sub_h2_medium_16(),
-                              ),
-
-                              SizedBox(height: 4.h),
-
-                              /// Stars + Date
-                              Row(
-                                children: [
-                                  Row(
-                                    children: List.generate(5, (i) {
-                                      return Icon(
-                                        i < review.rating.round()
-                                            ? Icons.star
-                                            : Icons.star_border,
-                                        size: 14,
-                                        color: Colors.amber,
-                                      );
-                                    }),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    "${review.createdAt.day}-${review.createdAt.month}-${review.createdAt.year}",
-                                    style: AppTextStyle.c_regular_12(),
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: 6.h),
-
-                              /// Comment
-                              Text(
-                                review.comment,
-                                style: AppTextStyle.c_light_12(),
-                              ),
-                            ],
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundImage: review.user.profileUrl != null
+                                ? NetworkImage(review.user.profileUrl!)
+                                : Assets.images.profile.provider(),
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  review.user.fullName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyle.sub_h2_medium_16(),
+                                ),
+                                SizedBox(height: 4.h),
+                                Row(
+                                  children: [
+                                    Row(
+                                      children: List.generate(5, (i) {
+                                        return Icon(
+                                          i < review.rating.round()
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          size: 14,
+                                          color: Colors.amber,
+                                        );
+                                      }),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      "${review.createdAt.day}-${review.createdAt.month}-${review.createdAt.year}",
+                                      style: AppTextStyle.c_regular_12(),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 6.h),
+                                Text(
+                                  review.comment,
+                                  style: AppTextStyle.c_light_12(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-      ],
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }

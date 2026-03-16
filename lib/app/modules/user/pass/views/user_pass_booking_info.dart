@@ -10,6 +10,8 @@ import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking
 import 'package:harry_service_app/app/modules/user/pass/models/get_single_pass.dart';
 import 'package:harry_service_app/app/modules/user/shared/models/booking_model.dart';
 
+import '../../../../core/widgets/custom_appbar.dart';
+
 class UsePassBookingInfo extends StatefulWidget {
 
 
@@ -55,29 +57,9 @@ class _UsePassBookingInfoState extends State<UsePassBookingInfo> {
 
     return Scaffold(
       backgroundColor: const Color(0xffF9F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF9F7F3),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Booking Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.all(3),
-          child: IconButton(
-            onPressed: () {
-              Get.back();
-            },
-            icon: SvgPicture.asset(
-              "assets/icons/back_icon.svg",
-              color: Colors.black,
-              width: 30.w,
-              height: 30.h,
-            ),
-          ),
-        ),
-      ),
+        appBar: CustomAppBar(title: "Pass booking details",onBackPressed: (){
+          Get.back();
+        },),
       body: GetBuilder<SinglePassBookingItem>(builder: (controller){
 
         if(controller.isLoading){

@@ -6,6 +6,7 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/model/get_single_trasnport.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
@@ -80,29 +81,9 @@ class _UserTransportBookingInfoState extends State<UserTransportBookingInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF9F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF9F7F3),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Transport Booking Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.all(3),
-          child: IconButton(
-            onPressed: () {
-              Get.back();
-            },
-            icon: SvgPicture.asset(
-              "assets/icons/back_icon.svg",
-              color: Colors.black,
-              width: 30.w,
-              height: 30.h,
-            ),
-          ),
-        ),
-      ),
+      appBar: CustomAppBar(title: "Transport booking details",onBackPressed: (){
+        Get.back();
+      },),
       body: GetBuilder<SingleTransportBookingItem>(builder: (controller) {
         if (controller.isLoading) {
           return const Center(

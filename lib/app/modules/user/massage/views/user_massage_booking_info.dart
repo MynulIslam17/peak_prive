@@ -6,6 +6,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
@@ -101,25 +102,9 @@ class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF9F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF9F7F3),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Massage Booking Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: SvgPicture.asset(
-            "assets/icons/back_icon.svg",
-            width: 28.w,
-            height: 28.h,
-            colorFilter:
-            const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-          ),
-        ),
-      ),
+        appBar: CustomAppBar(title: "Massage booking details",onBackPressed: (){
+          Get.back();
+        },),
       body: GetBuilder<SingleMassageBookingItem>(builder: (controller){
 
         if(controller.isLoading){

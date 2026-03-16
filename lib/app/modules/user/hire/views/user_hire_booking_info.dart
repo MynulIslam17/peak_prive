@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/controllers/nav_controller.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../contollers/hire_booking_single_controller.dart';
 
 class UserHireBookingInfo extends StatefulWidget {
@@ -33,19 +36,9 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF9F7F3),
-      appBar: AppBar(
-        backgroundColor: const Color(0xffF9F7F3),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          "Booking Details",
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        leading: IconButton(
-          onPressed: Get.back,
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-        ),
-      ),
+      appBar: CustomAppBar(title: "Hire booking details",onBackPressed: (){
+        Get.back();
+      },),
       body: GetBuilder<SingleHireBookingItem>(
         builder: (controller) {
           if (controller.isLoading) {
@@ -138,11 +131,11 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Image.network(
-                          item.item?.productPhoto ?? "",
-                          width: 40.w,
-                          height: 40.h,
-                          fit: BoxFit.cover,
+                        CustomCachedImage(
+                          imageUrl: item.item?.productPhoto ?? "",
+                             width: 40.w,
+                             height: 40.h,
+                             fit: BoxFit.cover,
                         ),
                         SizedBox(width: 8.w),
                         Column(

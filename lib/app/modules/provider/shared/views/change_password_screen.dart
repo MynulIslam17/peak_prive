@@ -6,8 +6,10 @@ import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/change_pass_controller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/change_pass_request_model.dart';
+import 'package:harry_service_app/app/routes/app_routes.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/widgets/appbar_with_title.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../core/widgets/custome_button.dart';
 
 class ProviderPassScreen extends StatefulWidget {
@@ -93,11 +95,9 @@ class _ProviderPassScreenState extends State<ProviderPassScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBarWithTitle(
-        icons: icons,
-        title: "Change Password",
-        onTap: () => Get.back(),
-      ),
+      appBar: CustomAppBar(title: "Change Password",onBackPressed: (){
+        Get.back();
+      },),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -154,9 +154,14 @@ class _ProviderPassScreenState extends State<ProviderPassScreen> {
                         SizedBox(height: 10),
                         Padding(
                           padding: const EdgeInsets.all(6.0),
-                          child: Text(
-                            "Forgot password?",
-                            style: AppTextStyle.p_regular_12(),
+                          child: InkWell(
+                            onTap: (){
+                              Get.toNamed(Routes.emailVerify);
+                            },
+                            child: Text(
+                              "Forgot password?",
+                              style: AppTextStyle.p_regular_12(),
+                            ),
                           ),
                         ),
                         SizedBox(height: 20),

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
+import 'package:harry_service_app/app/core/widgets/custom_appbar.dart';
 
 import '../../../gen/assets.gen.dart';
 import '../../core/constants/app_colors.dart';
@@ -29,8 +31,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      appBar: AppBarWithTitle(icons: icons, onTap: (){},title: "Messages",),
-
+     appBar: CustomAppBar(title: "Chat list",onBackPressed: (){
+       Get.find<NavController>().changeIndex(0);
+     },),
 
        body: Padding(
          padding: const EdgeInsets.symmetric(vertical: 20,horizontal: 24),
@@ -79,10 +82,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
              /// recent chat list
              Expanded(
                child: ListView.builder(
-               
+
                    itemCount: 4,
                    itemBuilder: (context,index){
-               
+
                  return Padding(
                    padding: const EdgeInsets.symmetric(vertical: 10),
                    child: ChatsContainer(images: images,onTap: (){
@@ -91,8 +94,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
                    },),
                  );
-               
-               
+
+
                }),
              )
 

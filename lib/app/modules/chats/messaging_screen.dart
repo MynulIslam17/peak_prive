@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 
 
 
+
 class MessagingScreen extends StatefulWidget {
   const MessagingScreen({super.key});
 
@@ -47,6 +48,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       body: SafeArea(
         child: Column(
           children: [

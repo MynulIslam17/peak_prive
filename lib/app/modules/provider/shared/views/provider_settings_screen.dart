@@ -6,6 +6,7 @@ import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/profile_field_box.dart';
 
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../routes/app_routes.dart';
 
 class ProviderSettingsScreen extends StatefulWidget {
@@ -23,7 +24,9 @@ class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      appBar: AppBarWithTitle(icons: icons, onTap: () {}, title: "Settings"),
+      appBar: CustomAppBar(title: "Settings",onBackPressed: (){
+        Get.back();
+      },),
 
       body: SafeArea(
         child: Padding(

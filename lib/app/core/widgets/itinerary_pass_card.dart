@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
 
@@ -32,14 +33,11 @@ class ItinerarySkiPass extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                image,
-                width: 100,
-                height: 100,
-                fit: BoxFit.cover,
-              ),
+             CustomCachedImage(
+              imageUrl: image,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
             ),
             const SizedBox(width: 12),
 

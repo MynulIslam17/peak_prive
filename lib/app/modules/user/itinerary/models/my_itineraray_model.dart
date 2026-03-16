@@ -82,6 +82,7 @@ class ItineraryItem {
   final String? duration;
 
   final int? personCount;
+  final int? bookingSeatCount;
 
   final String bookingStatus;
   final double totalPrice;
@@ -102,6 +103,7 @@ class ItineraryItem {
     required this.bookingStatus,
     required this.totalPrice,
     this.timeLabel,
+    this.bookingSeatCount,
   });
 
   factory ItineraryItem.fromJson(Map<String, dynamic> json) {
@@ -121,6 +123,7 @@ class ItineraryItem {
       bookingStatus: JsonHelper.getString(json['bookingStatus']),
       totalPrice: JsonHelper.getDouble(json['totalPrice']),
       timeLabel: json['timeLabel'],
+      bookingSeatCount: JsonHelper.getInt(json["bookingSeatCount"])
     );
   }
 }

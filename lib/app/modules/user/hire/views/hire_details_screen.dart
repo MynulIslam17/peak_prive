@@ -540,8 +540,14 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                         image: hireDetails.owner.profileUrl,
                         providerName: hireDetails.owner.fullName,
                         reviewCount: hireDetails.reviews.length,
-                        onTapCall: () {},
-                        onTapMessage: () {},
+                        onTapCall: () {
+                          //TODO : call
+                        },
+                        onTapMessage: () {
+                          //TODO : message
+
+
+                        },
                       ),
                       SizedBox(height: 10.h),
                       TabBar(

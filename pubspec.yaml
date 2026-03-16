@@ -35,6 +35,8 @@ dependencies:
   sliding_up_panel: ^2.0.0
   time_range_picker: ^2.0.0
   cached_network_image: ^3.3.1
+  socket_io_client: ^2.0.0
+
 
 
 

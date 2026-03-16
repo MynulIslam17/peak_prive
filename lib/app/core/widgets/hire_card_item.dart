@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
@@ -38,15 +39,14 @@ class HireCardItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                productImg,
-                height: 70,
-                width: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
+
+             CustomCachedImage(
+               imageUrl: productImg,
+               height: 70,
+               width: 60,
+               fit: BoxFit.cover,
+             ),
+
             SizedBox(height: 8.h),
 
             Text(
