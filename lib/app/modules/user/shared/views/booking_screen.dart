@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/booking_card.dart';
@@ -24,96 +24,124 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final List<ScrollController> _scrollControllers;
 
-  ///finds controllers
   final _navController = Get.find<NavController>();
   final GetMyBookingController _bookingController = Get.find();
   final ratingController = Get.find<HireRatingController>();
 
+  /// Local flag to debounce scroll events for pagination
+  bool _isFetchingMore = false;
+
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(length: 3, vsync: this);
-    _fetchBookings();
+
+    // Initialize ScrollControllers for each tab and attach listener
+    _scrollControllers = List.generate(
+      3,
+          (_) => ScrollController()..addListener(_scrollListener),
+    );
+
+    // Load the first tab (Active) initially
+    _bookingController.getMyBooking('Active');
+
+    // Fetch data for tabs when switched (if not already fetched)
+    _tabController.addListener(_onTabChanged);
   }
 
-  /// call api
-  Future<void> _fetchBookings() async {
-    await _bookingController.getMyBooking();
-    setState(() {});
+  /// Handle tab changes and fetch data if the tab hasn't been loaded yet
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+
+    final statuses = ['Active', 'Completed', 'Cancelled'];
+    final status = statuses[_tabController.index];
+
+    if (!_bookingController.isFetchedFor(status)) {
+      _bookingController.getMyBooking(status);
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    for (final sc in _scrollControllers) {
+      sc.dispose();
+    }
     super.dispose();
   }
 
-  /// Format datetime for display
+  /// Scroll listener for infinite scroll pagination
+  void _scrollListener() {
+    if (_isFetchingMore) return;
+    final statuses = ['Active', 'Completed', 'Cancelled'];
+
+    for (int i = 0; i < _scrollControllers.length; i++) {
+      final sc = _scrollControllers[i];
+      if (sc.hasClients &&
+          sc.position.pixels >= sc.position.maxScrollExtent - 200) {
+        final status = statuses[i];
+        if (!_bookingController.isMoreLoadingFor(status) &&
+            _bookingController.hasMoreFor(status)) {
+          _isFetchingMore = true;
+          _bookingController.loadMoreBookings(status).whenComplete(() {
+            _isFetchingMore = false;
+          });
+        }
+        break;
+      }
+    }
+  }
+
+  /// Format booking time for display
   String _formatBookingTime(booking) {
     if (_navController.getServiceType == "massage") {
-      // For massage, use the new dateString and timeString fields
       if (booking.dateString.isNotEmpty && booking.timeString.isNotEmpty) {
         try {
-          // Parse the date
-          String datePart = booking.dateString.contains('T')
-              ? booking.dateString.split('T')[0]
-              : booking.dateString;
+          String datePart =
+          booking.dateString.contains('T') ? booking.dateString.split('T')[0] : booking.dateString;
           DateTime date = DateTime.parse(datePart);
-
-          // Format: "15 Jan 2024, 10:30 AM"
           String formattedDate =
               "${date.day} ${_getMonthName(date.month)} ${date.year}";
           String formattedTime = _formatTime(booking.timeString);
-
           return "$formattedDate, $formattedTime";
         } catch (e) {
-          return booking.timeLabel; // Fallback
+          return booking.timeLabel;
         }
       }
       return booking.timeLabel;
     } else {
-      // For other services (ski_pass, hire), use timeLabel
       return booking.timeLabel;
     }
   }
 
-  /// Get month name
+  /// Helper to convert month number to short name
   String _getMonthName(int month) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return months[month - 1];
   }
 
-  /// Format time string (HH:mm to 12-hour format)
+  /// Convert 24h time string to 12h format with AM/PM
   String _formatTime(String timeString) {
     try {
       List<String> parts = timeString.split(':');
       int hour = int.parse(parts[0]);
       int minute = int.parse(parts[1]);
-
       String period = hour >= 12 ? 'PM' : 'AM';
       hour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-
       return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period";
     } catch (e) {
       return timeString;
     }
   }
 
-  /// show a dialog for rating
+  /// Show rating dialog for completed bookings
   void _showDialog(String productId) {
     double _rating = 0;
     TextEditingController feedbackTEController = TextEditingController();
@@ -123,15 +151,12 @@ class _BookingScreenState extends State<BookingScreen>
       barrierDismissible: false,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           elevation: 5,
           backgroundColor: Colors.white,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final maxHeight = MediaQuery.of(context).size.height * 0.7;
-
               return ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: maxHeight),
                 child: SingleChildScrollView(
@@ -139,16 +164,12 @@ class _BookingScreenState extends State<BookingScreen>
                     bottom: MediaQuery.of(context).viewInsets.bottom,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 18,
-                      horizontal: 20,
-                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                     child: StatefulBuilder(
                       builder: (context, setState) {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Top Icon
                             Container(
                               padding: EdgeInsets.all(12),
                               decoration: BoxDecoration(
@@ -162,8 +183,6 @@ class _BookingScreenState extends State<BookingScreen>
                               ),
                             ),
                             SizedBox(height: 10),
-
-                            // Title
                             Text(
                               "Rate Your Stay!",
                               style: TextStyle(
@@ -172,9 +191,7 @@ class _BookingScreenState extends State<BookingScreen>
                                 color: Colors.deepPurple,
                                 shadows: [
                                   Shadow(
-                                    color: Colors.deepPurpleAccent.withOpacity(
-                                      0.2,
-                                    ),
+                                    color: Colors.deepPurpleAccent.withOpacity(0.2),
                                     blurRadius: 4,
                                     offset: Offset(0, 2),
                                   ),
@@ -183,31 +200,23 @@ class _BookingScreenState extends State<BookingScreen>
                               textAlign: TextAlign.center,
                             ),
                             SizedBox(height: 10),
-
-                            /// Rating Stars
                             RatingBar.builder(
                               initialRating: _rating,
                               minRating: 1,
                               direction: Axis.horizontal,
                               allowHalfRating: true,
                               itemCount: 5,
-                              itemPadding: EdgeInsets.symmetric(
-                                horizontal: 4.0,
-                              ),
+                              itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
                               itemBuilder: (context, _) => Icon(
                                 Icons.star,
                                 color: Colors.amber,
                                 size: 36,
                               ),
                               onRatingUpdate: (rating) {
-                                setState(() {
-                                  _rating = rating;
-                                });
+                                setState(() => _rating = rating);
                               },
                             ),
                             SizedBox(height: 10),
-
-                            /// Feedback TextField
                             TextFormField(
                               controller: feedbackTEController,
                               maxLines: 4,
@@ -217,117 +226,63 @@ class _BookingScreenState extends State<BookingScreen>
                                 filled: true,
                                 fillColor: Colors.deepPurple.withOpacity(0.05),
                                 hintText: "Write your feedback...",
-                                hintStyle: TextStyle(
-                                  color: Colors.deepPurpleAccent,
-                                ),
+                                hintStyle: TextStyle(color: Colors.deepPurpleAccent),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 15,
-                                  horizontal: 15,
-                                ),
+                                contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 15),
                               ),
                             ),
                             SizedBox(height: 15),
-
-                            // Buttons
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                /// Cancel
                                 SizedBox(
                                   width: 110,
                                   child: OutlinedButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
+                                    onPressed: () => Navigator.of(context).pop(),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.primary_1,
                                       backgroundColor: Colors.white,
-                                      side: BorderSide(
-                                        color: AppColors.primary_1,
-                                        width: 1.5,
-                                      ),
+                                      side: BorderSide(color: AppColors.primary_1, width: 1.5),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
+                                      padding: EdgeInsets.symmetric(vertical: 14),
                                     ),
-                                    child: Text(
-                                      "Cancel",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    child: Text("Cancel", style: TextStyle(fontWeight: FontWeight.bold)),
                                   ),
                                 ),
                                 SizedBox(width: 15),
-
-                                /// Submit
                                 GetBuilder<HireRatingController>(
                                   builder: (controller) {
                                     return controller.isLoading
-                                        ? Center(
-                                            child: CircularProgressIndicator(
-                                              color: AppColors.primary_1,
-                                            ),
-                                          )
+                                        ? Center(child: CircularProgressIndicator(color: AppColors.primary_1))
                                         : SizedBox(
-                                            width: 110,
-                                            child: ElevatedButton(
-                                              onPressed: () async {
-                                                double rating = _rating;
-                                                String feedback =
-                                                    feedbackTEController.text;
-
-                                                Map<String, dynamic> body = {
-                                                  "rating": rating,
-                                                  "comment": feedback,
-                                                };
-
-                                                bool success =
-                                                    await ratingController
-                                                        .sendRating(
-                                                          productId,
-                                                          body,
-                                                        );
-
-                                                if (success) {
-                                                  print(
-                                                    "=>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>success",
-                                                  );
-                                                }
-
-                                                Navigator.of(context).pop();
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    Colors.deepPurple,
-                                                foregroundColor: Colors.white,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                padding: EdgeInsets.symmetric(
-                                                  vertical: 14,
-                                                ),
-                                                elevation: 3,
-                                                shadowColor: Colors
-                                                    .deepPurpleAccent
-                                                    .withOpacity(0.3),
-                                              ),
-                                              child: Text(
-                                                "Submit",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          );
+                                      width: 110,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          Map<String, dynamic> body = {
+                                            "rating": _rating,
+                                            "comment": feedbackTEController.text,
+                                          };
+                                          await ratingController.sendRating(productId, body);
+                                          Navigator.of(context).pop();
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.deepPurple,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          padding: EdgeInsets.symmetric(vertical: 14),
+                                          elevation: 3,
+                                          shadowColor: Colors.deepPurpleAccent.withOpacity(0.3),
+                                        ),
+                                        child: Text("Submit", style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    );
                                   },
                                 ),
                               ],
@@ -346,140 +301,166 @@ class _BookingScreenState extends State<BookingScreen>
     );
   }
 
-  /// booking list method
-  Widget _buildBookingList(String status) {
-    // Show shimmer loader
-    if (_bookingController.isLoading) {
-      return ListView(
-        children: const [
-          BookingCardSkeleton(),
-          SizedBox(height: 5),
-          BookingCardSkeleton(),
-          SizedBox(height: 5),
-          BookingCardSkeleton(),
-          SizedBox(height: 5),
-          BookingCardSkeleton(),
-          SizedBox(height: 5),
-          BookingCardSkeleton(),
-        ],
-      );
-    }
+  /// Build booking list for each tab with loading, empty state, and pagination
+  Widget _buildBookingList(String status, ScrollController scrollController) {
+    return GetBuilder<GetMyBookingController>(
+      builder: (controller) {
+        final bool isLoading = controller.isLoadingFor(status);
+        final bool isFetched = controller.isFetchedFor(status);
+        final filteredBookings = controller.bookingsFor(status);
 
-    // Filter bookings by status
-    final filteredBookings = _bookingController.bookingsByStatus(status);
-
-    // If empty
-    if (filteredBookings.isEmpty) {
-      return Center(child: Text("No $status bookings"));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      itemCount: filteredBookings.length,
-      itemBuilder: (context, index) {
-        final booking = filteredBookings[index];
-        final product = booking.product;
-
-        // Clamp totalPrice to prevent negative
-        double safePrice =
-            (booking.totalPrice != null && booking.totalPrice >= 0)
-            ? booking.totalPrice
-            : 0;
-
-        String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
-
-        return _navController.getServiceType == "ski_pass"
-            ? BookingCard(
-                /// working only for pass
-                image: product.thumbnail,
-                personCount: booking.bookingItems.isNotEmpty
-                    ? booking.bookingItems.fold<int>(
-                        0,
-                        (sum, item) => sum + (item.quantity ?? 0),
-                      )
-                    : 1,
-                passType: product?.title ?? "Default",
-                location: product?.serviceArea ?? "-",
-                date: booking.startDateAndTime != null
-                    ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
-                    : "",
-                time: booking.startDateAndTime != null
-                    ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
-                    : "",
-                buttonIcon: status == "Active"
-                    ? Icons.info_outline
-                    : Icons.rate_review,
-                onTap: () {
-                  if (status == "Active") {
-                    Get.toNamed(
-                      Routes.userPassBookingDetails,
-                      arguments: {"bookingId": booking.id},
-                    );
-                  } else {
-                    _showDialog(product.id);
-                  }
-                },
-              )
-            : BookingCardItem(
-                image: product.thumbnail,
-                buttonIcon: status == "Active"
-                    ? Icons.info_outline
-                    : Icons.rate_review,
-                borderColor: status == "Active"
-                    ? Colors.yellow
-                    : status == "Completed"
-                    ? Colors.green
-                    : Colors.red,
-                title: product.title,
-                timeLabel: _formatBookingTime(booking),
-                price: displayPrice,
-                buttonText: status == "Active"
-                    ? "Details"
-                    : status == "Completed"
-                    ? "Give Review"
-                    : null,
-                onButtonTap: () {
-                  if (status == "Completed") {
-                    _showDialog(product.id);
-                  }
-                  if (status == "Active") {
-                    String type = _navController.getServiceType;
-
-                    if (type == "ski_hire") {
-                      Get.toNamed(
-                        Routes.userHireBookingDetails,
-                        arguments: {"bookingId": booking.id},
-                      );
-                    }else if(type=="transport"){
-
-                      Get.toNamed(
-                        Routes.userTransportBookingDetails,
-                        arguments: {"bookingId": booking.id},
-                      );
-                    }else if(type=="restaurant"){
-
-                      Get.toNamed(
-                        Routes.userRestaurantBookingDetails,
-                        arguments: {"bookingId": booking.id},
-                      );
-
-                    }else{
-                      Get.toNamed(
-                        Routes.userMassageBookingDetails,
-                        arguments: {"bookingId": booking.id},
-                      );
-
-                    }
-
-
-
-
-
-                  }
-                },
+        // Pull-to-refresh wrapper
+        return RefreshIndicator(
+          color: AppColors.primary_1,
+          onRefresh: () async {
+            await controller.getMyBooking(status);
+          },
+          child: () {
+            // Show shimmer while loading
+            if (isLoading || !isFetched) {
+              return ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                children: const [
+                  BookingCardSkeleton(),
+                  SizedBox(height: 5),
+                  BookingCardSkeleton(),
+                  SizedBox(height: 5),
+                  BookingCardSkeleton(),
+                ],
               );
+            }
+
+            // Empty state
+            if (filteredBookings.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(), // Important to allow pull-to-refresh
+                children: [
+                  SizedBox(height: 100),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.calendar_today_outlined, size: 50, color: Colors.grey),
+                        SizedBox(height: 10),
+                        Text("No $status bookings found",
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final bool showLoadMoreIndicator = controller.isMoreLoadingFor(status);
+
+            // Booking list
+            return ListView.builder(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(), // Important
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              itemCount: filteredBookings.length + (showLoadMoreIndicator ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= filteredBookings.length) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: const Center(
+                        child:SpinKitCircle(
+                            color: AppColors.primary_1,
+                          size: 30,
+                        ),
+
+
+                    ),
+                  );
+                }
+
+                final booking = filteredBookings[index];
+                final product = booking.product;
+
+                double safePrice = (booking.totalPrice != null && booking.totalPrice >= 0)
+                    ? booking.totalPrice
+                    : 0;
+                String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
+
+                if (_navController.getServiceType == "ski_pass") {
+                  return BookingCard(
+                    image: product.thumbnail,
+                    personCount: booking.bookingItems.isNotEmpty
+                        ? booking.bookingItems.fold<int>(0,
+                            (sum, item) => sum + (item.quantity ?? 0))
+                        : 1,
+                    passType: product?.title ?? "Default",
+                    location: product?.serviceArea ?? "-",
+                    date: booking.startDateAndTime != null
+                        ? "${booking.startDateAndTime!.day}-${booking.startDateAndTime!.month}-${booking.startDateAndTime!.year}"
+                        : "",
+                    time: booking.startDateAndTime != null
+                        ? "${booking.startDateAndTime!.hour}:${booking.startDateAndTime!.minute}"
+                        : "",
+                    buttonIcon: status == "Active" ? Icons.info_outline : Icons.rate_review,
+                    onTap: () {
+                      if (status == "Active") {
+                        Get.toNamed(Routes.userPassBookingDetails,
+                            arguments: {"bookingId": booking.id});
+                      } else {
+                        _showDialog(product.id);
+                      }
+                    },
+                  );
+                } else {
+                  return BookingCardItem(
+                    image: product.thumbnail,
+                    buttonIcon: status == "Active" ? Icons.info_outline : Icons.rate_review,
+                    borderColor: status == "Active"
+                        ? Colors.yellow
+                        : status == "Completed"
+                        ? Colors.green
+                        : Colors.red,
+                    title: product.title,
+                    timeLabel: _formatBookingTime(booking),
+                    price: displayPrice,
+                    buttonText: status == "Active"
+                        ? "Details"
+                        : status == "Completed"
+                        ? "Give Review"
+                        : null,
+                    onButtonTap: () {
+                      if (status == "Completed") {
+                        _showDialog(product.id);
+                      } else if (status == "Active") {
+                        _navigateToDetails(booking.id);
+                      }
+                    },
+                  );
+                }
+              },
+            );
+          }(),
+        );
       },
     );
+  }
+
+  /// Navigate to booking details based on service type
+  void _navigateToDetails(String bookingId) {
+    String type = _navController.getServiceType;
+    String route;
+
+    switch (type) {
+      case "ski_hire":
+        route = Routes.userHireBookingDetails;
+        break;
+      case "transport":
+        route = Routes.userTransportBookingDetails;
+        break;
+      case "restaurant":
+        route = Routes.userRestaurantBookingDetails;
+        break;
+      default:
+        route = Routes.userMassageBookingDetails;
+    }
+
+    Get.toNamed(route, arguments: {"bookingId": bookingId});
   }
 
   @override
@@ -507,14 +488,15 @@ class _BookingScreenState extends State<BookingScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildBookingList("Active"),
-          _buildBookingList("Completed"),
-          _buildBookingList("Cancelled"),
+          _buildBookingList("Active", _scrollControllers[0]),
+          _buildBookingList("Completed", _scrollControllers[1]),
+          _buildBookingList("Cancelled", _scrollControllers[2]),
         ],
       ),
     );
   }
 
+  /// Build the top tab bar
   Widget _buildTabBar() {
     return Container(
       height: 52.h,
@@ -561,6 +543,7 @@ class _BookingScreenState extends State<BookingScreen>
     );
   }
 
+  /// Build individual tab
   Widget _buildTab(String label, IconData iconData) {
     return Tab(
       child: FittedBox(

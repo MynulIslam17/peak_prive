@@ -10,9 +10,13 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic>? json) {
     json ??= {};
+
+    // ⭐ handle API data wrapper
+    final data = json['data'] ?? json;
+
     return BookingModel(
-      pagination: Pagination.fromJson(json['pagination'] ?? {}),
-      result: (json['result'] as List? ?? [])
+      pagination: Pagination.fromJson(data['pagination'] ?? {}),
+      result: (data['result'] as List? ?? [])
           .map((e) => Booking.fromJson(e))
           .toList(),
     );
