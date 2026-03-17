@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 import '../../../../gen/assets.gen.dart';
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
@@ -47,8 +48,8 @@ class ItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Container(
-                height: 240.h,
                 width: 345.w,
+                // ✅ Removed fixed height — card now sizes to its content
                 decoration: BoxDecoration(
                   gradient: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(12),
@@ -57,14 +58,15 @@ class ItemCard extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min, // ✅ Shrink-wraps the column
                     children: [
-                      /// Rounded Image
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          image,
+                      /// Rounded Image — AspectRatio replaces fixed height: 160
+                      AspectRatio(
+                        aspectRatio: 345 / 160, // ✅ Preserves original proportions
+                        child: CustomCachedImage(
+                          imageUrl: image,
                           width: double.infinity,
-                          height: 160.h,
+                          height: double.infinity,
                           fit: BoxFit.cover,
                         ),
                       ),

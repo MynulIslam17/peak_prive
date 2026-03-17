@@ -76,7 +76,7 @@ class CustomCachedImage extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
-      direction: ShimmerDirection.rtl,
+      direction: ShimmerDirection.ltr,
       child: Container(
         height: height,
         width: width,

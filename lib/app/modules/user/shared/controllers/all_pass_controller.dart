@@ -5,73 +5,89 @@ import 'package:harry_service_app/app/data/models/network_response.dart';
 import 'package:harry_service_app/app/data/services/network_caller.dart';
 import '../models/ski_pass_model.dart';
 
+
 class AllPassController extends GetxController {
   List<SkiPass> skiPassList = [];
-
-  bool _fetchProgress = false;
+  bool _isLoading = false;        // initial load
+  bool _isMoreLoading = false;    // pagination load
+  bool _hasMore = true;
   String? _errorMessage;
 
-  /// Search control
+  int _page = 1;
+  final int _limit = 2;
+
+  /// Debounce search
   Timer? _debounceTimer;
   int _requestCounter = 0;
 
-  bool get fetchProgress => _fetchProgress;
+  // Getters for UI
+  bool get isLoading => _isLoading;
+  bool get isMoreLoading => _isMoreLoading;
+  bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
 
-  /// 🔹 Debounced search entry point (optional use)
+  /// 🔹 Debounced search
   void searchPass(String? search) {
     _debounceTimer?.cancel();
-
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      fetchAllPass(search);
+      fetchAllPass(search: search);
     });
   }
 
-  /// 🔹 Backward-compatible fetch
-  Future<bool> fetchAllPass([String? search]) async {
-    final int requestId = ++_requestCounter;
-    bool success = false;
+  /// 🔹 Fetch passes with pagination
+  Future<void> fetchAllPass({String? search, bool isLoadMore = false}) async {
+    // guard clauses
+    if (_isLoading || _isMoreLoading) return;
+    if (isLoadMore && !_hasMore) return;
 
-    _fetchProgress = true;
     _errorMessage = null;
+    if (isLoadMore) {
+      _isMoreLoading = true;
+    } else {
+      _isLoading = true;
+      _page = 1;
+      _hasMore = true;
+      skiPassList.clear();
+    }
     update();
 
+    final int requestId = ++_requestCounter;
+
     try {
-      String url = AppUrls.passAllServiceUrl;
+      String url = "${AppUrls.passAllServiceUrl}?page=$_page&limit=$_limit";
 
       if (search != null && search.trim().isNotEmpty) {
         final encodedSearch = Uri.encodeQueryComponent(search.trim());
-        url += url.contains('?')
-            ? '&search=$encodedSearch'
-            : '?search=$encodedSearch';
+        url += "&search=$encodedSearch";
       }
 
-      NetworkResponse response =
-      await Get.find<NetworkCaller>().getRequest(url: url);
+      NetworkResponse response = await Get.find<NetworkCaller>().getRequest(url: url);
 
-      /// Ignore outdated responses
-      if (requestId != _requestCounter) return false;
+      // Ignore outdated requests
+      if (requestId != _requestCounter) return;
 
       if (response.isSuccess && response.body != null) {
-        final data = response.body!['data'];
-        final List<dynamic> resultList = data['result'] ?? [];
+        final SkiPassResponse responseData = SkiPassResponse.fromJson(response.body!);
 
-        skiPassList = resultList
-            .map((item) => SkiPass.fromJson(item))
-            .toList();
+        final List<SkiPass> newItems = responseData.data.result;
+        skiPassList.addAll(newItems);
 
-        success = true;
+        // pagination logic
+        if (_page >= responseData.data.pagination.totalPages || newItems.length < _limit) {
+          _hasMore = false;
+        } else {
+          _page++;
+        }
       } else {
         _errorMessage = response.errorMessage ?? "Can't fetch data";
       }
+    } catch (e) {
+      _errorMessage = "An unexpected error occurred: $e";
     } finally {
-      if (requestId == _requestCounter) {
-        _fetchProgress = false;
-        update();
-      }
+      _isLoading = false;
+      _isMoreLoading = false;
+      update();
     }
-
-    return success;
   }
 
   @override

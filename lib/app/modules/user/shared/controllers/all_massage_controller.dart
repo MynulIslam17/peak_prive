@@ -11,101 +11,134 @@ class MassageController extends GetxController {
   final List<ServiceCategory> categoryList = [];
 
   bool _isLoading = false;
+  bool _isMoreLoading = false;
+  bool _hasMore = true;
+
   String? _errorMessage;
   String? selectedCategoryName;
+
+  int _page = 1;
+  final int _limit = 3;
 
   /// Search control
   Timer? _debounceTimer;
   int _requestCounter = 0;
 
   bool get isLoading => _isLoading;
+  bool get isMoreLoading => _isMoreLoading;
+  bool get hasMore => _hasMore;
   String? get errorMessage => _errorMessage;
 
   /// Public search trigger (call this from UI)
   void searchMassage({String? category, String? search}) {
     _debounceTimer?.cancel();
-
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      fetchAllMassageAndCategory(category, search);
+      fetchAllMassageAndCategory(category: category, search: search);
     });
   }
 
-  /// Core fetch method
-  Future<bool> fetchAllMassageAndCategory([
+  /// Core fetch method with pagination
+  Future<bool> fetchAllMassageAndCategory({
     String? category,
     String? search,
-  ]) async {
+    bool isLoadMore = false,
+  }) async {
+    // Prevent multiple pagination calls
+    if (isLoadMore && (_isLoading || _isMoreLoading)) return false;
+    if (isLoadMore && !_hasMore) return false;
 
     final int requestId = ++_requestCounter;
+    bool success = false;
 
-    _isLoading = true;
+    // Reset pagination if category changed
+    if (!isLoadMore && category != selectedCategoryName) {
+      _page = 1;
+      _hasMore = true;
+      massageList.clear();
+    }
+
+    if (isLoadMore) {
+      _isMoreLoading = true;
+    } else {
+      _isLoading = true;
+      if (_page == 1) massageList.clear();
+    }
+
     _errorMessage = null;
+    selectedCategoryName = category;
     update();
 
     try {
-      selectedCategoryName = category;
-
-      /// Build URL safely
+      // Build URL with pagination
       String url = AppUrls.massageServiceUrl(category);
+      url += url.contains('?') ? '&page=$_page&limit=$_limit' : '?page=$_page&limit=$_limit';
 
       if (search != null && search.trim().isNotEmpty) {
         final encodedSearch = Uri.encodeQueryComponent(search.trim());
-        url += url.contains('?')
-            ? '&search=$encodedSearch'
-            : '?search=$encodedSearch';
+        url += '&search=$encodedSearch';
       }
 
-      /// Fetch massage services
-      final massageResponse =
-      await Get.find<NetworkCaller>().getRequest(url: url);
+      final massageResponse = await Get.find<NetworkCaller>().getRequest(url: url);
 
-      /// Ignore outdated responses
+      // Ignore outdated responses
       if (requestId != _requestCounter) return false;
 
       if (!massageResponse.isSuccess || massageResponse.body == null) {
         _errorMessage = 'Failed to load massage services';
-        massageList.clear();
+        if (!isLoadMore) massageList.clear();
         return false;
       }
 
-      final data = massageResponse.body!['data']?['result'] as List<dynamic>? ?? [];
+      final model = MassageModel.fromJson(massageResponse.body);
+      final newItems = model.data.result;
 
-      massageList
-        ..clear()
-        ..addAll(
-          data.map(
-                (e) => Massage.fromJson(e as Map<String, dynamic>),
-          ),
-        );
+      if (!isLoadMore) massageList.clear();
+      massageList.addAll(newItems);
 
-      /// Fetch categories only once
-      if (categoryList.isEmpty) {
-        final categoryResponse =
-        await Get.find<NetworkCaller>().getRequest(
+      // Pagination logic
+      final pagination = model.data.pagination;
+      if (_page >= pagination.totalPages || newItems.length < _limit) {
+        _hasMore = false;
+      } else {
+        _page++;
+      }
+
+      // Fetch categories only once
+      if (!isLoadMore && categoryList.isEmpty) {
+        final categoryResponse = await Get.find<NetworkCaller>().getRequest(
           url: AppUrls.massageCategoryUrl,
         );
 
         if (categoryResponse.isSuccess && categoryResponse.body != null) {
           final list = categoryResponse.body!['data'] as List<dynamic>? ?? [];
           categoryList.addAll(
-            list.map(
-                  (e) => ServiceCategory.fromJson(e as Map<String, dynamic>),
-            ),
+            list.map((e) => ServiceCategory.fromJson(e as Map<String, dynamic>)),
           );
         }
       }
 
-      return true;
+      success = true;
     } catch (e) {
-      if (requestId == _requestCounter) {
-        _errorMessage = e.toString();
-      }
-      return false;
+      if (requestId == _requestCounter) _errorMessage = e.toString();
+      success = false;
     } finally {
       if (requestId == _requestCounter) {
         _isLoading = false;
+        _isMoreLoading = false;
         update();
       }
+    }
+
+    return success;
+  }
+
+  /// Load more trigger for pagination
+  Future<void> loadMore() async {
+    if (_hasMore && !_isMoreLoading) {
+      await fetchAllMassageAndCategory(
+        category: selectedCategoryName,
+        isLoadMore: true,
+      );
     }
   }
 
@@ -116,6 +149,9 @@ class MassageController extends GetxController {
     categoryList.clear();
     selectedCategoryName = null;
     _errorMessage = null;
+    _page = 1;
+    _hasMore = true;
+    _isMoreLoading = false;
     update();
   }
 

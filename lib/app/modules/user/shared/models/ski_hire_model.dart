@@ -1,14 +1,39 @@
 class SkiHireModel {
+  final Pagination pagination;
   final List<SkiHireItem> result;
 
-  SkiHireModel({required this.result});
+  SkiHireModel({required this.pagination, required this.result});
 
   factory SkiHireModel.fromJson(Map<String, dynamic> json) {
-    final data = json['data']?['result'] ?? [];
-    return SkiHireModel(
-      result: (data as List)
-          .map((e) => SkiHireItem.fromJson(e))
-          .toList(),
+    final data = json['data'] ?? {};
+    final pagination = Pagination.fromJson(data['pagination'] ?? {});
+    final result = (data['result'] as List? ?? [])
+        .map((e) => SkiHireItem.fromJson(e))
+        .toList();
+
+    return SkiHireModel(pagination: pagination, result: result);
+  }
+}
+
+class Pagination {
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+
+  Pagination({
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
+
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    return Pagination(
+      total: json['total'] ?? 0,
+      page: json['page'] ?? 0,
+      limit: json['limit'] ?? 0,
+      totalPages: json['totalPages'] ?? 0,
     );
   }
 }

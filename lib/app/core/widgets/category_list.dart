@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
 import '../../modules/user/shared/models/category_model.dart';
 import '../constants/app_colors.dart';
@@ -53,16 +54,13 @@ class CategoryList extends StatelessWidget {
                     ),
                   ),
                   padding: const EdgeInsets.all(6.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(50),
-                    child: Image.network(
-                      category.categoryPhoto,
-                      width: 50.w,
-                      height: 50.h,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(Icons.error, size: 40.sp),
-                    ),
-                  ),
+                  child: CustomCachedImage(
+                    width: 50,
+                    height: 50,
+                    imageUrl: category.categoryPhoto,
+                    fit: BoxFit.cover,
+                    isCircle: true,
+                  )
                 ),
               ),
               SizedBox(height: 6.h),
