@@ -145,6 +145,10 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
   static const itinerary="/itinerary";
   static const itineraryDetails="/itineraryDetails";
 
+// notification
+
+static const notification="/notification";
+
 
 
 

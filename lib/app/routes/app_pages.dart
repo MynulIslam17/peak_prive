@@ -9,6 +9,8 @@ import 'package:harry_service_app/app/modules/auth/bindings/signup_bindings.dart
 import 'package:harry_service_app/app/modules/auth/views/email_verify_screen.dart';
 
 import 'package:harry_service_app/app/modules/auth/views/pass_reset_screen.dart';
+import 'package:harry_service_app/app/modules/notification/bindings/notification_bindings.dart';
+import 'package:harry_service_app/app/modules/notification/views/notification_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/massage_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_screen.dart';
@@ -337,5 +339,14 @@ abstract class AppPages {
     GetPage(name: Routes.itinerary, page: () => ItineraryScreen(),binding: ItineraryBindings()),
 
     GetPage(name: Routes.itineraryDetails, page: () => ItineraryDetails(),),
+
+
+    GetPage(name: Routes.notification, page: () => NotificationScreen(),binding:NotificationBindings()),
+
+
+
+
+
+
   ];
 }

@@ -10,35 +10,38 @@ class CategorySkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 100.h,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        separatorBuilder: (_, __) => SizedBox(width: 15.w),
-        itemBuilder: (context, index) {
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: const BoxDecoration(
-                    color: Colors.grey,
-                    shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: 5,
+          separatorBuilder: (_, __) => SizedBox(width: 15.w),
+          itemBuilder: (context, index) {
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Colors.grey,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(height: 6.h),
-              Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Container(width: 50, height: 7, color: Colors.grey[300]),
-              ),
-            ],
-          );
-        },
+                SizedBox(height: 6.h),
+                Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Container(width: 50, height: 7, color: Colors.grey[300]),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

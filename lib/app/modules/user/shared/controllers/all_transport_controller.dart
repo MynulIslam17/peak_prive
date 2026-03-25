@@ -7,51 +7,51 @@ import '../models/all_transport_model.dart';
 import '../models/category_model.dart';
 
 class TransportController extends GetxController {
+  /// ─── Lists ───
   List<TransportItem> transportList = [];
   List<ServiceCategory> categoryList = [];
 
+  /// ─── Pagination & State ───
   bool _isLoading = false;
   bool _isMoreLoading = false;
   bool _hasMore = true;
-
+  bool _isCategoryLoading = false;
   String? _errorMessage;
   String? selectedCategoryName;
 
   int _page = 1;
-  final int _limit = 3; // default limit per page
+  final int _limit = 10;
 
-  /// Search control
+  /// ─── Search Debounce ───
   Timer? _debounceTimer;
   int _requestCounter = 0;
 
+  /// ─── Getters ───
   bool get isLoading => _isLoading;
   bool get isMoreLoading => _isMoreLoading;
   bool get hasMore => _hasMore;
+  bool get isCategoryLoading => _isCategoryLoading;
   String? get errorMessage => _errorMessage;
 
-  /// 🔹 Debounced search entry point
+  /// 🔹 Debounced search
   void searchTransport({String? category, String? search}) {
     _debounceTimer?.cancel();
-
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       fetchAllTransportAndCategory(category: category, search: search);
     });
   }
 
-  /// 🔹 Fetch transport items with pagination
+  /// 🔹 Fetch transport items with pagination + category
   Future<bool> fetchAllTransportAndCategory({
     String? category,
     String? search,
     bool isLoadMore = false,
   }) async {
-    /// Prevent multiple pagination calls
-    if (isLoadMore && (_isLoading || _isMoreLoading)) return false;
-    if (isLoadMore && !_hasMore) return false;
+    if ((isLoadMore && (_isLoading || _isMoreLoading)) || (isLoadMore && !_hasMore)) return false;
 
     final int requestId = ++_requestCounter;
     bool success = false;
 
-    /// Reset pagination if category changes
     if (!isLoadMore && category != selectedCategoryName) {
       _page = 1;
       _hasMore = true;
@@ -62,9 +62,8 @@ class TransportController extends GetxController {
       _isMoreLoading = true;
     } else {
       _isLoading = true;
-      if (_page == 1) {
-        transportList.clear();
-      }
+      if (_page == 1) transportList.clear();
+      _isCategoryLoading = categoryList.isEmpty; // ✅ set loading state
     }
 
     _errorMessage = null;
@@ -72,36 +71,30 @@ class TransportController extends GetxController {
     update();
 
     try {
-      /// Build URL with pagination
+      // Build URL
       String url = AppUrls.transportServiceUrl(category);
       url += url.contains('?') ? '&page=$_page&limit=$_limit' : '?page=$_page&limit=$_limit';
 
-      /// Add search if exists
       if (search != null && search.trim().isNotEmpty) {
         final encodedSearch = Uri.encodeQueryComponent(search.trim());
         url += '&search=$encodedSearch';
       }
 
-      /// Parallel requests
       final itemFuture = Get.find<NetworkCaller>().getRequest(url: url);
 
-      final categoryFuture =
-      (!isLoadMore && categoryList.isEmpty)
+      final categoryFuture = (!isLoadMore && categoryList.isEmpty)
           ? Get.find<NetworkCaller>().getRequest(url: AppUrls.transportCategoryUrl)
           : Future.value(null);
 
       final results = await Future.wait([itemFuture, categoryFuture]);
-
       final itemResponse = results[0] as NetworkResponse;
       final categoryResponse = results[1] as NetworkResponse?;
 
-      /// Ignore outdated responses
       if (requestId != _requestCounter) return false;
 
-      /// Parse items
+      // Parse transport items
       if (itemResponse.isSuccess && itemResponse.body != null) {
         final model = TransportModel.fromJson(itemResponse.body!);
-
         if (isLoadMore) {
           transportList.addAll(model.results);
         } else {
@@ -118,7 +111,7 @@ class TransportController extends GetxController {
         }
       }
 
-      /// Parse categories
+      // Parse categories
       if (!isLoadMore &&
           categoryResponse != null &&
           categoryResponse.isSuccess &&
@@ -135,6 +128,7 @@ class TransportController extends GetxController {
       if (requestId == _requestCounter) {
         _isLoading = false;
         _isMoreLoading = false;
+        _isCategoryLoading = false; // ✅ reset after fetch
         update();
       }
     }
@@ -142,18 +136,15 @@ class TransportController extends GetxController {
     return success;
   }
 
-  /// 🔹 Load next page if available
+  /// 🔹 Load more transport items (pagination)
   Future<void> loadMoreTransport() async {
     if (!isMoreLoading && hasMore) {
       _page++;
-      await fetchAllTransportAndCategory(
-        category: selectedCategoryName,
-        isLoadMore: true,
-      );
+      await fetchAllTransportAndCategory(category: selectedCategoryName, isLoadMore: true);
     }
   }
 
-  /// 🔹 Clear controller state
+  /// 🔹 Clear all controller data
   void clearData() {
     transportList.clear();
     categoryList.clear();
@@ -163,6 +154,8 @@ class TransportController extends GetxController {
     _page = 1;
     _hasMore = true;
     _isMoreLoading = false;
+    _isLoading = false;
+    _isCategoryLoading = false;
 
     update();
   }

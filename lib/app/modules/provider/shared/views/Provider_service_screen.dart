@@ -90,17 +90,17 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                   ),
                   child: Column(
                     children: [
+
+
                       ProviderProfile(
-                        imageUrl: authController.userModel?.profilePic ?? '',
-                        role: "${authController.userModel?.providerType ?? ""} Provider",
-                        name: authController.userModel?.fullName ?? "",
-                        onTap: () => Get.toNamed(Routes.providerProfileScreen),
-                        icon: const Icon(
-                          Icons.notifications,
-                          color: Colors.red,
-                          size: 30,
-                        ),
-                        onIconTap: () => print("Icon tapped!"),
+                        onProfileTap: () {
+                          // Navigate to profile screen
+                          Get.toNamed(Routes.providerInfoScreen);
+                        },
+                        onNotificationTap: () {
+                          // Navigate to notifications screen
+                          Get.toNamed(Routes.notification);
+                        },
                       ),
                       SizedBox(height: 24.h),
                       GetBuilder<AllServiceController>(builder: (controller) {

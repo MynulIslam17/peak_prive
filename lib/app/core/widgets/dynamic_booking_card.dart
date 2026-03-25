@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'custom_image_container.dart';
+
 class ServiceInfoCard extends StatelessWidget {
   final String imageUrl;
 
@@ -127,21 +129,13 @@ class ServiceInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Left Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  imageUrl,
-                  width: 75,
-                  height: 95,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 75,
-                    height: 95,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.broken_image, size: 40),
-                  ),
-                ),
-              ),
+             CustomCachedImage(
+               width: 75,
+               height: 95,
+               imageUrl: imageUrl,
+               borderRadius: 8,
+               fit: BoxFit.cover,
+             ),
 
               const SizedBox(width: 16),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
 import '../../../gen/assets.gen.dart';
 import '../constants/app_colors.dart';
@@ -54,40 +55,15 @@ class MyServiceCard extends StatelessWidget {
                 child: Column(
                   children: [
                     /// Image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        image, // <-- use the network URL passed in
-                        width: double.infinity,
-                        height: 160,
-                        fit: BoxFit.cover, // keep the aspect ratio nicely
-                        errorBuilder: (context, error, stackTrace) {
-                          // optional: fallback image if network fails
-                          return Container(
-                            width: double.infinity,
-                            height: 160,
-                            color: Colors.grey.shade200,
-                            child: Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            width: double.infinity,
-                            height: 160,
-                            color: Colors.grey.shade200,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                    (loadingProgress.expectedTotalBytes ?? 1)
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+
+                    CustomCachedImage(
+                      width: double.infinity,
+                      height: 160,
+                      borderRadius: 8,
+                      imageUrl: image,
+                      fit: BoxFit.cover,
                     ),
+
 
 
                     SizedBox(height: 8.h),

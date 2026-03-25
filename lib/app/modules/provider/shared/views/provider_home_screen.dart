@@ -90,6 +90,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             final recentBookings = controller.providerHome!.recentBookings;
 
             return RefreshIndicator(
+              color: AppColors.primary_1,
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -99,20 +100,13 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
                       // Profile
                       ProviderProfile(
-                        imageUrl: authController.userModel!.profilePic ?? '',
-                        role:
-                            "${authController.userModel!.providerType ?? ""} Provider",
-                        name: authController.userModel!.fullName ?? "",
-                        onTap: () {
-                          Get.toNamed(Routes.providerInfoScreen);
+                        onProfileTap: () {
+                          // Navigate to profile screen
+                          Get.toNamed(Routes.profile);
                         },
-                        icon: Icon(
-                          Icons.notifications,
-                          color: Colors.red,
-                          size: 30,
-                        ),
-                        onIconTap: () {
-                          print("Icon tapped!");
+                        onNotificationTap: () {
+                          // Navigate to notifications screen
+                          Get.toNamed(Routes.notification);
                         },
                       ),
 
@@ -825,6 +819,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                 ),
               ),
               onRefresh: () async {
+
                 controller.refreshData();
               },
             );

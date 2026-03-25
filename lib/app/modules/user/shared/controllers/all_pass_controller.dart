@@ -14,7 +14,7 @@ class AllPassController extends GetxController {
   String? _errorMessage;
 
   int _page = 1;
-  final int _limit = 2;
+  final int _limit = 10;
 
   /// Debounce search
   Timer? _debounceTimer;

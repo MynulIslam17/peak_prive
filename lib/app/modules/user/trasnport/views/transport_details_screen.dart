@@ -3,13 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
+import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/custome_button.dart';
 import 'package:harry_service_app/app/core/widgets/provider_info.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/hire_shimmer.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/pass_details_skeleton.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shimmer.dart';
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/controlers/trasnport_details_controller.dart';
@@ -28,33 +28,51 @@ class TransportDetailsScreen extends StatefulWidget {
 }
 
 class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
-
-
-  // Stripe payment helper
   late StripePaymentHelper _paymentHelper;
   bool _isProcessingPayment = false;
-
-
   late final String productId;
+  final destinationTEController=TextEditingController();
 
-  /// find controllers
   final transportController = Get.find<TransportDetailsController>();
   final createBookingController = Get.find<CreateBookingController>();
   final authController = Get.find<AuthController>();
 
-
-
   final image = Assets.images;
   final icon = Assets.icons;
 
-  /// total price
-  int ? totalPrice;
-
+  int? totalPrice;
   bool _isRentClicked = false;
   DateTime? selectedStartDate;
   DateTime? selectedEndDate;
 
-  /// Pick date and time
+  @override
+  void initState() {
+    super.initState();
+    productId = Get.arguments["id"];
+    _fetchDetails();
+    _initializeStripeHelper();
+  }
+
+  void _initializeStripeHelper() {
+    final config = StripeConfig(
+      secretKey: EnvConfig.stripeSk,
+      merchantDisplayName: 'Harry Service',
+      paymentSheetTheme: ThemeMode.light,
+      allowsDelayedPaymentMethods: true,
+    );
+
+    _paymentHelper = StripePaymentHelper(
+      config: config,
+      onPaymentSuccess: (result) => setState(() => _isProcessingPayment = false),
+      onPaymentFailure: (result) => setState(() => _isProcessingPayment = false),
+      onLog: (message) => debugPrint('StripeLog: $message'),
+    );
+  }
+
+  Future<void> _fetchDetails() async {
+    await transportController.fetchTransportDetails(productId);
+  }
+
   Future<DateTime?> _pickDateTime() async {
     final date = await showDatePicker(
       context: context,
@@ -73,10 +91,8 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  /// Calculate total duration between start and end date
   String getTotalDuration(DateTime? start, DateTime? end) {
     if (start == null || end == null) return "Not selected";
-
     final duration = end.difference(start);
     final days = duration.inDays;
     final hours = duration.inHours % 24;
@@ -84,439 +100,92 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
 
     String result = "";
     if (days > 0) result += "$days day${days > 1 ? 's' : ''} ";
-    if (hours > 0) result += "$hours hour${hours > 1 ? 's' : ''} ";
+    if (hours > 0) result += "$hours hr ";
     if (minutes > 0 && days == 0) result += "$minutes min";
-
-    return result.trim();
+    return result.isEmpty ? "0 min" : result.trim();
   }
 
-  /// Calculate total rent based on duration and per-hour rate
   int calculateTotalRate(int ratePerHour, DateTime? start, DateTime? end) {
     if (start == null || end == null) return 0;
-
     final duration = end.difference(start);
     final totalHours = duration.inMinutes / 60;
-
-    totalPrice=(totalHours * ratePerHour).ceil();
-
-    return (totalHours * ratePerHour).ceil() ;
+    totalPrice = (totalHours * ratePerHour).ceil();
+    return totalPrice!;
   }
-
-
-
-
-  /// create new booking
 
   Future<void> _createBooking(Map<String, dynamic> reqBody) async {
     bool success = await createBookingController.proceedBooking(reqBody);
-
     if (success) {
-
-      /// showing dialog
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
-                SizedBox(height: 16.h),
-                Text(
-                  "Booking Successful!",
-                  style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  "Your Booking has been processed successfully",
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                ),
-              ],
-            ),
-          );
-        },
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+              SizedBox(height: 16.h),
+              Text("Booking Successful!", style: AppTextStyle.sub_h2_medium_16(color: Colors.green)),
+            ],
+          ),
+        ),
       );
-
-
-
-      await Future.delayed(Duration(seconds: 2));
-
-      if(mounted){
-        Navigator.of(context).pop();/// close the dilaog
-        Get.back(); /// back to previous screen
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        Navigator.of(context).pop();
+        Get.back();
       }
     }
   }
 
   @override
-  void initState() {
-    super.initState();
-    productId = Get.arguments["id"];
-    _fetchDetails();
-
-    _initializeStripeHelper();
-  }
-
-  void _initializeStripeHelper() {
-    final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
-      merchantDisplayName: 'Harry Service',
-      paymentSheetTheme: ThemeMode.light,
-      allowsDelayedPaymentMethods: true,
-    );
-
-    _paymentHelper = StripePaymentHelper(
-      config: config,
-      onPaymentSuccess: _handlePaymentSuccess,
-      onPaymentFailure: _handlePaymentFailure,
-      onLog: (message) => debugPrint('StripeLog: $message'),
-    );
-  }
-
-  void _handlePaymentSuccess(PaymentResult result) {
-    ///  Don't show snackbar immediately - wait for sheet to close
-    setState(() {
-
-      _isProcessingPayment = false;
-    });
-  }
-
-  void _handlePaymentFailure(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
-  }
-
-  /// call api method
-  Future<void> _fetchDetails() async {
-    await transportController.fetchTransportDetails(productId);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.sizeOf(context);
+    final Size size = MediaQuery.sizeOf(context);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: GetBuilder<TransportDetailsController>(
         builder: (controller) {
-          if (controller.fetchProgress) return TransportDetailsSkeleton();
-
-          if (controller.transportDetails == null) {
-            return Center(child: Text("Failed to load details"));
-          }
+          if (controller.fetchProgress) return const TransportDetailsSkeleton();
+          if (controller.transportDetails == null) return const Center(child: Text("Failed to load details"));
 
           final transport = controller.transportDetails!;
           final owner = transport.owner;
 
-          return SizedBox(
-            height: double.infinity,
-            child: Stack(
-              children: [
-                // Background image
-                Image.network(
-                  transport.thumbnail.isNotEmpty ? transport.thumbnail : "",
-                  height: size.height * 0.4,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Image.asset(
-                    "assets/images/placeholder.png",
-                    height: size.height * 0.4,
+          return SafeArea(
+            child: SlidingUpPanel(
+              maxHeight: size.height * 0.97,
+              minHeight: size.height * 0.45,
+              parallaxEnabled: true,
+              parallaxOffset: 0.5,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              // Persistent Footer logic
+              footer: _buildPersistentFooter(transport),
+              panelBuilder: (scrollController) => _buildSlidingContent(
+                context: context,
+                transport: transport,
+                owner: owner,
+                scrollController: scrollController,
+              ),
+              body: Stack(
+                children: [
+
+                  Image.network(
+                    transport.thumbnail.isNotEmpty ? transport.thumbnail : "",
+                    height: size.height * 0.6,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(color: Colors.grey[300]),
                   ),
-                ),
-
-                // Bottom Card
-                Positioned(
-                  top: size.height * 0.33,
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Color(0xffFDFAF6),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          SizedBox(height: 10),
-                          image.line.image(),
-
-                          if (_isRentClicked) ...[
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 20),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            transport.title,
-                                            style: AppTextStyle.sub_h1_medium_18(),
-                                          ),
-                                          Text(
-                                            "\$${transport.amount}/ hr",
-                                            style: AppTextStyle.sub_h3_medium_14(
-                                              color: AppColors.primary_1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 20),
-
-                                      // Date pickers
-                                      Card(
-                                        color: const Color(0xFFFDFAF6),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "Start Date & Time",
-                                                      style: AppTextStyle.sub_h3_medium_14().copyWith(fontSize: 12),
-                                                    ),
-                                                    SizedBox(height: 6),
-                                                    InkWell(
-                                                      onTap: () async {
-                                                        final selected = await _pickDateTime();
-                                                        if (selected != null) {
-                                                          setState(() {
-                                                            selectedStartDate = selected;
-                                                          });
-                                                        }
-                                                      },
-                                                      child: _dateBox(selectedStartDate),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              SizedBox(width: 20),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "End Date & Time",
-                                                      style: AppTextStyle.sub_h3_medium_14().copyWith(fontSize: 12),
-                                                    ),
-                                                    SizedBox(height: 6),
-                                                    InkWell(
-                                                      onTap: () async {
-                                                        final selected = await _pickDateTime();
-                                                        if (selected != null) {
-                                                          setState(() {
-                                                            selectedEndDate = selected;
-                                                          });
-                                                        }
-                                                      },
-                                                      child: _dateBox(selectedEndDate),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: 20),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Checkout section
-                            Container(
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: Color(0xffE7E7E7),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  icon.time.svg(width: 17, height: 17),
-                                  SizedBox(width: 6),
-                                  Text(getTotalDuration(selectedStartDate, selectedEndDate),style: AppTextStyle.p_medium_12(color: AppColors.primary_1),),
-                                  SizedBox(width: 12),
-                                  _divider(),
-                                  SizedBox(width: 6),
-                                  icon.carProfile.svg(width: 17, height: 17),
-                                  SizedBox(width: 6),
-                                  Text("1 Car",style: AppTextStyle.p_medium_12(color: AppColors.primary_1),),
-                                  SizedBox(width: 12),
-                                  _divider(),
-                                  SizedBox(width: 6),
-                                  icon.currencyCircleDollar.svg(width: 17, height: 17),
-                                  SizedBox(width: 6),
-                                  // Display total amount dynamically based on duration
-                                  Text(
-                                    "\$${calculateTotalRate(transport.amount, selectedStartDate, selectedEndDate)}",
-                                    style: AppTextStyle.p_medium_12(color: AppColors.primary_1),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            SizedBox(height: 20),
-
-                            /// checkout button
-                            SafeArea(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
-                                child: GetBuilder<CreateBookingController>(builder: (controller){
-                                  return controller.bookingProgress?
-                                  CircularProgressIndicator(color: AppColors.primary_1,)
-                                      :  CustomButton(
-                                    text: "Checkout",
-                                    width: double.infinity,
-                                    onTap: ()async {
-                                      if (_isProcessingPayment) return;
-
-                                      if (selectedStartDate == null || selectedEndDate == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text("Please select both start and end date & time before proceeding."),
-                                            backgroundColor: Colors.redAccent,
-                                            duration: Duration(seconds: 2),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      // Process Stripe payment
-                                      final PaymentResult = await _paymentHelper.processPayment(
-                                        context: context,
-                                        amount: 100.0, // Payment amount in dollars
-                                        currency: 'USD',
-                                        description: 'Pass Booking Payment',
-                                        metadata: {
-
-                                          "userId": authController.userModel?.id ?? "",
-                                          "productId": productId,
-
-                                        },
-                                      );
-
-                                      if(PaymentResult.isSuccess){
-                                        Map<String, dynamic> body = {
-                                          "userId": authController.userModel!.id,
-                                          "productId": productId,
-                                          "totalPrice" : totalPrice ?? 0,
-                                          "startDateAndTime": selectedStartDate!.toIso8601String(), // ISO format
-                                          "endDateAndTime": selectedEndDate!.toIso8601String(), // ISO format
-                                          "transactionId": PaymentResult.paymentData?['transactionId'],
-                                        };
-
-                                        /// call the api for create booking
-
-                                        await   _createBooking(body);
-
-
-                                      }
-
-                                    },
-                                  );
-                                }),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-
-
-
-                          ] else ...[
-
-                            Expanded(
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  children: [
-                                    ProviderInfo(
-                                      image: owner.profileUrl,
-                                      providerName: owner.fullName,
-                                      rating: transport.averageRating.toString(),
-                                      reviewCount: transport.reviews.length,
-                                      onTapCall: () {},
-                                      onTapMessage: () {},
-                                    ),
-                                    SizedBox(height: 10),
-                                    Text(
-                                      transport.description,
-                                      style: AppTextStyle.p_regular_12().copyWith(
-                                        fontSize: 14,
-                                        color: AppColors.black_2,
-                                      ),
-                                    ),
-                                    SizedBox(height: 10),
-
-                                    // Price card
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(20),
-                                        child: Column(
-                                          children: [
-                                            _priceRow("Insurance Fee", transport.insuranceFee),
-                                            _priceRow("Maintain Charge", transport.maintainCharge),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 100,
-                                  child: Text(
-                                    "${controller.transportDetails!.amount}/hr",
-                                    style: AppTextStyle.sub_h1_medium_18().copyWith(fontSize: 18,fontWeight: FontWeight.w500,color: AppColors.primary_1),
-                                  ),
-                                ),
-                                SizedBox(width: 30),
-                                Expanded(
-                                  child: CustomButton(
-                                    text: "Rent Car",
-                                    onTap: () {
-                                      setState(() {
-                                        _isRentClicked = true;
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 20),
-                          ],
-                        ],
-                      ),
-                    ),
+                  Positioned(
+                    top: 50.h,
+                    left: 20.w,
+                    child: CustomBackButton(onTap: Get.back),
                   ),
-                ),
-
-                /// Back button
-                CustomBackButton(onTap: () => Get.back()),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -524,38 +193,246 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
     );
   }
 
-  Widget _divider() => Container(height: 20, width: 2, color: Colors.grey);
+  Widget _buildSlidingContent({
+    required BuildContext context,
+    required dynamic transport,
+    required dynamic owner,
+    required ScrollController scrollController,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: ListView(
+        controller: scrollController,
+        padding: const EdgeInsets.only(bottom: 150), // Extra space for footer
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 60,
+              height: 5,
+              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          if (_isRentClicked) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(transport.title, style: AppTextStyle.sub_h1_medium_18()),
+                Text("\$${transport.amount}/ hr", style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Card(
+              color: const Color(0xFFFDFAF6),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child:Column(
+                  children: [
+                    Row(
+                      children: [
+                        _buildDateSelector("Start Date", selectedStartDate, (date) => setState(() => selectedStartDate = date)),
+                        const SizedBox(width: 15),
+                        _buildDateSelector("End Date", selectedEndDate, (date) => setState(() => selectedEndDate = date)),
+                      ],
+                    ),
+                    const SizedBox(height: 10,),
+                  
+                    CustomTextField(
+                          prefixIcon: Icons.location_on,
+                         controller: destinationTEController,
+                        hintText: "Destination"
 
-  Widget _priceRow(String label, int value) {
+
+                    )
+
+                  ],
+                )
+              ),
+            ),
+          ] else ...[
+            ProviderInfo(
+              image: owner.profileUrl,
+              providerName: owner.fullName,
+              rating: transport.averageRating.toString(),
+              reviewCount: transport.reviews.length,
+              onTapCall: () {},
+              onTapMessage: () {},
+            ),
+            const SizedBox(height: 15),
+            Text(transport.description, style: AppTextStyle.p_regular_12().copyWith(fontSize: 14, color: AppColors.black_2)),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                children: [
+                  _priceRow("Insurance Fee", transport.insuranceFee),
+                  const Divider(),
+                  _priceRow("Maintain Charge", transport.maintainCharge),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersistentFooter(dynamic transport) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).padding.bottom + 10),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
+      child: _isRentClicked ? _buildCheckoutSection(transport) : _buildRentNowSection(transport),
+    );
+  }
+
+  Widget _buildRentNowSection(dynamic transport) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTextStyle.sub_h3_medium_14()),
-        Text("\$$value", style: AppTextStyle.sub_h3_medium_14()),
+        Text("\$${transport.amount}/hr", style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1)),
+        const Spacer(),
+        SizedBox(
+          width: 180.w,
+          child: CustomButton(text: "Rent Car", onTap: () => setState(() => _isRentClicked = true)),
+        ),
       ],
     );
   }
 
+  Widget _buildCheckoutSection(dynamic transport) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          height: 50,
+          decoration: BoxDecoration(color: const Color(0xffF3F3F3), borderRadius: BorderRadius.circular(8)),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _infoTile(icon.time, getTotalDuration(selectedStartDate, selectedEndDate)),
+              _verticalDivider(),
+              _infoTile(icon.carProfile, "1 Car"),
+              _verticalDivider(),
+              _infoTile(icon.currencyCircleDollar, "\$${calculateTotalRate(transport.amount, selectedStartDate, selectedEndDate)}"),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        GetBuilder<CreateBookingController>(
+          builder: (controller) {
+            return controller.bookingProgress
+                ? const CircularProgressIndicator()
+                : CustomButton(
+              text: "Checkout",
+              width: double.infinity,
+              onTap: _handleCheckout,
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleCheckout() async {
+    if (_isProcessingPayment) return;
+
+    if (selectedStartDate == null || selectedEndDate == null) {
+      Get.snackbar("Error", "Please select dates", backgroundColor: Colors.redAccent, colorText: Colors.white);
+      return;
+    }
+
+
+
+    if (destinationTEController.text.trim().isEmpty) {
+      Get.snackbar("Error", "Destination is required",
+          backgroundColor: Colors.redAccent, colorText: Colors.white);
+      return;
+    }
+
+    final payment = await _paymentHelper.processPayment(
+      context: context,
+      amount: (totalPrice ?? 0).toDouble(),
+      currency: 'USD',
+      description: 'Car Rental',
+    );
+
+    if (payment.isSuccess) {
+      await _createBooking({
+        "userId": authController.userModel!.id,
+        "productId": productId,
+        "totalPrice": totalPrice,
+        "destination": destinationTEController.text.trim(),
+        "startDateAndTime": selectedStartDate!.toIso8601String(),
+        "endDateAndTime": selectedEndDate!.toIso8601String(),
+        "transactionId": payment.paymentData?['transactionId'],
+      });
+    }
+  }
+
+  Widget _buildDateSelector(String label, DateTime? date, Function(DateTime) onPick) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          InkWell(
+            onTap: () async {
+              final picked = await _pickDateTime();
+              if (picked != null) onPick(picked);
+            },
+            child: _dateBox(date),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoTile(dynamic svgIcon, String text) {
+    return Row(
+      children: [
+
+        svgIcon.svg(width: 16.0, height: 16.0, color: AppColors.primary_1),
+        const SizedBox(width: 4),
+        Text(text, style: AppTextStyle.p_medium_12(color: AppColors.primary_1)),
+      ],
+    );
+  }
+
+  Widget _verticalDivider() => Container(height: 20, width: 1, color: Colors.grey[300]);
+
+  Widget _priceRow(String label, int value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: AppTextStyle.sub_h3_medium_14()),
+        Text("\$$value", style: AppTextStyle.sub_h3_medium_14(color: Colors.black87)),
+      ],
+    ),
+  );
+
   Widget _dateBox(DateTime? date) {
     return Container(
-      height: 38,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      height: 40,
+      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8), color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
-          icon.calendarDots.svg(width: 20, height: 20),
-          SizedBox(width: 5),
-          Text(
-            date == null
-                ? "Select Date & Time"
-                : "${date.day.toString().padLeft(2, '0')}/"
-                "${date.month.toString().padLeft(2, '0')}/"
-                "${date.year}  "
-                "${date.hour.toString().padLeft(2, '0')}:"
-                "${date.minute.toString().padLeft(2, '0')}",style: TextStyle(fontSize: 9),
+          icon.calendarDots.svg(width: 16.0, height: 16.0),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              date == null ? "Pick Date" : "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
+              style: const TextStyle(fontSize: 10),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

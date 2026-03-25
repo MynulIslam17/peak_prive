@@ -81,7 +81,7 @@ class UpdateProfileController extends GetxController {
       );
 
       ///  THIS triggers UI refresh for GetBuilder<UpdateProfileController>
-      update();
+      _auth.update();
 
       isLoading = false;
       update();

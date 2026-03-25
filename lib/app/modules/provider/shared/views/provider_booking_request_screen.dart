@@ -63,18 +63,15 @@ class _ProviderBookingRequestScreenState
                   children: [
                     /// --- HEADER SECTION (Always Visible) ---
                     ProviderProfile(
-                      imageUrl: authController.userModel!.profilePic ?? '',
-                      role: "${authController.userModel!.providerType ?? ""} Provider",
-                      name: authController.userModel!.fullName ?? "",
-                      onTap: () => Get.toNamed(Routes.providerProfileScreen),
-                      icon: const Icon(
-                        Icons.notifications,
-                        color: Colors.red,
-                        size: 30,
-                      ),
-                      onIconTap: () => print("Icon tapped!"),
+                      onProfileTap: () {
+                        // Navigate to profile screen
+                        Get.toNamed(Routes.profile);
+                      },
+                      onNotificationTap: () {
+                        // Navigate to notifications screen
+                        Get.toNamed(Routes.notification);
+                      },
                     ),
-
                     const SizedBox(height: 18),
 
                     Text(

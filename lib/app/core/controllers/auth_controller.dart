@@ -1,14 +1,11 @@
 import 'dart:convert';
-
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../data/models/user_model.dart';
 import '../../routes/app_routes.dart';
 
-class AuthController  extends GetxController{
-
+class AuthController extends GetxController {
   // -------------------------
   // KEYS
   // -------------------------
@@ -24,7 +21,6 @@ class AuthController  extends GetxController{
   String? role;
   UserModel? userModel;
 
-
   // -------------------------
   // SAVE USER + TOKEN + ROLE
   // -------------------------
@@ -32,27 +28,26 @@ class AuthController  extends GetxController{
     required UserModel model,
     required String token,
   }) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
     await prefs.setString(_tokenKey, token);
     await prefs.setString(_userDataKey, jsonEncode(model.toJson()));
     await prefs.setString(_roleKey, model.role);
-    if(model.providerType!=null){
+
+    if (model.providerType != null) {
       await prefs.setString(_providerTypeKey, model.providerType!);
     }
-
 
     accessToken = token;
     userModel = model;
     role = model.role;
-
   }
 
   // -------------------------
   // LOAD USER DATA
   // -------------------------
   Future<void> loadUserData() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
     accessToken = prefs.getString(_tokenKey);
     role = prefs.getString(_roleKey);
@@ -64,66 +59,35 @@ class AuthController  extends GetxController{
   }
 
   // -------------------------
-  // CHECK LOGIN
+  // UPDATE PROFILE
   // -------------------------
-  Future<bool> isUserAlreadyLoggedIn() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey) != null;
+  Future<void> updateUser(UserModel updatedUser) async {
+    final prefs = await SharedPreferences.getInstance();
+    userModel = updatedUser;
+    await prefs.setString(_userDataKey, jsonEncode(updatedUser.toJson()));
   }
 
   // -------------------------
-  // CLEAR ALL SAVED DATA
+  // LOGOUT
   // -------------------------
-  Future<void> clearUserData() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
-    accessToken = null;
-    userModel = null;
-    role = null;
-  }
-
-  // -------------------------
-  // OPTIONAL: SAVE ROLE ONLY
-  // -------------------------
-  Future<void> saveRole(String newRole) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_roleKey, newRole);
-    role = newRole;
-  }
-
-
-
-  /// this use for logout
-
   Future<void> logout() async {
-
-    final navController=Get.put(NavController());
+    final navController = Get.put(NavController());
     final prefs = await SharedPreferences.getInstance();
 
-    ///Remove only login-related keys
     await prefs.remove(_tokenKey);
     await prefs.remove(_userDataKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_providerTypeKey);
 
-
-    /// reset navController
     navController.changeIndex(0);
-
-
 
     accessToken = null;
     userModel = null;
     role = null;
 
-    // Redirect to login
     Get.offAllNamed(Routes.login);
   }
 
-
-  // -------------------------
-  // GETTERS
   // -------------------------
   bool get isLoggedIn => accessToken != null;
 }

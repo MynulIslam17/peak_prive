@@ -6,30 +6,34 @@ import '../models/all_massage_model.dart';
 import '../models/category_model.dart';
 
 class MassageController extends GetxController {
-  /// Data
+  /// ─── Lists ───
   final List<Massage> massageList = [];
   final List<ServiceCategory> categoryList = [];
 
+  /// ─── State ───
   bool _isLoading = false;
   bool _isMoreLoading = false;
+  bool _isCategoryLoading = false;
   bool _hasMore = true;
 
   String? _errorMessage;
   String? selectedCategoryName;
 
   int _page = 1;
-  final int _limit = 3;
+  final int _limit = 10;
 
-  /// Search control
+  /// ─── Search debounce ───
   Timer? _debounceTimer;
   int _requestCounter = 0;
 
+  /// ─── Getters ───
   bool get isLoading => _isLoading;
   bool get isMoreLoading => _isMoreLoading;
   bool get hasMore => _hasMore;
+  bool get isCategoryLoading => _isCategoryLoading; //
   String? get errorMessage => _errorMessage;
 
-  /// Public search trigger (call this from UI)
+  /// 🔹 Debounced search
   void searchMassage({String? category, String? search}) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -37,20 +41,17 @@ class MassageController extends GetxController {
     });
   }
 
-  /// Core fetch method with pagination
+  /// 🔹 Fetch massage services with pagination and categories
   Future<bool> fetchAllMassageAndCategory({
     String? category,
     String? search,
     bool isLoadMore = false,
   }) async {
-    // Prevent multiple pagination calls
-    if (isLoadMore && (_isLoading || _isMoreLoading)) return false;
-    if (isLoadMore && !_hasMore) return false;
+    if ((isLoadMore && (_isLoading || _isMoreLoading)) || (isLoadMore && !_hasMore)) return false;
 
     final int requestId = ++_requestCounter;
     bool success = false;
 
-    // Reset pagination if category changed
     if (!isLoadMore && category != selectedCategoryName) {
       _page = 1;
       _hasMore = true;
@@ -62,6 +63,7 @@ class MassageController extends GetxController {
     } else {
       _isLoading = true;
       if (_page == 1) massageList.clear();
+      _isCategoryLoading = categoryList.isEmpty;
     }
 
     _errorMessage = null;
@@ -69,7 +71,6 @@ class MassageController extends GetxController {
     update();
 
     try {
-      // Build URL with pagination
       String url = AppUrls.massageServiceUrl(category);
       url += url.contains('?') ? '&page=$_page&limit=$_limit' : '?page=$_page&limit=$_limit';
 
@@ -80,7 +81,6 @@ class MassageController extends GetxController {
 
       final massageResponse = await Get.find<NetworkCaller>().getRequest(url: url);
 
-      // Ignore outdated responses
       if (requestId != _requestCounter) return false;
 
       if (!massageResponse.isSuccess || massageResponse.body == null) {
@@ -95,7 +95,7 @@ class MassageController extends GetxController {
       if (!isLoadMore) massageList.clear();
       massageList.addAll(newItems);
 
-      // Pagination logic
+      // Pagination
       final pagination = model.data.pagination;
       if (_page >= pagination.totalPages || newItems.length < _limit) {
         _hasMore = false;
@@ -105,6 +105,9 @@ class MassageController extends GetxController {
 
       // Fetch categories only once
       if (!isLoadMore && categoryList.isEmpty) {
+        _isCategoryLoading = true;
+        update();
+
         final categoryResponse = await Get.find<NetworkCaller>().getRequest(
           url: AppUrls.massageCategoryUrl,
         );
@@ -125,6 +128,7 @@ class MassageController extends GetxController {
       if (requestId == _requestCounter) {
         _isLoading = false;
         _isMoreLoading = false;
+        _isCategoryLoading = false;
         update();
       }
     }
@@ -132,17 +136,14 @@ class MassageController extends GetxController {
     return success;
   }
 
-  /// Load more trigger for pagination
+  /// 🔹 Load more items
   Future<void> loadMore() async {
     if (_hasMore && !_isMoreLoading) {
-      await fetchAllMassageAndCategory(
-        category: selectedCategoryName,
-        isLoadMore: true,
-      );
+      await fetchAllMassageAndCategory(category: selectedCategoryName, isLoadMore: true);
     }
   }
 
-  /// Clear all data
+  /// 🔹 Clear all data
   void clearData() {
     _debounceTimer?.cancel();
     massageList.clear();
@@ -152,6 +153,8 @@ class MassageController extends GetxController {
     _page = 1;
     _hasMore = true;
     _isMoreLoading = false;
+    _isLoading = false;
+    _isCategoryLoading = false;
     update();
   }
 

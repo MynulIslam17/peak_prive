@@ -51,36 +51,38 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
             return const Center(child: Text("No details available"));
           }
 
-          return SlidingUpPanel(
-            controller: panelController,
-            maxHeight: size.height * 0.75,
-            minHeight: size.height * 0.55,
-            parallaxEnabled: true,
-            parallaxOffset: 0.2,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(32),
-            ),
-            panelBuilder: (scrollController) =>
-                _SlidingContent(pass, scrollController),
-            body: SafeArea(
-              child: Stack(
-                children: [
-                  // Background Image
-                  Image.network(
-                    pass.thumbnail,
-                    height: size.height * 0.6,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-              
-                  // Back Button
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CustomBackButton(onTap: Get.back),
+          return SafeArea(
+            child: SlidingUpPanel(
+              controller: panelController,
+              maxHeight: size.height * 0.97,
+              minHeight: size.height * 0.55,
+              parallaxEnabled: true,
+              parallaxOffset: 0.2,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(32),
+              ),
+              panelBuilder: (scrollController) =>
+                  _SlidingContent(pass, scrollController),
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    // Background Image
+                    Image.network(
+                      pass.thumbnail,
+                      height: size.height * 0.6,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                ],
+                
+                    // Back Button
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: CustomBackButton(onTap: Get.back),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

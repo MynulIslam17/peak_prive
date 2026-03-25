@@ -8,7 +8,6 @@ import 'package:harry_service_app/app/core/widgets/custom_search_bar.dart';
 import 'package:harry_service_app/app/core/widgets/item_card.dart';
 import 'package:harry_service_app/app/core/widgets/category_list.dart';
 import 'package:harry_service_app/app/core/widgets/category_title.dart';
-import 'package:harry_service_app/app/core/widgets/userProfileSection.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/all_restaurant_controller.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/all_transport_controller.dart';
 import '../../../../core/constants/text-style.dart';
@@ -40,10 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController scrollCtrl = ScrollController();
 
   String selectedCategory = "All";
-  bool fullScreenLoading = true;
 
   // ── Getters ──
   String get serviceType => nav.getServiceType;
+  bool get hasCategory => serviceType != "ski_pass";
 
   @override
   void initState() {
@@ -52,11 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _setupScrollListener();
   }
 
-  // ════════════════════════════════════════════════════
-  // Scroll listener — pagination for ski_pass & ski_hire
-  // Controller guards duplicate calls internally via
-  // isLoading / isMoreLoading / hasMore checks
-  // ════════════════════════════════════════════════════
   void _setupScrollListener() {
     scrollCtrl.addListener(() {
       final isNearBottom =
@@ -72,22 +66,15 @@ class _HomeScreenState extends State<HomeScreen> {
           isLoadMore: true,
         );
       } else if (serviceType == "transport") {
-        // TransportController has dedicated loadMoreTransport()
-        // which handles _page++ and guard checks internally
         transport.loadMoreTransport();
-      }else if (serviceType == "massage") {
+      } else if (serviceType == "massage") {
         massage.loadMore();
-      }else if(serviceType == "restaurant"){
-        // TransportController has dedicated loadMoreTransport()
-        // which handles _page++ and guard checks internally
+      } else if(serviceType == "restaurant") {
         restaurant.loadMoreRestaurant();
       }
     });
   }
 
-  // ════════════════════════════════════════════════════
-  // Initial / category load
-  // ════════════════════════════════════════════════════
   Future<void> _loadData({String? category}) async {
     final cat = (category == null || category == "All") ? null : category;
 
@@ -102,13 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (serviceType == "restaurant") {
       await restaurant.fetchAllRestaurantsAndCategory(category: cat);
     }
-
-    if (mounted) setState(() => fullScreenLoading = false);
   }
 
-  // ════════════════════════════════════════════════════
-  // Search
-  // ════════════════════════════════════════════════════
   void _onSearch(String value) {
     final cat = selectedCategory == "All" ? null : selectedCategory;
     switch (serviceType) {
@@ -120,21 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════
-  // Clear search
-  // ════════════════════════════════════════════════════
   void _onClearSearch() {
     FocusScope.of(context).unfocus();
     searchCtrl.clear();
     _loadData(category: selectedCategory);
-  }
-
-  // ════════════════════════════════════════════════════
-  // Category tap
-  // ════════════════════════════════════════════════════
-  void _onCategoryTap(String categoryName) {
-    setState(() => selectedCategory = categoryName);
-    _loadData(category: categoryName);
   }
 
   @override
@@ -144,19 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // ════════════════════════════════════════════════════
-  // BUILD
-  // ════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    // Full screen shimmer on very first load
-    if (fullScreenLoading) {
-      return _FullScreenShimmer(type: serviceType);
-    }
-
     return Scaffold(
       backgroundColor: Colors.white,
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary_1,
         child: Image.asset("assets/icons/fav.png", color: Colors.black87),
@@ -164,27 +126,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: RefreshIndicator(
         color: AppColors.primary_1,
-        onRefresh: ()async{
-
-          await _loadData(category: selectedCategory);
-        },
-
+        onRefresh: () async => await _loadData(category: selectedCategory),
         child: SafeArea(
           child: CustomScrollView(
             controller: scrollCtrl,
             slivers: [
-
               SliverAppBar(
                 automaticallyImplyLeading: false,
-                pinned: true,       // Keeps the title (User Profile) visible
-                floating: false,    // Search bar won't "pop" back in mid-scroll
-                snap: false,        // Disables the snapping animation
+                pinned: true,
+                floating: false,
+                snap: false,
                 expandedHeight: 140.h,
                 backgroundColor: Colors.white,
                 elevation: 0,
-
-
-                // This part stays visible at the top
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -199,60 +153,35 @@ class _HomeScreenState extends State<HomeScreen> {
                           "Hello, ${auth.userModel?.fullName ?? "User"}",
                           style: AppTextStyle.sub_h1_regular_18().copyWith(
                             fontSize: 16.sp,
-                            color: Colors.black, // Ensure visibility against white appbar
+                            color: Colors.black,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Get.toNamed(Routes.notification);
+                      },
                       icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
                     ),
                   ],
                 ),
-
-                // This part scrolls away and only reappears at the very top
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.pin,
                   background: Padding(
-                    // Top padding pushes the search bar below the pinned title area
                     padding: EdgeInsets.only(left: 12.w, right: 12.w, top: 85.h),
-                    child: Column(
-                      children: [
-                        CustomSearchBar(
-
-                          controller: searchCtrl,
-                          onChanged: _onSearch,
-                          onClear: _onClearSearch,
-                        ),
-                      ],
+                    child: CustomSearchBar(
+                      focusColor: Colors.black54,
+                      controller: searchCtrl,
+                      onChanged: _onSearch,
+                      onClear: _onClearSearch,
                     ),
                   ),
                 ),
               ),
-
-
-
               SliverToBoxAdapter(child: SizedBox(height: 20.h)),
-
-              // ── 2. Category section (not for ski_pass) ──
-              if (serviceType != "ski_pass") ...[
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w),
-                    child: CategoryTitle(
-                      title: serviceType == "transport" ? "Top Brand" : "Category",
-                      text: "See All",
-                      onClick: () {},
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(child: _buildCategoryRow()),
-              ],
-
+              SliverToBoxAdapter(child: _buildCategoryRow()),
               SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-
-              // ── 3. List title ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 12.w),
@@ -263,18 +192,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(child: SizedBox(height: 10.h)),
-
-              // ── 4. Service list ──
               SliverPadding(
                 padding: EdgeInsets.symmetric(horizontal: 12.w),
                 sliver: _buildServiceList(),
               ),
-
-              // ── 5. Pagination footer (ski_pass & ski_hire,all service) ──
               SliverToBoxAdapter(child: _buildPaginationFooter()),
-
               SliverToBoxAdapter(child: SizedBox(height: 30.h)),
             ],
           ),
@@ -283,71 +206,200 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // HEADER
-  // ════════════════════════════════════════════════════
-  Widget _buildHeader() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 20.h),
-      decoration: BoxDecoration(gradient: AppColors.appBarBackground),
-      child: Column(
-        children: [
-          UserProfileSection(
-            name: auth.userModel?.fullName ?? "User",
-            image: auth.userModel?.profilePic ?? "",
-            onTap: () {},
-          ),
-          SizedBox(height: 20.h),
-          CustomSearchBar(
-            elevation: 2,
-            controller: searchCtrl,
-            onChanged: _onSearch,
-            onClear: _onClearSearch,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ════════════════════════════════════════════════════
-  // CATEGORY ROW
-  // ════════════════════════════════════════════════════
   Widget _buildCategoryRow() {
-    final categoryList = serviceType == "ski_hire"
-        ? hire.categoryList
-        : serviceType == "transport"
-        ? transport.categoryList
-        : serviceType == "massage"
-        ? massage.categoryList
-        : restaurant.categoryList;
+    if (!hasCategory) return const SizedBox.shrink();
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w),
-        child: Row(
-          children: [
-            // "All" button
-            _AllCategoryButton(
-              isSelected: selectedCategory == "All",
-              onTap: () => _onCategoryTap("All"),
-            ),
-            SizedBox(width: 15.w),
-            // Rest of categories
-            CategoryList(
-              categoryList: categoryList,
-              selectedCategoryName: selectedCategory,
-              onTap: _onCategoryTap,
-            ),
-          ],
-        ),
+    // Show CategoryTitle immediately
+    Widget categoryTitleWidget = Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12.w),
+      child: CategoryTitle(
+        title: "Category",
+        text: "See All",
+        onClick: () {
+          // Optional: navigate to full category screen
+        },
       ),
     );
+
+    switch (serviceType) {
+      case "ski_hire":
+        return GetBuilder<SkiHireController>(
+          builder: (c) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                categoryTitleWidget,
+                SizedBox(height: 10.h),
+                c.isCategoryLoading
+                    ? const CategorySkeleton()
+                    : c.categoryList.isEmpty
+                    ? const SizedBox.shrink()
+                    : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: Row(
+                    children: [
+                      _AllCategoryButton(
+                        isSelected: selectedCategory == "All",
+                        onTap: () {
+                          setState(() => selectedCategory = "All");
+                          _loadData(category: "All");
+                        },
+                      ),
+                      SizedBox(width: 15.w),
+                      CategoryList(
+                        categoryList: c.categoryList,
+                        selectedCategoryName: selectedCategory,
+                        onTap: (cat) {
+                          setState(() => selectedCategory = cat);
+                          _loadData(category: cat);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+      case "transport":
+        return GetBuilder<TransportController>(
+          builder: (c) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                categoryTitleWidget,
+                SizedBox(height: 10.h),
+                c.isCategoryLoading
+                    ? const CategorySkeleton()
+                    : c.categoryList.isEmpty
+                    ? const SizedBox.shrink()
+                    : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: Row(
+                    children: [
+                      _AllCategoryButton(
+                        isSelected: selectedCategory == "All",
+                        onTap: () {
+                          setState(() => selectedCategory = "All");
+                          _loadData(category: "All");
+                        },
+                      ),
+                      SizedBox(width: 15.w),
+                      CategoryList(
+                        categoryList: c.categoryList,
+                        selectedCategoryName: selectedCategory,
+                        onTap: (cat) {
+                          setState(() => selectedCategory = cat);
+                          _loadData(category: cat);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+      case "massage":
+        return GetBuilder<MassageController>(
+          builder: (c) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                categoryTitleWidget,
+                SizedBox(height: 10.h),
+                c.isCategoryLoading
+                    ? const CategorySkeleton()
+                    : c.categoryList.isEmpty
+                    ? const SizedBox.shrink()
+                    : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: Row(
+                    children: [
+                      _AllCategoryButton(
+                        isSelected: selectedCategory == "All",
+                        onTap: () {
+                          setState(() => selectedCategory = "All");
+                          _loadData(category: "All");
+                        },
+                      ),
+                      SizedBox(width: 15.w),
+                      CategoryList(
+                        categoryList: c.categoryList,
+                        selectedCategoryName: selectedCategory,
+                        onTap: (cat) {
+                          setState(() => selectedCategory = cat);
+                          _loadData(category: cat);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+      case "restaurant":
+        return GetBuilder<RestaurantController>(
+          builder: (c) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                categoryTitleWidget,
+                SizedBox(height: 10.h),
+                c.isCategoryLoading
+                    ? const CategorySkeleton()
+                    : c.categoryList.isEmpty
+                    ? const SizedBox.shrink()
+                    : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 12.w),
+                  child: Row(
+                    children: [
+                      _AllCategoryButton(
+                        isSelected: selectedCategory == "All",
+                        onTap: () {
+                          setState(() => selectedCategory = "All");
+                          _loadData(category: "All");
+                        },
+                      ),
+                      SizedBox(width: 15.w),
+                      CategoryList(
+                        categoryList: c.categoryList,
+                        selectedCategoryName: selectedCategory,
+                        onTap: (cat) {
+                          setState(() => selectedCategory = cat);
+                          _loadData(category: cat);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            categoryTitleWidget,
+            SizedBox(height: 10.h),
+            const CategorySkeleton(), // fallback shimmer if no controller
+          ],
+        );
+    }
   }
 
-  // ════════════════════════════════════════════════════
-  // SERVICE LIST — routes to correct sliver list
-  // ════════════════════════════════════════════════════
+
+
   Widget _buildServiceList() {
     switch (serviceType) {
       case "ski_pass":   return _buildSkiPassList();
@@ -359,12 +411,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ════════════════════════════════════════════════════
-  // PAGINATION FOOTER — ski_pass-hire-restaurant-transport-massage
-  // ════════════════════════════════════════════════════
   Widget _buildPaginationFooter() {
     switch (serviceType) {
-
       case "ski_pass":
         return GetBuilder<AllPassController>(
           builder: (c) => PaginationFooter(
@@ -374,7 +422,6 @@ class _HomeScreenState extends State<HomeScreen> {
             endMessage: "You've seen all ski passes",
           ),
         );
-
       case "ski_hire":
         return GetBuilder<SkiHireController>(
           builder: (c) => PaginationFooter(
@@ -384,7 +431,6 @@ class _HomeScreenState extends State<HomeScreen> {
             endMessage: "You've seen all ski hire items",
           ),
         );
-
       case "transport":
         return GetBuilder<TransportController>(
           builder: (c) => PaginationFooter(
@@ -394,7 +440,6 @@ class _HomeScreenState extends State<HomeScreen> {
             endMessage: "You've seen all transport services",
           ),
         );
-
       case "massage":
         return GetBuilder<MassageController>(
           builder: (c) => PaginationFooter(
@@ -404,7 +449,6 @@ class _HomeScreenState extends State<HomeScreen> {
             endMessage: "You've seen all massage services",
           ),
         );
-
       case "restaurant":
         return GetBuilder<RestaurantController>(
           builder: (c) => PaginationFooter(
@@ -414,31 +458,18 @@ class _HomeScreenState extends State<HomeScreen> {
             endMessage: "You've seen all restaurant items",
           ),
         );
-
       default:
         return const SizedBox.shrink();
     }
   }
 
-  // ════════════════════════════════════════════════════
-  // SKI PASS LIST
-  // Uses: isLoading, isMoreLoading, skiPassList, errorMessage
-  // ════════════════════════════════════════════════════
+  // ─────────── Service Lists ───────────
   Widget _buildSkiPassList() {
     return GetBuilder<AllPassController>(
       builder: (c) {
-        // Initial loading shimmer
         if (c.isLoading) return _skeletonSliver();
-
-        // Error state
-        if (c.errorMessage != null && c.skiPassList.isEmpty) {
-          return _emptySliver(c.errorMessage!);
-        }
-
-        // Empty state
-        if (c.skiPassList.isEmpty) {
-          return _emptySliver("No ski pass services found");
-        }
+        if (c.errorMessage != null && c.skiPassList.isEmpty) return _emptySliver(c.errorMessage!);
+        if (c.skiPassList.isEmpty) return _emptySliver("No ski pass services found");
 
         return SliverList(
           delegate: SliverChildBuilderDelegate(
@@ -469,9 +500,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // SKI HIRE LIST
-  // ════════════════════════════════════════════════════
   Widget _buildSkiHireList() {
     return GetBuilder<SkiHireController>(
       builder: (c) {
@@ -507,9 +535,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // TRANSPORT LIST
-  // ════════════════════════════════════════════════════
   Widget _buildTransportList() {
     return GetBuilder<TransportController>(
       builder: (c) {
@@ -545,9 +570,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // MASSAGE LIST
-  // ════════════════════════════════════════════════════
   Widget _buildMassageList() {
     return GetBuilder<MassageController>(
       builder: (c) {
@@ -583,9 +605,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // RESTAURANT LIST
-  // ════════════════════════════════════════════════════
   Widget _buildRestaurantList() {
     return GetBuilder<RestaurantController>(
       builder: (c) {
@@ -621,19 +640,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ════════════════════════════════════════════════════
-  // HELPERS
-  // ════════════════════════════════════════════════════
-  String _listTitle() {
-    switch (serviceType) {
-      case "ski_pass":   return "Top Ski Pass";
-      case "ski_hire":   return "Top Ski Hire";
-      case "transport":  return "Top Car in Town";
-      case "restaurant": return "Restaurant";
-      default:           return "Top Massage's Provider";
-    }
-  }
-
   Widget _skeletonSliver() => SliverList(
     delegate: SliverChildListDelegate([
       const ItemCardSkeleton(),
@@ -649,19 +655,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     ),
   );
+
+  String _listTitle() {
+    switch (serviceType) {
+      case "ski_pass":   return "Top Ski Pass";
+      case "ski_hire":   return "Top Ski Hire";
+      case "transport":  return "Top Car in Town";
+      case "restaurant": return "Restaurant";
+      default:           return "Top Massage's Provider";
+    }
+  }
 }
 
-// ══════════════════════════════════════════════════════════════
-// "ALL" CATEGORY BUTTON — extracted widget
-// ══════════════════════════════════════════════════════════════
+// ────────────── "ALL" CATEGORY BUTTON ──────────────
 class _AllCategoryButton extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _AllCategoryButton({
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _AllCategoryButton({required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -702,33 +713,6 @@ class _AllCategoryButton extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-      ],
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-// FULL SCREEN SHIMMER
-// ══════════════════════════════════════════════════════════════
-class _FullScreenShimmer extends StatelessWidget {
-  final String type;
-  const _FullScreenShimmer({required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      children: [
-        const HeaderSkeleton(),
-        SizedBox(height: 20.h),
-        if (type != "ski_pass") ...[
-          const CategoryTitleSkeleton(),
-          const CategorySkeleton(),
-          SizedBox(height: 20.h),
-        ],
-        const CategoryTitleSkeleton(),
-        const ItemCardSkeleton(),
-        const ItemCardSkeleton(),
       ],
     );
   }
