@@ -71,7 +71,7 @@ class AuthController extends GetxController {
   // LOGOUT
   // -------------------------
   Future<void> logout() async {
-    final navController = Get.put(NavController());
+
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.remove(_tokenKey);
@@ -79,7 +79,7 @@ class AuthController extends GetxController {
     await prefs.remove(_roleKey);
     await prefs.remove(_providerTypeKey);
 
-    navController.changeIndex(0);
+
 
     accessToken = null;
     userModel = null;

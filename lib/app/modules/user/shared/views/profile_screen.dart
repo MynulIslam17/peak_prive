@@ -13,6 +13,7 @@ import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/routes/app_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/controllers/nav_controller.dart';
+import '../../../../data/models/user_model.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +26,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final authController = Get.find<AuthController>();
   final updateProfileController = Get.put(UpdateProfileController());
   final picker = ImagePicker();
+
+
 
   File? _selectedImageFile;
 
@@ -203,6 +206,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: () => Get.toNamed(Routes.providerInfoScreen),
                 ),
                 SizedBox(height: 15.h),
+                if(authController.userModel?.role != "User")
                 _buildProfileMenuItem(
                   icon: Icons.wallet_outlined,
                   title: 'Wallet',

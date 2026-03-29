@@ -428,7 +428,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F6F2),
+      backgroundColor: Colors.white,
 
       // ── AppBar ───────────────────────────────────────────────────────────────
       appBar: CustomAppBar(title: "Withdraw"),

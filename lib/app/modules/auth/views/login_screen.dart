@@ -15,6 +15,7 @@ import 'package:harry_service_app/app/modules/auth/models/login_request_model.da
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/controllers/nav_controller.dart';
 import '../../../routes/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -69,8 +70,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final role = loginController.getUserModel!.role;
         if (role == "User") {
+          final navController = Get.put(NavController());
+          navController.changeIndex(0);
           Get.offAllNamed(Routes.service);
         } else {
+          final navController = Get.put(NavController());
+          navController.changeIndex(0);
           Get.offAllNamed(Routes.providerNavScreen);
         }
       } else {
