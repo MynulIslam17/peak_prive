@@ -53,6 +53,7 @@ import 'package:harry_service_app/app/modules/user/restaurant/views/resturant_in
 import 'package:harry_service_app/app/modules/user/restaurant/views/user_restaurant_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
+import 'package:harry_service_app/app/modules/user/shared/bindings/wallet_binder.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/all_transaction.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/extra_booking_screen.dart';
@@ -72,10 +73,11 @@ import '../modules/user/hire/bindings/hire_details_bindings.dart';
 import '../modules/user/itinerary/bindings/itinerary_bindings.dart';
 import '../modules/user/pass/bindings/booking_details_binding.dart';
 import '../modules/user/pass/bindings/pass_details_bindings.dart';
-import '../modules/user/shared/bindings/bottom_bindings.dart';
+import '../modules/user/shared/bindings/bottom_nav_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';
 
 import '../modules/user/pass/views/set_information.dart';
+import '../modules/user/shared/views/withdraw_screen.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
@@ -246,8 +248,21 @@ abstract class AppPages {
     GetPage(name: Routes.splash, page: () => SplashScreen()),
 
     /// user wallet
-    GetPage(name: Routes.userWallet, page: () => UserWallet()),
-    GetPage(name: Routes.userTransaction, page: () => AllTransaction()),
+    GetPage(
+      name: Routes.userWallet,
+      page: () => UserWallet(),
+      binding: WalletBinder(),
+    ),
+    GetPage(
+      name: Routes.userTransaction,
+      page: () => AllTransaction(),
+      binding: WalletBinder(),
+    ),
+    GetPage(
+      name: Routes.withdraw,
+      page: () => WithdrawScreen(),
+      binding: WalletBinder(),
+    ),
 
     /// provider section ========================================
 
@@ -336,17 +351,18 @@ abstract class AppPages {
       page: () => HireBookingDetails(),
     ),
 
-    GetPage(name: Routes.itinerary, page: () => ItineraryScreen(),binding: ItineraryBindings()),
+    GetPage(
+      name: Routes.itinerary,
+      page: () => ItineraryScreen(),
+      binding: ItineraryBindings(),
+    ),
 
-    GetPage(name: Routes.itineraryDetails, page: () => ItineraryDetails(),),
+    GetPage(name: Routes.itineraryDetails, page: () => ItineraryDetails()),
 
-
-    GetPage(name: Routes.notification, page: () => NotificationScreen(),binding:NotificationBindings()),
-
-
-
-
-
-
+    GetPage(
+      name: Routes.notification,
+      page: () => NotificationScreen(),
+      binding: NotificationBindings(),
+    ),
   ];
 }

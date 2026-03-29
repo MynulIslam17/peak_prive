@@ -1,4 +1,5 @@
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+import '../../../../core/utils/json_helper.dart';
 
 class TransportServiceModel {
   int? code;
@@ -9,9 +10,11 @@ class TransportServiceModel {
 
   factory TransportServiceModel.fromJson(Map<String, dynamic> json) {
     return TransportServiceModel(
-      code: json['code'],
-      message: json['message'],
-      data: json['data'] != null ? Data.fromJson(json['data']) : null,
+      code: JsonHelper.getInt(json['code']),
+      message: JsonHelper.getString(json['message']),
+      data: JsonHelper.getMap(json['data']) != null
+          ? Data.fromJson(JsonHelper.getMap(json['data'])!)
+          : null,
     );
   }
 
@@ -32,10 +35,13 @@ class Data {
 
   factory Data.fromJson(Map<String, dynamic> json) {
     return Data(
-      pagination: json['pagination'] != null ? Pagination.fromJson(json['pagination']) : null,
-      result: json['result'] != null
-          ? List<TransportResult>.from(json['result'].map((x) => TransportResult.fromJson(x)))
-          : [],
+      pagination: JsonHelper.getMap(json['pagination']) != null
+          ? Pagination.fromJson(JsonHelper.getMap(json['pagination'])!)
+          : null,
+      result: List<TransportResult>.from(
+        JsonHelper.getList(json['result'])
+            .map((x) => TransportResult.fromJson(x)),
+      ),
     );
   }
 
@@ -57,10 +63,10 @@ class Pagination {
 
   factory Pagination.fromJson(Map<String, dynamic> json) {
     return Pagination(
-      total: json['total'],
-      page: json['page'],
-      limit: json['limit'],
-      totalPages: json['totalPages'],
+      total: JsonHelper.getInt(json['total']),
+      page: JsonHelper.getInt(json['page']),
+      limit: JsonHelper.getInt(json['limit']),
+      totalPages: JsonHelper.getInt(json['totalPages']),
     );
   }
 
@@ -119,8 +125,6 @@ class TransportResult {
     this.iV,
   });
 
-  /// Convert RecentService to TransportResult
-  /// Convert RecentService to TransportResult with proper null safety
   factory TransportResult.fromRecentService(RecentService recentService) {
     try {
       return TransportResult(
@@ -135,63 +139,55 @@ class TransportResult {
             : null,
         thumbnail: recentService.thumbnail,
         title: recentService.title,
-
-        // ✅ Fields are now nullable - no need to check isNotEmpty
         personCount: recentService.personCount,
         milage: recentService.milage,
         power: recentService.power,
         extraChargePerHours: recentService.extraChargePerHours,
-
-        // Convert numerics safely
         insuranceFee: (recentService.insuranceFee ?? 0).toInt(),
         maintainCharge: (recentService.maintainCharge ?? 0).toInt(),
-
         serviceArea: recentService.serviceArea,
         amount: (recentService.amount ?? 0).toInt(),
         description: recentService.description,
         averageRating: (recentService.averageRating ?? 0).toInt(),
-
-        // Safe list handling
         reviews: recentService.reviews.isNotEmpty ? recentService.reviews : [],
         refunds: recentService.refunds.isNotEmpty ? recentService.refunds : [],
-
         createdAt: recentService.createdAt,
         updatedAt: recentService.updatedAt,
         iV: recentService.v,
       );
     } catch (e) {
-      print('Error converting RecentService to TransportResult: $e');
       rethrow;
     }
   }
 
-  /// Parse from JSON API response
   factory TransportResult.fromJson(Map<String, dynamic> json) {
     return TransportResult(
-      sId: json['_id'],
-      owner: json['owner'],
-      category: json['category'] != null ? Category.fromJson(json['category']) : null,
-      thumbnail: json['thumbnail'],
-      title: json['title'],
-      personCount: json['personCount'],
-      milage: json['milage'],
-      power: json['power'],
-      extraChargePerHours: json['extraChargePerHours'],
-      insuranceFee: json['insuranceFee'],
-      maintainCharge: json['maintainCharge'],
-      serviceArea: json['serviceArea'],
-      amount: json['amount'],
-      description: json['description'],
-      averageRating: json['averageRating'],
-      reviews: json['reviews'] ?? [],
-      refunds: json['refunds'] ?? [],
-      createdAt: json['createdAt'],
-      updatedAt: json['updatedAt'],
-      iV: json['__v'],
+      sId: JsonHelper.getString(json['_id']),
+      owner: JsonHelper.getString(json['owner']),
+      category: JsonHelper.getMap(json['category']) != null
+          ? Category.fromJson(JsonHelper.getMap(json['category'])!)
+          : null,
+      thumbnail: JsonHelper.getString(json['thumbnail']),
+      title: JsonHelper.getString(json['title']),
+      personCount: JsonHelper.getString(json['personCount']),
+      milage: JsonHelper.getString(json['milage']),
+      power: JsonHelper.getString(json['power']),
+      extraChargePerHours:
+      JsonHelper.getString(json['extraChargePerHours']),
+      insuranceFee: JsonHelper.getInt(json['insuranceFee']),
+      maintainCharge: JsonHelper.getInt(json['maintainCharge']),
+      serviceArea: JsonHelper.getString(json['serviceArea']),
+      amount: JsonHelper.getInt(json['amount']),
+      description: JsonHelper.getString(json['description']),
+      averageRating: JsonHelper.getInt(json['averageRating']),
+      reviews: JsonHelper.getList(json['reviews']),
+      refunds: JsonHelper.getList(json['refunds']),
+      createdAt: JsonHelper.getString(json['createdAt']),
+      updatedAt: JsonHelper.getString(json['updatedAt']),
+      iV: JsonHelper.getInt(json['__v']),
     );
   }
 
-  /// Convert to JSON for API requests
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
     data['_id'] = sId;
@@ -227,9 +223,9 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      name: json['name'],
-      categoryPhoto: json['categoryPhoto'],
-      sId: json['_id'],
+      name: JsonHelper.getString(json['name']),
+      categoryPhoto: JsonHelper.getString(json['categoryPhoto']),
+      sId: JsonHelper.getString(json['_id']),
     );
   }
 

@@ -1,3 +1,5 @@
+import '../../../../core/utils/json_helper.dart';
+
 class SkiPassResponse {
   final int code;
   final String message;
@@ -11,13 +13,13 @@ class SkiPassResponse {
 
   factory SkiPassResponse.fromJson(Map<String, dynamic>? json) {
     json ??= {};
-    final data = json['data'] ?? {};
+    final data = JsonHelper.getMap(json['data']) ?? {};
 
     return SkiPassResponse(
-      code: json['code'] ?? 0,
-      message: json['message'] ?? '',
-      result: (data['result'] as List<dynamic>? ?? [])
-          .map((e) => SkiPass.fromJson(e as Map<String, dynamic>?))
+      code: JsonHelper.getInt(json['code']),
+      message: JsonHelper.getString(json['message']),
+      result: JsonHelper.getList(data['result'])
+          .map((e) => SkiPass.fromJson(JsonHelper.getMap(e)))
           .toList(),
     );
   }
@@ -67,25 +69,25 @@ class SkiPass {
   factory SkiPass.fromJson(Map<String, dynamic>? json) {
     json ??= {};
     return SkiPass(
-      id: json['_id'] ?? '',
-      title: json['title'] ?? '',
-      thumbnail: json['thumbnail'] ?? '',
-      owner: json['owner'] ?? '',
-      skiPassType: json['skiPassType'] ?? '',
-      services: (json['services'] as List<dynamic>? ?? [])
-          .map((e) => ProductService.fromJson(e as Map<String, dynamic>?))
+      id: JsonHelper.getString(json['_id']),
+      title: JsonHelper.getString(json['title']),
+      thumbnail: JsonHelper.getString(json['thumbnail']),
+      owner: JsonHelper.getString(json['owner']),
+      skiPassType: JsonHelper.getString(json['skiPassType']),
+      services: JsonHelper.getList(json['services'])
+          .map((e) => ProductService.fromJson(JsonHelper.getMap(e)))
           .toList(),
-      serviceArea: json['serviceArea'] ?? '',
-      amount: json['amount'] ?? 0,
-      description: json['description'] ?? '',
-      averageRating: json['averageRating'] ?? 0,
-      reviews: (json['reviews'] as List<dynamic>? ?? [])
-          .map((e) => Review.fromJson(e as Map<String, dynamic>?))
+      serviceArea: JsonHelper.getString(json['serviceArea']),
+      amount: JsonHelper.getInt(json['amount']),
+      description: JsonHelper.getString(json['description']),
+      averageRating: JsonHelper.getDouble(json['averageRating']),
+      reviews: JsonHelper.getList(json['reviews'])
+          .map((e) => Review.fromJson(JsonHelper.getMap(e)))
           .toList(),
-      refunds: json['refunds'] ?? [],
-      createdAt: json['createdAt'] ?? '',
-      updatedAt: json['updatedAt'] ?? '',
-      v: json['__v'] ?? 0,
+      refunds: JsonHelper.getList(json['refunds']),
+      createdAt: JsonHelper.getString(json['createdAt']),
+      updatedAt: JsonHelper.getString(json['updatedAt']),
+      v: JsonHelper.getInt(json['__v']),
     );
   }
 
@@ -120,8 +122,8 @@ class ProductService {
   factory ProductService.fromJson(Map<String, dynamic>? json) {
     json ??= {};
     return ProductService(
-      title: json['title'] ?? '',
-      description: json['description'] ?? '',
+      title: JsonHelper.getString(json['title']),
+      description: JsonHelper.getString(json['description']),
     );
   }
 
@@ -147,10 +149,10 @@ class Review {
   factory Review.fromJson(Map<String, dynamic>? json) {
     json ??= {};
     return Review(
-      userId: json['userId'] ?? '',
-      rating: (json['rating'] ?? 0).toDouble(),
-      comment: json['comment'] ?? '',
-      createdAt: json['createdAt'] ?? '',
+      userId: JsonHelper.getString(json['userId']),
+      rating: JsonHelper.getDouble(json['rating']),
+      comment: JsonHelper.getString(json['comment']),
+      createdAt: JsonHelper.getString(json['createdAt']),
     );
   }
 
@@ -161,3 +163,4 @@ class Review {
     "createdAt": createdAt,
   };
 }
+

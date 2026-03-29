@@ -265,7 +265,14 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                             );
                                           },
                                           onEdit: () async {
-                                            await Get.toNamed(Routes.addMessageService, arguments: {"massage": massage, "isEdit": true});
+                                            final result = await Get.toNamed(
+                                              Routes.addMessageService,
+                                              arguments: {"massage": massage, "isEdit": true},
+                                            );
+
+                                            if (result == true) {
+                                              controller.refreshServices();
+                                            }
                                           },
                                         ),
                                       );
@@ -299,7 +306,14 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                             );
                                           },
                                           onEdit: () async {
-                                            await Get.toNamed(Routes.addTransportService, arguments: {"transport": transport, "isEdit": true});
+                                            final result = await Get.toNamed(
+                                              Routes.addTransportService,
+                                              arguments: {"transport": transport, "isEdit": true},
+                                            );
+
+                                            if (result == true) {
+                                              controller.refreshServices();
+                                            }
                                           },
                                         ),
                                       );

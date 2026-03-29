@@ -1,10 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
+import 'package:harry_service_app/app/core/widgets/custom_appbar.dart';
 import 'package:harry_service_app/app/modules/user/shared/models/get_balance_model.dart';
 
 import '../../../../core/widgets/transaction_card.dart';
@@ -19,14 +17,11 @@ class UserWallet extends StatefulWidget {
 }
 
 class _UserWalletState extends State<UserWallet> {
-  final balanceController = Get.put(BalanceController());
-  List<Transaction>? transactionList = [];
+  final BalanceController balanceController = Get.put(BalanceController());
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     balanceController.fetchBalance();
   }
 
@@ -34,99 +29,84 @@ class _UserWalletState extends State<UserWallet> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Text("My Wallet"),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () {
-            Get.back();
-          },
-          icon: Icon(Icons.arrow_back_ios),
-        ),
-      ),
-
+      appBar: CustomAppBar(title: "My Wallet"),
       body: GetBuilder<BalanceController>(
-        builder: (controller) {
-          final data = balanceController.getBalance?.data;
-          transactionList = data?.transactions ?? [];
-
-          if (controller.isLoading) {
-            return Center(
+        builder: (_) {
+          if (balanceController.isLoading) {
+            return const Center(
               child: CircularProgressIndicator(color: AppColors.primary_1),
             );
           }
 
-          if (controller.getBalance == null) {
-            return Center(child: Text("No Data Found"));
+          if (balanceController.getBalance?.data == null) {
+            return const Center(child: Text("No Data Found"));
           }
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                SizedBox(height: 20),
+          final data = balanceController.getBalance!.data!;
+          final transactions = data.transactions ?? [];
 
-                /// circle for show current balance
-                _buildCircleBalance(),
+          return RefreshIndicator(
+            onRefresh: balanceController.refreshBalance,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
 
-                SizedBox(height: 10),
+                  /// Circle showing current balance
+                  _buildCircleBalance(data),
 
-                Text("Show breakdown", style: AppTextStyle.sub_h1_regular_18()),
+                  const SizedBox(height: 10),
+                  Text("Show breakdown", style: AppTextStyle.sub_h1_regular_18()),
 
-                SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                /// withddraw button
-                _buildWithdrowButton(),
+                  /// Withdraw button
+                  _buildWithdrawButton(),
 
-                SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-
-                if (transactionList!.isNotEmpty) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Transactions",
-                        style: AppTextStyle.sub_h1_regular_18(),
-                      ),
-                      InkWell(
-                        onTap: () {
-                          Get.toNamed(Routes.userTransaction);
-                        },
-                        child: Text(
-                          "See All",
-                          style: AppTextStyle.sub_h1_regular_18(
-                            color: AppColors.primary_1,
+                  /// Transactions list
+                  if (transactions.isNotEmpty) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Transactions", style: AppTextStyle.sub_h1_regular_18()),
+                        InkWell(
+                          onTap: () => Get.toNamed(Routes.userTransaction),
+                          child: Text(
+                            "See All",
+                            style: AppTextStyle.sub_h1_regular_18(color: AppColors.primary_1),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: transactionList?.length,
-                      itemBuilder: (context, index) {
-                        final transaction = transactionList![index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: TransactionCard(transaction: transaction),
-                        );
-                      },
+                      ],
                     ),
-                  ),
-                ] else ...[
-                  Image.asset("assets/images/no_payment.png",width: 256,
-                  height: 280,)
-                ]
-
-
-
-
-              ],
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: transactions.length,
+                        itemBuilder: (context, index) {
+                          final transaction = transactions[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: TransactionCard(transaction: transaction),
+                          );
+                        },
+                      ),
+                    ),
+                  ] else ...[
+                    Expanded(
+                      child: Center(
+                        child: Image.asset(
+                          "assets/images/no_payment.png",
+                          width: 256,
+                          height: 280,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           );
         },
@@ -134,12 +114,62 @@ class _UserWalletState extends State<UserWallet> {
     );
   }
 
-  SizedBox _buildWithdrowButton() {
+  /// Circle showing current balance
+  Align _buildCircleBalance(Data data) {
+    return Align(
+      alignment: Alignment.center,
+      child: Container(
+        width: 200,
+        height: 200,
+        decoration: const BoxDecoration(
+          color: AppColors.primary_1,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: CircleAvatar(
+            radius: 85,
+            backgroundColor: Colors.white,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "Your Balance",
+                    style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      "${data.balance}",
+                      style: AppTextStyle.h2_semibold_22(color: AppColors.primary_1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Withdraw button
+  SizedBox _buildWithdrawButton() {
     return SizedBox(
       height: 60,
-      width: 350,
+      width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          // Handle withdraw logic
+
+          Get.toNamed(Routes.withdraw);
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary_1,
           foregroundColor: Colors.white,
@@ -153,62 +183,6 @@ class _UserWalletState extends State<UserWallet> {
             Text(
               "Withdraw",
               style: AppTextStyle.sub_h2_medium_16(color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Align _buildCircleBalance() {
-    final data = balanceController.getBalance?.data;
-
-    return Align(
-      alignment: Alignment.center,
-      child: Container(
-        width: 200,
-        height: 200,
-        decoration: BoxDecoration(
-          color: AppColors.primary_1,
-          shape: BoxShape.circle,
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Inner circle
-            CircleAvatar(
-              radius: 85,
-              backgroundColor: Colors.white,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  /// Label
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      "Your Balance",
-                      style: AppTextStyle.sub_h3_medium_14(
-                        color: AppColors.primary_1,
-                      ),
-                    ),
-                  ),
-
-                  /// Amount
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        "${data!.balance}",
-                        style: AppTextStyle.h2_semibold_22(
-                          color: AppColors.primary_1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

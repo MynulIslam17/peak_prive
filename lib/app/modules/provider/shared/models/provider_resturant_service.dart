@@ -1,4 +1,6 @@
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+import '../../../../core/utils/json_helper.dart';
+
 
 class RestaurantServiceModel {
   int code;
@@ -13,9 +15,11 @@ class RestaurantServiceModel {
 
   factory RestaurantServiceModel.fromJson(Map<String, dynamic> json) =>
       RestaurantServiceModel(
-        code: json['code'] ?? 0,
-        message: json['message'] ?? '',
-        data: json['data'] != null ? Data.fromJson(json['data']) : Data(),
+        code: JsonHelper.getInt(json['code']),
+        message: JsonHelper.getString(json['message']),
+        data: json['data'] != null
+            ? Data.fromJson(JsonHelper.getMap(json['data'])!)
+            : Data(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -36,13 +40,11 @@ class Data {
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
     pagination: json['pagination'] != null
-        ? Pagination.fromJson(json['pagination'])
+        ? Pagination.fromJson(JsonHelper.getMap(json['pagination'])!)
         : null,
-    result: json['result'] != null
-        ? (json['result'] as List)
-        .map((e) => Result.fromJson(e))
-        .toList()
-        : [],
+    result: JsonHelper.getList(json['result'])
+        .map((e) => Result.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -65,10 +67,10 @@ class Pagination {
   });
 
   factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
-    total: json['total'] ?? 0,
-    page: json['page'] ?? 1,
-    limit: json['limit'] ?? 10,
-    totalPages: json['totalPages'] ?? 1,
+    total: JsonHelper.getInt(json['total']),
+    page: JsonHelper.getInt(json['page']),
+    limit: JsonHelper.getInt(json['limit']),
+    totalPages: JsonHelper.getInt(json['totalPages']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -131,37 +133,41 @@ class Result {
         refunds = refunds ?? [];
 
   factory Result.fromJson(Map<String, dynamic> json) => Result(
-    sId: json['_id'] ?? '',
-    title: json['title'] ?? '',
-    thumbnail: json['thumbnail'] ?? '',
-    category: json['category'] != null ? Category.fromJson(json['category']) : null,
-    owner: json['owner'] != null ? Owner.fromJson(json['owner']) : null,
-    openTime: json['openTime'] ?? '',
-    closeTime: json['closeTime'] ?? '',
-    serviceArea: json['serviceArea'] ?? '',
-    foodType: json['foodType'] ?? '',
-    status: json['status'] ?? '',
-    items: json['items'] != null
-        ? (json['items'] as List).map((e) => Item.fromJson(e)).toList()
-        : [],
-    description: json['description'] ?? '',
-    slots: json['slots'] != null
-        ? (json['slots'] as List).map((e) => Slot.fromJson(e)).toList()
-        : [],
-    averageRating: (json['averageRating'] ?? 0).toDouble(),
-    availableSlots: json['availableSlots'] != null
-        ? (json['availableSlots'] as List).map((e) => Slot.fromJson(e)).toList()
-        : [],
-    reviews: json['reviews'] != null
-        ? (json['reviews'] as List).map((e) => Review.fromJson(e)).toList()
-        : [],
-    refunds: json['refunds'] != null
-        ? (json['refunds'] as List).map((e) => Refund.fromJson(e)).toList()
-        : [],
-    createdAt: json['createdAt'] ?? '',
-    updatedAt: json['updatedAt'] ?? '',
-    iV: json['__v'] ?? 0,
-    serviceFee: json['serviceFee'] ?? 0,
+    sId: JsonHelper.getString(json['_id']),
+    title: JsonHelper.getString(json['title']),
+    thumbnail: JsonHelper.getString(json['thumbnail']),
+    category: json['category'] != null
+        ? Category.fromJson(JsonHelper.getMap(json['category'])!)
+        : null,
+    owner: json['owner'] != null
+        ? Owner.fromJson(JsonHelper.getMap(json['owner'])!)
+        : null,
+    openTime: JsonHelper.getString(json['openTime']),
+    closeTime: JsonHelper.getString(json['closeTime']),
+    serviceArea: JsonHelper.getString(json['serviceArea']),
+    foodType: JsonHelper.getString(json['foodType']),
+    status: JsonHelper.getString(json['status']),
+    items: JsonHelper.getList(json['items'])
+        .map((e) => Item.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
+    description: JsonHelper.getString(json['description']),
+    slots: JsonHelper.getList(json['slots'])
+        .map((e) => Slot.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
+    averageRating: JsonHelper.getDouble(json['averageRating']),
+    availableSlots: JsonHelper.getList(json['availableSlots'])
+        .map((e) => Slot.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
+    reviews: JsonHelper.getList(json['reviews'])
+        .map((e) => Review.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
+    refunds: JsonHelper.getList(json['refunds'])
+        .map((e) => Refund.fromJson(JsonHelper.getMap(e)!))
+        .toList(),
+    createdAt: JsonHelper.getString(json['createdAt']),
+    updatedAt: JsonHelper.getString(json['updatedAt']),
+    iV: JsonHelper.getInt(json['__v']),
+    serviceFee: JsonHelper.getInt(json['serviceFee']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -187,35 +193,39 @@ class Result {
     '__v': iV,
     'serviceFee': serviceFee,
   };
+
   factory Result.fromRecentService(RecentService service) {
-    // 1. Map Category (ServiceCategory to Category)
-    final Category? targetCategory = service.category != null ? Category(
+    final Category? targetCategory = service.category != null
+        ? Category(
       sId: service.category!.id,
       name: service.category!.name,
       categoryPhoto: service.category!.categoryPhoto,
-    ) : null;
+    )
+        : null;
 
-    // 2. Map Items (ServiceItem to Item)
-    final List<Item> targetItems = service.items.map((si) => Item(
-      sId: si.id ?? '',
-      seat: si.seat ?? '',
-      photo: si.photo ?? '',
-      // Use .toInt() for safety
-      totalQty: (si.totalQty ?? 0).toInt(),
-      availableQty: (si.availableQty ?? 0).toInt(),
-      price: (si.price ?? 0).toInt(),
-      description: si.description ?? '',
-    )).toList();
+    final List<Item> targetItems = service.items
+        .map((si) => Item(
+      sId: JsonHelper.getString(si.id),
+      seat: JsonHelper.getString(si.seat),
+      photo: JsonHelper.getString(si.photo),
+      totalQty: JsonHelper.getInt(si.totalQty),
+      availableQty: JsonHelper.getInt(si.availableQty),
+      price: JsonHelper.getInt(si.price),
+      description: JsonHelper.getString(si.description),
+    ))
+        .toList();
 
-    // 3. Map Refunds (List<dynamic> to List<Refund>)
-    final List<Refund> targetRefunds = service.refunds.whereType<Map<String, dynamic>>()
+    final List<Refund> targetRefunds = service.refunds
+        .whereType<Map<String, dynamic>>()
         .map((json) => Refund.fromJson(json))
         .toList();
 
-    // 4. Map Slots/Reviews (Assumes inner models are compatible via toJson/fromJson)
-    final List<Slot> targetSlots = service.slots.map((s) => Slot.fromJson(s.toJson())).toList();
-    final List<Slot> targetAvailableSlots = service.availableSlots.map((s) => Slot.fromJson(s.toJson())).toList();
-    final List<Review> targetReviews = service.reviews.map((r) => Review.fromJson(r.toJson())).toList();
+    final List<Slot> targetSlots =
+    service.slots.map((s) => Slot.fromJson(s.toJson())).toList();
+    final List<Slot> targetAvailableSlots =
+    service.availableSlots.map((s) => Slot.fromJson(s.toJson())).toList();
+    final List<Review> targetReviews =
+    service.reviews.map((r) => Review.fromJson(r.toJson())).toList();
 
     return Result(
       sId: service.id,
@@ -228,27 +238,17 @@ class Result {
       status: service.status,
       createdAt: service.createdAt,
       updatedAt: service.updatedAt,
-
-      // Type Conversions
-      serviceFee: service.serviceFee.toInt(),
-      averageRating: service.averageRating.toDouble(),
-      iV: service.v ?? 0,
-
-      // Mapped Objects/Lists
+      serviceFee: JsonHelper.getInt(service.serviceFee),
+      averageRating: JsonHelper.getDouble(service.averageRating),
+      iV: JsonHelper.getInt(service.v),
       category: targetCategory,
       items: targetItems,
       refunds: targetRefunds,
       slots: targetSlots,
       availableSlots: targetAvailableSlots,
       reviews: targetReviews,
-
-      // *** FINAL FIX FOR OWNER ***
-      // We explicitly set owner to null, as the source gives a String ID,
-      // and you confirmed you don't need the owner object.
       owner: null,
-
-      // Special Cases
-      description: '', // Set default as field is missing in RecentService
+      description: '',
     );
   }
 }
@@ -265,9 +265,9 @@ class Category {
   });
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
-    name: json['name'] ?? '',
-    categoryPhoto: json['categoryPhoto'] ?? '',
-    sId: json['_id'] ?? '',
+    name: JsonHelper.getString(json['name']),
+    categoryPhoto: JsonHelper.getString(json['categoryPhoto']),
+    sId: JsonHelper.getString(json['_id']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -293,11 +293,11 @@ class Owner {
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) => Owner(
-    sId: json['_id'] ?? '',
-    email: json['email'] ?? '',
-    address: json['address'] ?? '',
-    fullName: json['fullName'] ?? '',
-    profileUrl: json['profileUrl'] ?? '',
+    sId: JsonHelper.getString(json['_id']),
+    email: JsonHelper.getString(json['email']),
+    address: JsonHelper.getString(json['address']),
+    fullName: JsonHelper.getString(json['fullName']),
+    profileUrl: JsonHelper.getString(json['profileUrl']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -329,13 +329,13 @@ class Item {
   });
 
   factory Item.fromJson(Map<String, dynamic> json) => Item(
-    seat: json['seat'] ?? '',
-    photo: json['photo'] ?? '',
-    totalQty: json['totalQty'] ?? 0,
-    availableQty: json['availableQty'] ?? 0,
-    price: json['price'] ?? 0,
-    description: json['description'] ?? '',
-    sId: json['_id'] ?? '',
+    seat: JsonHelper.getString(json['seat']),
+    photo: JsonHelper.getString(json['photo']),
+    totalQty: JsonHelper.getInt(json['totalQty']),
+    availableQty: JsonHelper.getInt(json['availableQty']),
+    price: JsonHelper.getInt(json['price']),
+    description: JsonHelper.getString(json['description']),
+    sId: JsonHelper.getString(json['_id']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -361,9 +361,9 @@ class Slot {
   });
 
   factory Slot.fromJson(Map<String, dynamic> json) => Slot(
-    startTime: json['startTime'] ?? '',
-    endTime: json['endTime'] ?? '',
-    sId: json['_id'] ?? '',
+    startTime: JsonHelper.getString(json['startTime']),
+    endTime: JsonHelper.getString(json['endTime']),
+    sId: JsonHelper.getString(json['_id']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -387,10 +387,10 @@ class Review {
   });
 
   factory Review.fromJson(Map<String, dynamic> json) => Review(
-    userId: json['userId'] ?? '',
-    rating: (json['rating'] ?? 0).toDouble(),
-    comment: json['comment'] ?? '',
-    createdAt: json['createdAt'] ?? '',
+    userId: JsonHelper.getString(json['userId']),
+    rating: JsonHelper.getDouble(json['rating']),
+    comment: JsonHelper.getString(json['comment']),
+    createdAt: JsonHelper.getString(json['createdAt']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -413,9 +413,9 @@ class Refund {
   });
 
   factory Refund.fromJson(Map<String, dynamic> json) => Refund(
-    userId: json['userId'] ?? '',
-    reason: json['reason'] ?? '',
-    createdAt: json['createdAt'] ?? '',
+    userId: JsonHelper.getString(json['userId']),
+    reason: JsonHelper.getString(json['reason']),
+    createdAt: JsonHelper.getString(json['createdAt']),
   );
 
   Map<String, dynamic> toJson() => {

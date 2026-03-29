@@ -1,8 +1,5 @@
-// ==========================================================
-// All Models for Massage Service List in a Single File
-// ==========================================================
-
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_home_model.dart';
+import '../../../../core/utils/json_helper.dart';
 
 class MassageServiceModel {
   int? code;
@@ -11,12 +8,13 @@ class MassageServiceModel {
 
   MassageServiceModel({this.code, this.message, this.data});
 
-  // Factory constructor for cleaner null checks in fromJson
   factory MassageServiceModel.fromJson(Map<String, dynamic> json) =>
       MassageServiceModel(
-        code: json['code'] as int?,
-        message: json['message'] as String?,
-        data: json['data'] != null ? Data.fromJson(json['data']) : null,
+        code: JsonHelper.getInt(json['code']),
+        message: JsonHelper.getString(json['message']),
+        data: JsonHelper.getMap(json['data']) != null
+            ? Data.fromJson(JsonHelper.getMap(json['data'])!)
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -26,20 +24,18 @@ class MassageServiceModel {
   };
 }
 
-// ================= Data (CORRECTED) =================
-
 class Data {
-  Pagination? pagination; // Nested Pagination object
-  List<MassageResult>? result; // Renamed to match JSON key "result"
+  Pagination? pagination;
+  List<MassageResult>? result;
 
   Data({this.pagination, this.result});
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
-    pagination: json['pagination'] != null
-        ? Pagination.fromJson(json['pagination'])
+    pagination: JsonHelper.getMap(json['pagination']) != null
+        ? Pagination.fromJson(JsonHelper.getMap(json['pagination'])!)
         : null,
     result: json['result'] != null
-        ? (json['result'] as List)
+        ? JsonHelper.getList(json['result'])
         .map((e) => MassageResult.fromJson(e))
         .toList()
         : null,
@@ -51,8 +47,6 @@ class Data {
   };
 }
 
-// ================= Pagination (New/Corrected) =================
-
 class Pagination {
   int? total;
   int? page;
@@ -62,10 +56,10 @@ class Pagination {
   Pagination({this.total, this.page, this.limit, this.totalPages});
 
   factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
-    total: json['total'] as int?,
-    page: json['page'] as int?,
-    limit: json['limit'] as int?,
-    totalPages: json['totalPages'] as int?,
+    total: JsonHelper.getInt(json['total']),
+    page: JsonHelper.getInt(json['page']),
+    limit: JsonHelper.getInt(json['limit']),
+    totalPages: JsonHelper.getInt(json['totalPages']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -75,8 +69,6 @@ class Pagination {
     'totalPages': totalPages,
   };
 }
-
-// ================= MassageResult =================
 
 class MassageResult {
   String? sId;
@@ -89,7 +81,7 @@ class MassageResult {
   List<PriceByDuration>? priceByDuration;
   String? serviceArea;
   int? amount;
-  String? benefits; // Assuming this should be a single String based on JSON
+  String? benefits;
   String? ourRecommendations;
   double? averageRating;
   List<Reviews>? reviews;
@@ -173,42 +165,43 @@ class MassageResult {
     iV: rs.v,
   );
 
-
-  factory MassageResult.fromJson(Map<String, dynamic> json) => MassageResult(
-    sId: json['_id'] as String?,
-    category: json['category'] != null
-        ? Category.fromJson(json['category'])
-        : null,
-    owner: json['owner'] != null ? Owner.fromJson(json['owner']) : null,
-    thumbnail: json['thumbnail'] as String?,
-    title: json['title'] as String?,
-    openTime: json['openTime'] as String?,
-    closeTime: json['closeTime'] as String?,
-    priceByDuration: json['priceByDuration'] != null
-        ? (json['priceByDuration'] as List)
-        .map((e) => PriceByDuration.fromJson(e))
-        .toList()
-        : null,
-    serviceArea: json['serviceArea'] as String?,
-    amount: json['amount'] as int?,
-    // Assuming benefits is a string if it's not a List in the final JSON
-    benefits: json['benefits'] as String?,
-    ourRecommendations: json['ourRecommendations'] as String?,
-    averageRating: json['averageRating'] != null
-        ? double.tryParse(json['averageRating'].toString())
-        : null,
-    reviews: json['reviews'] != null
-        ? (json['reviews'] as List)
-        .map((e) => Reviews.fromJson(e))
-        .toList()
-        : null,
-    refunds: json['refunds'] != null
-        ? List<dynamic>.from(json['refunds'] as List)
-        : null,
-    createdAt: json['createdAt'] as String?,
-    updatedAt: json['updatedAt'] as String?,
-    iV: json['__v'] as int?,
-  );
+  factory MassageResult.fromJson(Map<String, dynamic> json) =>
+      MassageResult(
+        sId: JsonHelper.getString(json['_id']),
+        category: json['category'] != null
+            ? Category.fromJson(json['category'])
+            : null,
+        owner: json['owner'] != null
+            ? Owner.fromJson(json['owner'])
+            : null,
+        thumbnail: JsonHelper.getString(json['thumbnail']),
+        title: JsonHelper.getString(json['title']),
+        openTime: JsonHelper.getString(json['openTime']),
+        closeTime: JsonHelper.getString(json['closeTime']),
+        priceByDuration: json['priceByDuration'] != null
+            ? JsonHelper.getList(json['priceByDuration'])
+            .map((e) => PriceByDuration.fromJson(e))
+            .toList()
+            : null,
+        serviceArea: JsonHelper.getString(json['serviceArea']),
+        amount: JsonHelper.getInt(json['amount']),
+        benefits: JsonHelper.getString(json['benefits']),
+        ourRecommendations:
+        JsonHelper.getString(json['ourRecommendations']),
+        averageRating:
+        JsonHelper.getDouble(json['averageRating']),
+        reviews: json['reviews'] != null
+            ? JsonHelper.getList(json['reviews'])
+            .map((e) => Reviews.fromJson(e))
+            .toList()
+            : null,
+        refunds: json['refunds'] != null
+            ? JsonHelper.getList(json['refunds'])
+            : null,
+        createdAt: JsonHelper.getString(json['createdAt']),
+        updatedAt: JsonHelper.getString(json['updatedAt']),
+        iV: JsonHelper.getInt(json['__v']),
+      );
 
   Map<String, dynamic> toJson() => {
     '_id': sId,
@@ -218,7 +211,8 @@ class MassageResult {
     'title': title,
     'openTime': openTime,
     'closeTime': closeTime,
-    'priceByDuration': priceByDuration?.map((v) => v.toJson()).toList(),
+    'priceByDuration':
+    priceByDuration?.map((v) => v.toJson()).toList(),
     'serviceArea': serviceArea,
     'amount': amount,
     'benefits': benefits,
@@ -232,19 +226,18 @@ class MassageResult {
   };
 }
 
-// ================= Category (CORRECTED) =================
-
 class Category {
   String? sId;
-  String? name; // Matches JSON key "name"
-  String? categoryPhoto; // Matches JSON key "categoryPhoto"
+  String? name;
+  String? categoryPhoto;
 
   Category({this.sId, this.name, this.categoryPhoto});
 
   factory Category.fromJson(Map<String, dynamic> json) => Category(
-    sId: json['_id'] as String?,
-    name: json['name'] as String?,
-    categoryPhoto: json['categoryPhoto'] as String?,
+    sId: JsonHelper.getString(json['_id']),
+    name: JsonHelper.getString(json['name']),
+    categoryPhoto:
+    JsonHelper.getString(json['categoryPhoto']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -254,14 +247,11 @@ class Category {
   };
 }
 
-// ================= Owner =================
-
 class Owner {
   String? sId;
   String? fullName;
   String? email;
   String? phone;
-  // Added fields present in your JSON that weren't in your original Owner model
   String? providerType;
   String? status;
   String? role;
@@ -279,14 +269,16 @@ class Owner {
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) => Owner(
-    sId: json['_id'] as String?,
-    fullName: json['fullName'] as String?,
-    email: json['email'] as String?,
-    phone: json['phone'] as String?,
-    providerType: json['providerType'] as String?,
-    status: json['status'] as String?,
-    role: json['role'] as String?,
-    profileUrl: json['profileUrl'] as String?,
+    sId: JsonHelper.getString(json['_id']),
+    fullName: JsonHelper.getString(json['fullName']),
+    email: JsonHelper.getString(json['email']),
+    phone: JsonHelper.getString(json['phoneNumber']),
+    providerType:
+    JsonHelper.getString(json['providerType']),
+    status: JsonHelper.getString(json['status']),
+    role: JsonHelper.getString(json['role']),
+    profileUrl:
+    JsonHelper.getString(json['profileUrl']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -301,20 +293,18 @@ class Owner {
   };
 }
 
-// ================= PriceByDuration =================
-
 class PriceByDuration {
   String? duration;
-  int? amount; // Renamed from 'price' to 'amount' to match the JSON key
+  int? amount;
   String? sId;
 
   PriceByDuration({this.duration, this.amount, this.sId});
 
   factory PriceByDuration.fromJson(Map<String, dynamic> json) =>
       PriceByDuration(
-        duration: json['duration'] as String?,
-        amount: json['amount'] as int?,
-        sId: json['_id'] as String?,
+        duration: JsonHelper.getString(json['duration']),
+        amount: JsonHelper.getInt(json['amount']),
+        sId: JsonHelper.getString(json['_id']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -324,29 +314,30 @@ class PriceByDuration {
   };
 }
 
-// ================= Reviews =================
-
 class Reviews {
   String? sId;
-
   dynamic reviewer;
-  // Using userId (present in the JSON)
   String? userId;
-
   String? comment;
-  double? rating; // Changed to double to match JSON (4.5)
+  double? rating;
   String? createdAt;
 
-  Reviews({this.sId, this.reviewer, this.comment, this.rating, this.createdAt, this.userId});
+  Reviews({
+    this.sId,
+    this.reviewer,
+    this.userId,
+    this.comment,
+    this.rating,
+    this.createdAt,
+  });
 
   factory Reviews.fromJson(Map<String, dynamic> json) => Reviews(
-    sId: json['_id'] as String?,
-    // Assuming reviewer is a map if it exists, otherwise it's just the userId
+    sId: JsonHelper.getString(json['_id']),
     reviewer: json['reviewer'],
-    userId: json['userId'] as String?,
-    comment: json['comment'] as String?,
-    rating: json['rating'] != null ? double.tryParse(json['rating'].toString()) : null,
-    createdAt: json['createdAt'] as String?,
+    userId: JsonHelper.getString(json['userId']),
+    comment: JsonHelper.getString(json['comment']),
+    rating: JsonHelper.getDouble(json['rating']),
+    createdAt: JsonHelper.getString(json['createdAt']),
   );
 
   Map<String, dynamic> toJson() => {

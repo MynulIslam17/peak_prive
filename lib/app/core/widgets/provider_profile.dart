@@ -50,7 +50,7 @@ class ProviderProfile extends StatelessWidget {
                   style: AppTextStyle.sub_h3_medium_14(),
                 ),
                 Text(
-                  user?.role ?? 'No Role',
+                  "${user?.providerType} Provider" ?? '___',
                   style: AppTextStyle.p_medium_12(),
                 ),
               ],

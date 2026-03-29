@@ -49,6 +49,7 @@ abstract class Routes {
 
   static const userWallet="/userWallet";
   static const userTransaction="/userTransaction";
+  static const withdraw="/withdraw";
 
 
 
