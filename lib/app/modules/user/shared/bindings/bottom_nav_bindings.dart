@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/modules/user/shared/controllers/all_transp
 import 'package:harry_service_app/app/modules/user/shared/controllers/get_my_booking_controller.dart';
 
 
+import '../../../chats/controllers/chat_list_controller.dart';
 import '../controllers/all_pass_controller.dart';
 import '../controllers/all_ski_hire_controller.dart';
 import '../controllers/hire_rating_controller.dart';

@@ -7,6 +7,7 @@ import 'package:harry_service_app/app/core/utils/set_up_client.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 
 
+import '../../modules/chats/controllers/chat_list_controller.dart';
 import '../controllers/nav_controller.dart';
 
 class AppBindings extends Bindings{
@@ -17,14 +18,12 @@ class AppBindings extends Bindings{
     /// nav controllers
     Get.put<NavController>(NavController());
 
-
-    /// role controllers
-   // Get.lazyPut<RoleController>(()=>RoleController());
-
-
     Get.put(setUpNetworkClient());
     Get.put(RoleController());
     Get.put(AuthController());
+
+
+    Get.put(ChatListController());
 
 
 

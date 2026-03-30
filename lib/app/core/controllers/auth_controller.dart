@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+import 'package:harry_service_app/app/data/services/socket/socket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_model.dart';
+import '../../modules/chats/controllers/chat_list_controller.dart';
 import '../../routes/app_routes.dart';
+import '../constants/api_urls.dart';
 
 class AuthController extends GetxController {
   // -------------------------
@@ -41,6 +44,22 @@ class AuthController extends GetxController {
     accessToken = token;
     userModel = model;
     role = model.role;
+
+
+    // Socket initialize
+    await Get.putAsync<SocketService>(
+          () => SocketService().init(
+        userId: model.id,
+        token: token,
+        baseUrl: AppUrls.socketBaseUrl,
+      ),
+      permanent: true,
+    );
+
+    if (Get.isRegistered<ChatListController>()) {
+      Get.find<ChatListController>().setSocketListener();
+    }
+
   }
 
   // -------------------------
@@ -56,6 +75,27 @@ class AuthController extends GetxController {
     if (userJson != null) {
       userModel = UserModel.fromJson(jsonDecode(userJson));
     }
+
+   //when  App restart
+    if (accessToken != null && userModel != null) {
+      await Get.putAsync<SocketService>(
+            () => SocketService().init(
+          userId: userModel!.id,
+          token: accessToken!,
+          baseUrl: AppUrls.socketBaseUrl,
+        ),
+        permanent: true,
+      );
+    }
+
+    if (Get.isRegistered<ChatListController>()) {
+      Get.find<ChatListController>().setSocketListener();
+    }
+
+
+
+
+
   }
 
   // -------------------------
@@ -84,6 +124,9 @@ class AuthController extends GetxController {
     accessToken = null;
     userModel = null;
     role = null;
+
+    // Socket disconnect kore cleanup
+    await Get.delete<SocketService>();
 
     Get.offAllNamed(Routes.login);
   }

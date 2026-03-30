@@ -5,6 +5,9 @@ class AppUrls{
 /// base url
   static const baseUrl="https://wn85j8p6-5000.asse.devtunnels.ms/api/v1";
 
+  /// socket base url
+  static const socketBaseUrl = "https://wn85j8p6-5000.asse.devtunnels.ms";
+
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
 
@@ -223,8 +226,10 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
   static String notificationUrl = '$baseUrl/notifications/all';
 
 
+/// chats
 
-
+  static String allChatList = '$baseUrl/chat/chat-users';
+  static String messageHistory(String otherUserId) =>'$baseUrl/chat/user-messages/${otherUserId}';
 
 
 

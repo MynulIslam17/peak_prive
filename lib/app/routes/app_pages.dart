@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/modules/auth/bindings/signup_bindings.dart
 import 'package:harry_service_app/app/modules/auth/views/email_verify_screen.dart';
 
 import 'package:harry_service_app/app/modules/auth/views/pass_reset_screen.dart';
+import 'package:harry_service_app/app/modules/chats/bingings/chat_binding.dart';
 import 'package:harry_service_app/app/modules/notification/bindings/notification_bindings.dart';
 import 'package:harry_service_app/app/modules/notification/views/notification_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
@@ -22,7 +23,7 @@ import 'package:harry_service_app/app/modules/provider/restaurant/views/restaura
 import 'package:harry_service_app/app/modules/provider/shared/bindings/change_pass_binding.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/provider_nav_bindings.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/change_password_screen.dart';
-import 'package:harry_service_app/app/modules/chats/messaging_screen.dart';
+
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_account_information_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_booking_request_screen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_nav_screen.dart';
@@ -67,6 +68,7 @@ import '../modules/all_service/views/AllServiceScreen.dart';
 import '../modules/auth/views/login_screen.dart';
 import '../modules/auth/views/otp_verification_screen.dart';
 import '../modules/auth/views/signup_screen.dart';
+import '../modules/chats/messaging_screen.dart';
 import '../modules/onboard/views/on_boarding_screen.dart';
 
 import '../modules/user/hire/bindings/hire_details_bindings.dart';
@@ -273,7 +275,7 @@ abstract class AppPages {
       binding: ProviderNavBindings(),
     ),
 
-    GetPage(name: Routes.messagingScreen, page: () => MessagingScreen()),
+    GetPage(name: Routes.messagingScreen, page: () => MessagingScreen(),binding: ChatBinding()),
 
     /// provider profile
     GetPage(

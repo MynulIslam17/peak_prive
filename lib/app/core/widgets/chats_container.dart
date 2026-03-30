@@ -1,25 +1,39 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
-import '../../../gen/assets.gen.dart';
+import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
+import '../utils/date_parser.dart';
 
 class ChatsContainer extends StatelessWidget {
   const ChatsContainer({
     super.key,
-    required this.images,
     required this.onTap,
+    this.image,
+    this.userName,
+    this.lastText = "",
+    this.unReadCount = "0",
+    this.lastMessageTime = "",
+    this.isOnline = false,
   });
 
-  final $AssetsImagesGen images;
+  final String? image;
+  final String? userName;
+  final String lastText;
+  final String unReadCount;
+  final String lastMessageTime;
+  final bool isOnline;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final DateTime? dateTime = DateParserHelper.parseDate(lastMessageTime);
+    final String displayTime = dateTime != null
+        ? DateParserHelper.toDisplayDate(dateTime)
+        : "--:--";
+
     return InkWell(
       onTap: onTap,
-       borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(14),
       child: Ink(
         width: double.infinity,
         height: 80,
@@ -38,50 +52,56 @@ class ChatsContainer extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             children: [
-              ///  Profile Image
+              /// Profile Image with Online Indicator
               Stack(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: images.user2.provider(),
-                    radius: 28,
+                  CustomCachedImage(
+                    imageUrl: image,
+                    isCircle: true,
+                    width: 60,
+                    height: 60,
                   ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: Colors.greenAccent.shade400,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                  if (isOnline)
+                    Positioned(
+                      bottom: 2,
+                      right: 2,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.greenAccent.shade400,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
 
               const SizedBox(width: 12),
 
-              ///  Message Info
+              /// Message Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    /// Name + time (same row)
+                    /// Name + Time
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "David",
-                          style: AppTextStyle.sub_h2_medium_16().copyWith(
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Text(
+                            userName ?? "__",
+                            style: AppTextStyle.sub_h2_medium_16()
+                                .copyWith(fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 4),
                         Text(
-                          "10:00 PM",
-                          style: AppTextStyle.c_regular_12(
+                          displayTime,
+                          style: AppTextStyle.c_regular_10(
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -91,7 +111,7 @@ class ChatsContainer extends StatelessWidget {
 
                     /// Last message preview
                     Text(
-                      "Please send the payment link as soon as possible.",
+                      lastText.isNotEmpty ? lastText : "No messages yet",
                       style: AppTextStyle.sub_h3_regular_14().copyWith(
                         color: Colors.grey.shade700,
                         height: 1.3,
@@ -105,21 +125,21 @@ class ChatsContainer extends StatelessWidget {
 
               const SizedBox(width: 10),
 
-              ///  Unread message indicator
-              Container(
-                width: 16,
-                height: 16,
-                decoration: const BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
+              /// Unread message indicator
+              if (unReadCount != "0" && unReadCount.isNotEmpty)
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    unReadCount,
+                    style: AppTextStyle.c_regular_10(color: Colors.white),
+                  ),
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  "2",
-                  style: AppTextStyle.c_regular_10(color: Colors.white),
-
-                ),
-              ),
             ],
           ),
         ),
