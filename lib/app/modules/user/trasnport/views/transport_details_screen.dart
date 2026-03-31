@@ -14,11 +14,13 @@ import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shi
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/controlers/trasnport_details_controller.dart';
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
 import '../../../../core/constants/env_config.dart';
+import '../../../../routes/app_routes.dart';
 
 class TransportDetailsScreen extends StatefulWidget {
   const TransportDetailsScreen({super.key});
@@ -257,8 +259,28 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
               providerName: owner.fullName,
               rating: transport.averageRating.toString(),
               reviewCount: transport.reviews.length,
-              onTapCall: () {},
-              onTapMessage: () {},
+              onTapCall: () {
+                //TODO : call provider
+                makePhoneCall(owner.phoneNumber);
+
+              },
+              onTapMessage: () {
+                //TODO : message provider
+
+                Get.toNamed(
+                  Routes.messagingScreen,
+                  arguments: {
+                    'otherUserId': owner.id,
+                    'chatId': '',
+                    'otherUserName': owner.fullName,
+                    'otherUserProfileUrl': owner.profileUrl,
+                    'isOnline': false,
+                  },
+                );
+
+
+
+              },
             ),
             const SizedBox(height: 15),
             Text(transport.description, style: AppTextStyle.p_regular_12().copyWith(fontSize: 14, color: AppColors.black_2)),

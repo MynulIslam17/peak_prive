@@ -174,6 +174,7 @@ class Owner {
   final String providerType;
   final String status;
   final String role;
+  final String phoneNumber;
 
   Owner({
     required this.id,
@@ -184,6 +185,7 @@ class Owner {
     required this.providerType,
     required this.status,
     required this.role,
+    required this.phoneNumber,
   });
 
   factory Owner.fromJson(Map<String, dynamic>? json) {
@@ -199,6 +201,7 @@ class Owner {
         providerType: json['providerType']?.toString() ?? '',
         status: json['status']?.toString() ?? '',
         role: json['role']?.toString() ?? '',
+        phoneNumber: json["phoneNumber"]?.toString() ?? '',
       );
     } catch (_) {
       return Owner.empty();
@@ -215,6 +218,7 @@ class Owner {
       providerType: '',
       status: '',
       role: '',
+      phoneNumber: '',
     );
   }
 }

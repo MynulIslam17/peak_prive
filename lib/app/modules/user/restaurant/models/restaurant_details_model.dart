@@ -130,6 +130,7 @@ class Owner {
   final String? fullName;
   final String? profileUrl;
   final String? address;
+  final String? phoneNumber;
   final String? email;
   final String? providerType;
   final String? status;
@@ -150,6 +151,7 @@ class Owner {
     this.isAgreedTermsCondition = false,
     this.isAgreedTermsConditions = false,
     this.isResetPassword = false,
+    this.phoneNumber,
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) => Owner(
@@ -164,6 +166,7 @@ class Owner {
     isAgreedTermsCondition: json['isAgreedTermsCondition'] ?? false,
     isAgreedTermsConditions: json['isAgreedTermsConditions'] ?? false,
     isResetPassword: json['isResetPassword'] ?? false,
+    phoneNumber: json['phoneNumber']
   );
 
   Map<String, dynamic> toJson() => {

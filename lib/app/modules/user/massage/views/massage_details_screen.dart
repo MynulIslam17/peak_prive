@@ -10,6 +10,7 @@ import 'package:harry_service_app/app/modules/user/massage/views/review_screen.d
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../core/widgets/provider_info.dart';
@@ -108,7 +109,11 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
     );
   }
 
-  Widget _buildPanelContent(ScrollController sc, dynamic massage, dynamic owner) {
+  Widget _buildPanelContent(
+    ScrollController sc,
+    dynamic massage,
+    dynamic owner,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -132,8 +137,24 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
             rating: massage.averageRating.toString(),
             reviewCount: massage.reviews.length,
             image: owner.profileUrl,
-            onTapCall: () {},
-            onTapMessage: () {},
+            onTapCall: () {
+              //TODO : call provider
+              makePhoneCall(owner.phoneNumber);
+            },
+            onTapMessage: () {
+              //TODO : message provider
+
+              Get.toNamed(
+                Routes.messagingScreen,
+                arguments: {
+                  'otherUserId': owner.id,
+                  'chatId': '',
+                  'otherUserName': owner.fullName,
+                  'otherUserProfileUrl': owner.profileUrl,
+                  'isOnline': false,
+                },
+              );
+            },
           ),
           SizedBox(height: 15.h),
 
@@ -144,8 +165,9 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
             labelStyle: AppTextStyle.sub_h3_medium_14(),
             indicatorSize: TabBarIndicatorSize.tab,
             indicator: BoxDecoration(
-                color: const Color(0xffD4AF38),
-                borderRadius: BorderRadius.circular(10)),
+              color: const Color(0xffD4AF38),
+              borderRadius: BorderRadius.circular(10),
+            ),
             tabs: const [
               Tab(text: "About"),
               Tab(text: "Review"),
@@ -168,9 +190,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
                 ListView(
                   controller: sc, // Attach Panel ScrollController
                   padding: EdgeInsets.only(bottom: 120.h),
-                  children: [
-                    ReviewScreen(reviewList: massage.reviews),
-                  ],
+                  children: [ReviewScreen(reviewList: massage.reviews)],
                 ),
               ],
             ),
@@ -180,10 +200,18 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
     );
   }
 
-  Widget _buildPersistentFooter(dynamic massage, MassageDetailsController controller) {
+  Widget _buildPersistentFooter(
+    dynamic massage,
+    MassageDetailsController controller,
+  ) {
     return Container(
       width: MediaQuery.of(context).size.width,
-      padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).padding.bottom + 10),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        MediaQuery.of(context).padding.bottom + 10,
+      ),
       decoration: const BoxDecoration(
         color: Color(0xffFDFAF6),
         border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
@@ -194,9 +222,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
             width: 110,
             child: Text(
               "\$ ${massage.amount}",
-              style: AppTextStyle.sub_h3_medium_14(
-                color: AppColors.primary_1,
-              ),
+              style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
             ),
           ),
           const Spacer(),
@@ -204,10 +230,13 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
             flex: 2,
             child: CustomButton(
               onTap: () {
-                Get.toNamed(Routes.bookingRequest, arguments: {
-                  "priceByDuration": massage.priceByDuration,
-                  "id": productId
-                });
+                Get.toNamed(
+                  Routes.bookingRequest,
+                  arguments: {
+                    "priceByDuration": massage.priceByDuration,
+                    "id": productId,
+                  },
+                );
               },
               text: "Book Now",
               backgroundColor: AppColors.primary_1,
@@ -227,27 +256,34 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-                child: Text(
-                  massage.title,
-                  style: AppTextStyle.h2_semibold_22(),
-                  softWrap: true,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                )),
-            Text("\$ ${massage.amount}",
-                style: AppTextStyle.sub_h2_medium_16(color: AppColors.primary_1)),
+              child: Text(
+                massage.title,
+                style: AppTextStyle.h2_semibold_22(),
+                softWrap: true,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              "\$ ${massage.amount}",
+              style: AppTextStyle.sub_h2_medium_16(color: AppColors.primary_1),
+            ),
           ],
         ),
         SizedBox(height: 10.h),
         Row(
           children: [
-            Text("Open : ${massage.openTime}",
-                style: AppTextStyle.p_regular_12(color: AppColors.black_3)),
+            Text(
+              "Open : ${massage.openTime}",
+              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
+            ),
             SizedBox(width: 10.w),
             const CircleAvatar(radius: 3, backgroundColor: Colors.grey),
             SizedBox(width: 10.w),
-            Text("Closed : ${massage.closeTime}",
-                style: AppTextStyle.p_regular_12(color: AppColors.black_3)),
+            Text(
+              "Closed : ${massage.closeTime}",
+              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
+            ),
           ],
         ),
         SizedBox(height: 8.h),
@@ -255,8 +291,10 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
           children: [
             icons.mapPinSimpleArea.svg(width: 18, height: 18),
             SizedBox(width: 8.w),
-            Text("Location : ${massage.serviceArea}",
-                style: AppTextStyle.p_regular_12(color: AppColors.black_3))
+            Text(
+              "Location : ${massage.serviceArea}",
+              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
+            ),
           ],
         ),
         SizedBox(height: 20.h),

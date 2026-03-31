@@ -93,6 +93,7 @@ class Owner {
   final String fullName;
   final String profileUrl;
   final String address;
+  final String phoneNumber;
   final String id;
   final String email;
   final String providerType;
@@ -114,6 +115,7 @@ class Owner {
     required this.isAgreedTermsCondition,
     required this.isAgreedTermsConditions,
     required this.isResetPassword,
+    required this.phoneNumber,
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) {
@@ -129,6 +131,7 @@ class Owner {
       isAgreedTermsCondition: json["isAgreedTermsCondition"] == true,
       isAgreedTermsConditions: json["isAgreedTermsConditions"] == true,
       isResetPassword: json["isResetPassword"] == true,
+      phoneNumber: json["phoneNumber"]?.toString() ??"",
     );
   }
 
@@ -145,6 +148,7 @@ class Owner {
       isAgreedTermsCondition: false,
       isAgreedTermsConditions: false,
       isResetPassword: false,
+      phoneNumber: '',
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/utils/phone_utils.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../../../../../gen/assets.gen.dart';
@@ -125,10 +126,26 @@ class _SlidingContent extends StatelessWidget {
                 children: [
                   ProviderInfo(
                     image: pass.owner.profileUrl,
-                    providerName: pass.owner.email,
+                    providerName: pass.owner.ownerName,
                     rating: pass.averageRating.toString(),
-                    onTapCall: () {},
-                    onTapMessage: () {},
+                    onTapCall: () {
+                      //TODO : call provider 
+                      makePhoneCall(pass.owner.phoneNumber);
+                    },
+                    onTapMessage: () {
+                      //TODO : message provider 
+                      Get.toNamed(
+                        Routes.messagingScreen,
+                        arguments: {
+                          'otherUserId':pass.owner.id,
+                          'chatId': '',
+                          'otherUserName': pass.owner.ownerName,
+                          'otherUserProfileUrl': pass.owner.profileUrl,
+                          'isOnline': false,
+                        },
+                      );
+                      
+                    },
                   ),
 
                   SizedBox(height: 16.h),

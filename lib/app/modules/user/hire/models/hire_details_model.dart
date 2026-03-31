@@ -85,9 +85,11 @@ class Owner {
   final String email;
   final String profileUrl;
   final String address;
+  final String phoneNumber;
   final String providerType;
   final String status;
   final String role;
+
 
   Owner({
     required this.id,
@@ -98,6 +100,7 @@ class Owner {
     required this.providerType,
     required this.status,
     required this.role,
+    required this.phoneNumber,
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) {
@@ -110,6 +113,7 @@ class Owner {
       providerType: json['providerType'] ?? '',
       status: json['status'] ?? '',
       role: json['role'] ?? '',
+      phoneNumber:json["phoneNumber"] ?? '',
     );
   }
 }

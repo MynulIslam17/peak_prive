@@ -91,7 +91,7 @@ class SocketHelper {
       onMessageReceived?.call(data);
     });
     _socket!.on('chat-list', (data) {
-    //  print('📋 Received [chat-list]: $data'); // debug
+    print('📋 Received [chat-list]: $data'); // debug
       onChatListUpdated?.call(data);
     });
     _socket!.on('user-status', (data) => onUserStatusChanged?.call(data));
@@ -134,7 +134,7 @@ class SocketHelper {
   }
 
   /// Sends a read receipt, informing the other user their messages were seen.
-  void emitMessagesRead({required String chatId, required String otherUserId}) {
+  void emitMessagesRead({required String chatId,  String ? otherUserId}) {
     if (!_isReady()) return;
     _socket!.emit('messages-read', {'chatId': chatId, 'otherUserId': otherUserId});
   }

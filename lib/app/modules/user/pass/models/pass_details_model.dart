@@ -54,7 +54,7 @@ class PassDetails {
       thumbnail: json['thumbnail']?.toString() ?? "",
       owner: json['owner'] != null
           ? Owner.fromJson(json['owner'] as Map<String, dynamic>)
-          : Owner(id: "", email: "", phoneNumber: "", profileUrl: ""),
+          : Owner(id: "", email: "", phoneNumber: "", profileUrl: "", ownerName: ''),
       skiPassType: json['skiPassType']?.toString() ?? "",
       services: services,
       serviceArea: json['serviceArea']?.toString() ?? "",
@@ -126,12 +126,14 @@ class Owner {
   final String email;
   final String phoneNumber;
   final String profileUrl;
+  final String ownerName;
 
   Owner({
     required this.id,
     required this.email,
     required this.phoneNumber,
     required this.profileUrl,
+    required this.ownerName,
   });
 
   factory Owner.fromJson(Map<String, dynamic> json) {
@@ -140,6 +142,7 @@ class Owner {
       email: json['email']?.toString() ?? "",
       phoneNumber: json['phoneNumber']?.toString() ?? "",
       profileUrl: json['profileUrl']?.toString() ?? "",
+      ownerName: json['fullName']?.toString() ?? "",
     );
   }
 }

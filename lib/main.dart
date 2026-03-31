@@ -16,7 +16,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Stripe with compile-time injected publishable key
-  Stripe.publishableKey = EnvConfig.stripePk;
+ // Stripe.publishableKey = EnvConfig.stripePk;
+  Stripe.publishableKey = "pk_test_51QitDCEAiMVp9XTIp6HoMKcDlA10mMu2lBfnMFvx2RysXjSLTtXizIUFKla2Xbr6FAosWqN4oMsmWgb0aQGkObQi00fshLDYmv";
 
   runApp(HarryServiceApp());
 }

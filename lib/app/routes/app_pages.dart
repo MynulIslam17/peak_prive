@@ -46,6 +46,7 @@ import 'package:harry_service_app/app/modules/user/massage/views/massage_details
 import 'package:harry_service_app/app/modules/user/massage/views/user_massage_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
+import 'package:harry_service_app/app/modules/user/pass/views/ticket_screen.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/user_pass_booking_info.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/bindings/restaurant_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
@@ -156,6 +157,13 @@ abstract class AppPages {
       name: Routes.passInformation,
       page: () => SetInformation(),
       binding: BookingDetailsBindings(),
+    ),
+
+    GetPage(
+      /// pass booking details
+      name: Routes.ticket,
+      page: () => TicketScreen(),
+
     ),
 
     ///bottom nav
@@ -366,5 +374,12 @@ abstract class AppPages {
       page: () => NotificationScreen(),
       binding: NotificationBindings(),
     ),
+
+
+
+
+
+
+
   ];
 }

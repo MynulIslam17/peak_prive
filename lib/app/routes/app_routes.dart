@@ -6,6 +6,8 @@ abstract class Routes {
 
   /// SkiPass
   static const service = "/service";
+  // ticket  screen
+  static const ticket="/ticket";
 
   /// Bottom Navigation
   static const bottomNav = "/bottomNav";
@@ -149,6 +151,10 @@ static const massageDetailsService="/massageDetailsService";/// show booking use
 // notification
 
 static const notification="/notification";
+
+
+
+
 
 
 

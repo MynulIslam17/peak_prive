@@ -12,6 +12,7 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -23,8 +24,7 @@ class RestaurantDetails extends StatefulWidget {
 }
 
 class _RestaurantDetailsState extends State<RestaurantDetails> {
-
-  final authController=Get.find<AuthController>();
+  final authController = Get.find<AuthController>();
   final PanelController panelController = PanelController();
   final image = Assets.images;
   final icon = Assets.icons;
@@ -90,9 +90,7 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                   Positioned(
                     top: 16,
                     left: 16,
-                    child: CustomBackButton(
-                      onTap: () => Get.back(),
-                    ),
+                    child: CustomBackButton(onTap: () => Get.back()),
                   ),
                 ],
               ),
@@ -148,8 +146,24 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                       ProviderInfo(
                         image: owner!.profileUrl,
                         providerName: owner.fullName ?? "",
-                        onTapCall: () {},
-                        onTapMessage: () {},
+                        onTapCall: () {
+                          //TODO : call provider
+                          makePhoneCall(owner.phoneNumber);
+                        },
+                        onTapMessage: () {
+                          //TODO : message provider
+
+                          Get.toNamed(
+                            Routes.messagingScreen,
+                            arguments: {
+                              'otherUserId': owner.id,
+                              'chatId': '',
+                              'otherUserName': owner.fullName,
+                              'otherUserProfileUrl': owner.profileUrl,
+                              'isOnline': false,
+                            },
+                          );
+                        },
                       ),
 
                       SizedBox(height: 20),
@@ -206,10 +220,6 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
   ///  About Section Content
   Widget _buildAboutSection() {
-
-
-
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,11 +237,17 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
           children: [
             const CircleAvatar(backgroundColor: Colors.red, radius: 5),
             SizedBox(width: 10.h),
-            Text("Close ${restaurantDetailsController.restaurantDetails!.closeTime.toString()}", style: AppTextStyle.c_regular_10()),
+            Text(
+              "Close ${restaurantDetailsController.restaurantDetails!.closeTime.toString()}",
+              style: AppTextStyle.c_regular_10(),
+            ),
             SizedBox(width: 10.h),
             const CircleAvatar(backgroundColor: Colors.red, radius: 5),
             SizedBox(width: 10.h),
-            Text("Open ${restaurantDetailsController.restaurantDetails!.openTime.toString()}", style: AppTextStyle.c_regular_10()),
+            Text(
+              "Open ${restaurantDetailsController.restaurantDetails!.openTime.toString()}",
+              style: AppTextStyle.c_regular_10(),
+            ),
           ],
         ),
         SizedBox(height: 6.h),
@@ -249,48 +265,47 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
         SizedBox(height: 20),
 
-
         Text("Available Seat", style: AppTextStyle.sub_h2_medium_16()),
-
 
         SizedBox(height: 10),
 
         /// seating card list
         ListView.builder(
-
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
-          itemCount: restaurantDetailsController.restaurantDetails!.items.length,
+          itemCount:
+              restaurantDetailsController.restaurantDetails!.items.length,
           itemBuilder: (context, index) {
-            final item=restaurantDetailsController.restaurantDetails!.items[index];
+            final item =
+                restaurantDetailsController.restaurantDetails!.items[index];
 
             return buildSeatingCard(
               onTap: () {
+                Get.toNamed(
+                  Routes.restaurantInfo,
+                  arguments: {
+                    "userId": authController.userModel!.id,
+                    "productId": productId,
+                    "quantity": item.totalQty,
+                    "itemId": item.id,
+                    "availableQty": item.availableQty,
+                    "thumbnail": item.photo,
+                    "seatType": item.seat,
+                    "totalSeat": item.totalQty,
+                    "seatPrice": item.price,
 
-                Get.toNamed(Routes.restaurantInfo,
-                arguments: {
-                  "userId" :authController.userModel!.id,
-                   "productId": productId,
-                    "quantity" : item.totalQty,
-                   "itemId" :item.id,
-                   "availableQty" : item.availableQty,
-                  "thumbnail" : item.photo,
-                  "seatType" : item.seat,
-                  "totalSeat" : item.totalQty,
-                  "seatPrice" : item.price,
-
-                  "availableSeat":item.availableQty,
-                  "price"     : item.price,
-                  "description" : item.description,
-                  "availableSlots": restaurantDetailsController.restaurantDetails!.availableSlots,
-
-
-
-                });
+                    "availableSeat": item.availableQty,
+                    "price": item.price,
+                    "description": item.description,
+                    "availableSlots": restaurantDetailsController
+                        .restaurantDetails!
+                        .availableSlots,
+                  },
+                );
               },
-              imageUrl: item.photo?? "",
+              imageUrl: item.photo ?? "",
               seatingType: item.seat ?? "",
-              totalSeats: item.totalQty ,
+              totalSeats: item.totalQty,
               availableSeats: item.availableQty,
               pricePerSeat: item.price,
             );
@@ -302,7 +317,9 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
   /// Review Section Content (currently empty)
   Widget _buildReviewSection() {
-    return ReviewScreen(reviewList: restaurantDetailsController!.restaurantDetails!.reviews,);
+    return ReviewScreen(
+      reviewList: restaurantDetailsController!.restaurantDetails!.reviews,
+    );
   }
 
   /// seating card
@@ -344,10 +361,7 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
                   child: Container(
                     color: Colors.grey[300],
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.network(imageUrl, fit: BoxFit.cover),
                   ),
                 ),
               ),

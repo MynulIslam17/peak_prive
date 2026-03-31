@@ -8,6 +8,7 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/hire_shimmer.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../core/widgets/hire_card_item.dart';
 import '../../../../core/widgets/provider_info.dart';
@@ -19,6 +20,7 @@ import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
 import '../../../../core/constants/env_config.dart';
+import '../../../../routes/app_routes.dart';
 
 class HireDetailsScreen extends StatefulWidget {
   const HireDetailsScreen({super.key});
@@ -58,7 +60,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   void _initializeStripe() {
     final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
+     // secretKey: EnvConfig.stripeSk,
+      secretKey:'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
@@ -110,23 +113,30 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
               SizedBox(height: 16.h),
-              Text("Booking Successful!", style: AppTextStyle.sub_h2_medium_16(color: Colors.green)),
+              Text(
+                "Booking Successful!",
+                style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+              ),
             ],
           ),
         ),
       );
 
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) {
-        Navigator.of(context).pop();
-        Navigator.pop(context);
-      }
+      // Navigate back after showing success
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.of(context).pop(); // Close dialog
+          Get.back(); // Go back to previous screen
+        }
+      });
     } else {
       _showSnackBar("Booking Failed", "Please try again", Colors.red);
     }
@@ -162,15 +172,28 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
     if (pickedTime == null) return;
 
-    final combined = DateTime(pickedDate.year, pickedDate.month, pickedDate.day, pickedTime.hour, pickedTime.minute);
+    final combined = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
 
     if (!isStart && startDate != null && combined.isBefore(startDate!)) {
-      _showSnackBar("Invalid", "End time cannot be before start time", Colors.red);
+      _showSnackBar(
+        "Invalid",
+        "End time cannot be before start time",
+        Colors.red,
+      );
       return;
     }
 
     setState(() {
-      if (isStart) startDate = combined; else endDate = combined;
+      if (isStart)
+        startDate = combined;
+      else
+        endDate = combined;
     });
   }
 
@@ -189,8 +212,10 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     return Scaffold(
       body: GetBuilder<HireDetailsController>(
         builder: (controller) {
-          if (controller.isLoading) return const Center(child: HireDetailsSkeleton());
-          if (controller.hireDetails == null) return const Center(child: Text("Hire details not available"));
+          if (controller.isLoading)
+            return const Center(child: HireDetailsSkeleton());
+          if (controller.hireDetails == null)
+            return const Center(child: Text("Hire details not available"));
 
           final hireDetails = controller.hireDetails!;
 
@@ -198,7 +223,9 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             child: SlidingUpPanel(
               minHeight: size.height * 0.55,
               maxHeight: size.height * 0.97,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
               parallaxEnabled: true,
               parallaxOffset: 0.2,
               footer: _buildPersistentFooter(controller), // Added Footer
@@ -207,17 +234,23 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                   SizedBox(
                     width: size.width,
                     height: size.height,
-                    child: Image.network(hireDetails.thumbnail, fit: BoxFit.cover),
+                    child: Image.network(
+                      hireDetails.thumbnail,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: CustomBackButton(onTap: () => Navigator.of(context).pop()),
+                      child: CustomBackButton(
+                        onTap: () => Navigator.of(context).pop(),
+                      ),
                     ),
                   ),
                 ],
               ),
-              panelBuilder: (ScrollController sc) => _buildPanelContent(sc, hireDetails, controller),
+              panelBuilder: (ScrollController sc) =>
+                  _buildPanelContent(sc, hireDetails, controller),
             ),
           );
         },
@@ -225,7 +258,11 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
   }
 
-  Widget _buildPanelContent(ScrollController sc, dynamic hireDetails, HireDetailsController controller) {
+  Widget _buildPanelContent(
+    ScrollController sc,
+    dynamic hireDetails,
+    HireDetailsController controller,
+  ) {
     return Column(
       children: [
         SizedBox(height: 12.h),
@@ -233,13 +270,21 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           child: Container(
             width: 50.w,
             height: 5.h,
-            decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         ),
         Expanded(
           child: ListView(
             controller: sc,
-            padding: EdgeInsets.fromLTRB(12, 10, 12, 120.h), // Extra padding for persistent footer
+            padding: EdgeInsets.fromLTRB(
+              12,
+              10,
+              12,
+              120.h,
+            ), // Extra padding for persistent footer
             children: [
               _isCheckoutMode
                   ? _buildCheckoutForm(hireDetails, controller)
@@ -251,7 +296,10 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
   }
 
-  Widget _buildCheckoutForm(dynamic hireDetails, HireDetailsController controller) {
+  Widget _buildCheckoutForm(
+    dynamic hireDetails,
+    HireDetailsController controller,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -259,7 +307,9 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: hireDetails.items.where((item) => controller.getQuantity(item.id) > 0).length,
+          itemCount: hireDetails.items
+              .where((item) => controller.getQuantity(item.id) > 0)
+              .length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 10,
@@ -267,7 +317,9 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             childAspectRatio: 1.6,
           ),
           itemBuilder: (context, index) {
-            final filteredItems = hireDetails.items.where((item) => controller.getQuantity(item.id) > 0).toList();
+            final filteredItems = hireDetails.items
+                .where((item) => controller.getQuantity(item.id) > 0)
+                .toList();
             final item = filteredItems[index];
             return SelectedItem(
               productName: item.productName,
@@ -319,9 +371,14 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             child: Container(
               height: 38,
               alignment: Alignment.center,
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Text(
-                date == null ? "Pick Time" : "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
+                date == null
+                    ? "Pick Time"
+                    : "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
                 style: const TextStyle(fontSize: 10),
               ),
             ),
@@ -338,8 +395,24 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           image: hireDetails.owner.profileUrl,
           providerName: hireDetails.owner.fullName,
           reviewCount: hireDetails.reviews.length,
-          onTapCall: () {},
-          onTapMessage: () {},
+          onTapCall: () {
+            //TODO : call provider
+            makePhoneCall(hireDetails.owner.phoneNumber);
+          },
+          onTapMessage: () {
+            //TODO : message provider
+            Get.toNamed(
+              Routes.messagingScreen,
+              arguments: {
+                'otherUserId': hireDetails.owner.id,
+                'chatId': '',
+                'otherUserName': hireDetails.owner.fullName,
+                'otherUserProfileUrl': hireDetails.owner.profileUrl,
+                'isOnline': false,
+              },
+            );
+
+          },
         ),
         SizedBox(height: 10.h),
         TabBar(
@@ -348,8 +421,14 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           labelColor: Colors.white,
           unselectedLabelColor: Colors.black,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          indicator: const BoxDecoration(color: Color(0xffd6c24d), borderRadius: BorderRadius.all(Radius.circular(8))),
-          tabs: const [Tab(text: "About"), Tab(text: "Review")],
+          indicator: const BoxDecoration(
+            color: Color(0xffd6c24d),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          tabs: const [
+            Tab(text: "About"),
+            Tab(text: "Review"),
+          ],
         ),
         SizedBox(
           height: 400.h,
@@ -368,12 +447,19 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   Widget _buildPersistentFooter(HireDetailsController controller) {
     return Container(
       width: MediaQuery.of(context).size.width,
-      padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).padding.bottom + 10),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        MediaQuery.of(context).padding.bottom + 10,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
       ),
-      child: _isCheckoutMode ? _buildFooterCheckout() : _buildFooterBookNow(controller),
+      child: _isCheckoutMode
+          ? _buildFooterCheckout()
+          : _buildFooterBookNow(controller),
     );
   }
 
@@ -384,7 +470,11 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           flex: 2,
           child: Text(
             "\$${controller.totalSelectedPrice}",
-            style: TextStyle(fontSize: 20.sp, color: Colors.amber, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 20.sp,
+              color: Colors.amber,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         const Spacer(),
@@ -393,11 +483,15 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
           child: SizedBox(
             height: 50,
             child: ElevatedButton(
-              onPressed: controller.totalSelectedPrice > 0 ? () => setState(() => _isCheckoutMode = true) : null,
+              onPressed: controller.totalSelectedPrice > 0
+                  ? () => setState(() => _isCheckoutMode = true)
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary_1,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text("Book Now"),
             ),
@@ -415,31 +509,51 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         onPressed: (bookingController.bookingProgress || _isProcessingPayment)
             ? null
             : () async {
-          final phone = phoneController.text.trim();
-          final address = addressController.text.trim();
+                final phone = phoneController.text.trim();
+                final address = addressController.text.trim();
 
-          if (!_isValidPhone(phone) || startDate == null || endDate == null || address.isEmpty) {
-            _showSnackBar("Validation Error", "Fill all required fields", Colors.red);
-            return;
-          }
+                if (!_isValidPhone(phone) ||
+                    startDate == null ||
+                    endDate == null ||
+                    address.isEmpty) {
+                  _showSnackBar(
+                    "Validation Error",
+                    "Fill all required fields",
+                    Colors.red,
+                  );
+                  return;
+                }
 
-          setState(() => _isProcessingPayment = true);
-          await _stripeHelper.processPayment(
-            context: context,
-            amount: hireController.totalSelectedPrice.toDouble(), // Ensure double
-            currency: "USD",
-            description: "Hire Booking Payment",
-            metadata: {"userId": authController.userModel!.id, "productId": hireId},
-          );
-        },
+                setState(() => _isProcessingPayment = true);
+                await _stripeHelper.processPayment(
+                  context: context,
+                  amount: hireController.totalSelectedPrice
+                      .toDouble(), // Ensure double
+                  currency: "USD",
+                  description: "Hire Booking Payment",
+                  metadata: {
+                    "userId": authController.userModel!.id,
+                    "productId": hireId,
+                  },
+                );
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary_1,
           disabledBackgroundColor: AppColors.primary_1.withOpacity(0.7),
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: (bookingController.bookingProgress || _isProcessingPayment)
-            ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
             : const Text("Checkout"),
       ),
     );
