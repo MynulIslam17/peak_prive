@@ -14,6 +14,7 @@ import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shi
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/controlers/trasnport_details_controller.dart';
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/utils/date_parser.dart';
 import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/custome_back_button.dart';
 import '../../../../data/services/stripe/payment_result.dart';
@@ -75,22 +76,72 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
     await transportController.fetchTransportDetails(productId);
   }
 
-  Future<DateTime?> _pickDateTime() async {
-    final date = await showDatePicker(
+  Future<DateTime?> _pickDateTime({required bool isStart}) async {
+    // ১. তারিখ সিলেক্ট করা
+    final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
-    if (date == null) return null;
+    if (pickedDate == null) return null;
 
-    final time = await showTimePicker(
+    // ২. সময় সিলেক্ট করা (১২ ঘণ্টা ফরম্যাটে)
+    final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
     );
-    if (time == null) return null;
+    if (pickedTime == null) return null;
 
-    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    // ৩. তারিখ এবং সময়কে একত্রে যুক্ত করা
+    final combinedDateTime = DateTime(
+      pickedDate.year,
+      pickedDate.month,
+      pickedDate.day,
+      pickedTime.hour,
+      pickedTime.minute,
+    );
+
+    // ৪. বর্তমান মুহূর্ত নির্ধারণ (সেকেন্ড এবং মিলিসেকেন্ড জিরো করে তুলনা করা)
+    final now = DateTime.now();
+    final currentMoment = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+
+    // ৫. ভ্যালিডেশন চেক
+    if (isStart) {
+      // বর্তমান সময়ের চেয়ে ৫ মিনিট আগের সময় পর্যন্ত "ভ্যালিড" ধরা হবে (পেমেন্ট বাফার)
+      final bufferTime = currentMoment.subtract(const Duration(minutes: 5));
+
+      if (combinedDateTime.isBefore(bufferTime)) {
+        Get.snackbar(
+          "Invalid Time",
+          "Start time cannot be in the past. Please select current or future time.",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return null;
+      }
+    } else {
+      // এন্ড ডেট অবশ্যই স্টার্ট ডেটের পরে হতে হবে
+      if (selectedStartDate != null && combinedDateTime.isBefore(selectedStartDate!)) {
+        Get.snackbar(
+          "Invalid Time",
+          "End time cannot be before start time",
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return null;
+      }
+    }
+
+    return combinedDateTime;
   }
 
   String getTotalDuration(DateTime? start, DateTime? end) {
@@ -234,9 +285,9 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
                   children: [
                     Row(
                       children: [
-                        _buildDateSelector("Start Date", selectedStartDate, (date) => setState(() => selectedStartDate = date)),
+                        _buildDateSelector("Start Date", selectedStartDate, (date) => setState(() => selectedStartDate = date), isStart: true),
                         const SizedBox(width: 15),
-                        _buildDateSelector("End Date", selectedEndDate, (date) => setState(() => selectedEndDate = date)),
+                        _buildDateSelector("End Date", selectedEndDate, (date) => setState(() => selectedEndDate = date), isStart: false),
                       ],
                     ),
                     const SizedBox(height: 10,),
@@ -348,7 +399,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
         const SizedBox(height: 12),
         GetBuilder<CreateBookingController>(
           builder: (controller) {
-            return controller.bookingProgress
+            return controller.isLoading
                 ? const CircularProgressIndicator()
                 : CustomButton(
               text: "Checkout",
@@ -364,18 +415,54 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
   Future<void> _handleCheckout() async {
     if (_isProcessingPayment) return;
 
+    // 1️⃣ Validate if dates are selected (Null Check)
     if (selectedStartDate == null || selectedEndDate == null) {
-      Get.snackbar("Error", "Please select dates", backgroundColor: Colors.redAccent, colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Please select both start and end dates",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
       return;
     }
 
+    // 2️⃣ Start Date Validation: 3-minute backdate limit
+    final now = DateTime.now();
+    final backdateLimit = now.subtract(const Duration(minutes: 3)); // 3 min backdate
+    if (selectedStartDate!.isBefore(backdateLimit)) {
+      Get.snackbar(
+        "Invalid Start Time",
+        "Start time cannot be more than 3 minutes in the past. Please select a valid time.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
+    // 3️⃣ End date should not be before start date
+    if (selectedEndDate!.isBefore(selectedStartDate!)) {
+      Get.snackbar(
+        "Invalid End Time",
+        "End time cannot be before start time.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
+    // 4️⃣ Ensure destination is provided
     if (destinationTEController.text.trim().isEmpty) {
-      Get.snackbar("Error", "Destination is required",
-          backgroundColor: Colors.redAccent, colorText: Colors.white);
+      Get.snackbar(
+        "Error",
+        "Destination is required",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
       return;
     }
+
+    // 5️⃣ Start Payment Processing
+    setState(() => _isProcessingPayment = true);
 
     final payment = await _paymentHelper.processPayment(
       context: context,
@@ -384,20 +471,24 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
       description: 'Car Rental',
     );
 
+    // 6️⃣ If payment is successful, proceed to Create Booking API
     if (payment.isSuccess) {
       await _createBooking({
         "userId": authController.userModel!.id,
         "productId": productId,
         "totalPrice": totalPrice,
         "destination": destinationTEController.text.trim(),
-        "startDateAndTime": selectedStartDate!.toIso8601String(),
-        "endDateAndTime": selectedEndDate!.toIso8601String(),
+        "startDateAndTime": selectedStartDate!.toUtc().toIso8601String(),
+        "endDateAndTime": selectedEndDate!.toUtc().toIso8601String(),
         "transactionId": payment.paymentData?['transactionId'],
       });
+    } else {
+      // Reset processing state if payment fails or is cancelled
+      setState(() => _isProcessingPayment = false);
     }
   }
 
-  Widget _buildDateSelector(String label, DateTime? date, Function(DateTime) onPick) {
+  Widget _buildDateSelector(String label, DateTime? date, Function(DateTime) onPick, {required bool isStart}) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,7 +497,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
           const SizedBox(height: 5),
           InkWell(
             onTap: () async {
-              final picked = await _pickDateTime();
+              final picked = await _pickDateTime(isStart: isStart);
               if (picked != null) onPick(picked);
             },
             child: _dateBox(date),
@@ -451,7 +542,7 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              date == null ? "Pick Date" : "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
+              DateParserHelper.formatDateTime(date),
               style: const TextStyle(fontSize: 10),
               overflow: TextOverflow.ellipsis,
             ),

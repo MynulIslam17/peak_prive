@@ -9,6 +9,7 @@ import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking
 
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/date_parser.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
@@ -25,11 +26,11 @@ class _BookingRequestState extends State<BookingRequest> {
   final images = Assets.images;
   final icons = Assets.icons;
 
-  // Stripe payment helper
   late StripePaymentHelper _paymentHelper;
+
+  // Tracks whether payment or booking API is in progress
   bool _isProcessingPayment = false;
 
-  /// Controllers
   final authController = Get.find<AuthController>();
   final createBookingController = Get.find<CreateBookingController>();
 
@@ -42,7 +43,7 @@ class _BookingRequestState extends State<BookingRequest> {
 
   final TextEditingController requestTEController = TextEditingController();
 
-  /// Show error message
+  // Shows a red snackbar error message
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -57,6 +58,7 @@ class _BookingRequestState extends State<BookingRequest> {
   void initState() {
     super.initState();
 
+    // Get arguments passed from previous screen
     final arguments = Get.arguments;
     productId = arguments["id"] as String;
 
@@ -67,9 +69,10 @@ class _BookingRequestState extends State<BookingRequest> {
     _initializeStripeHelper();
   }
 
+  // Initialize Stripe payment helper with config and callbacks
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
@@ -83,12 +86,11 @@ class _BookingRequestState extends State<BookingRequest> {
     );
   }
 
-  void _handlePaymentSuccess(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
-  }
+  // Payment success — do NOT stop indicator here,
+  // booking API call will continue after this
+  void _handlePaymentSuccess(PaymentResult result) {}
 
+  // Payment failed — stop indicator and show error
   void _handlePaymentFailure(PaymentResult result) {
     setState(() {
       _isProcessingPayment = false;
@@ -96,11 +98,11 @@ class _BookingRequestState extends State<BookingRequest> {
     _showError("Payment Failed");
   }
 
-  /// Create Booking
   Future<void> _createBooking() async {
+    // Prevent duplicate requests
     if (_isProcessingPayment) return;
 
-    // Validate selections
+    // Validate all required fields before proceeding
     if (selectedDuration == null) {
       _showError("Please select a duration");
       return;
@@ -114,6 +116,7 @@ class _BookingRequestState extends State<BookingRequest> {
       return;
     }
 
+    // Start loading indicator
     setState(() {
       _isProcessingPayment = true;
     });
@@ -130,12 +133,30 @@ class _BookingRequestState extends State<BookingRequest> {
       },
     );
 
-    setState(() {
-      _isProcessingPayment = false;
-    });
-
     if (paymentResult.isSuccess) {
-      // Create booking body
+      // Payment succeeded — indicator stays ON while booking API runs
+
+      // Build the scheduled datetime from selected date and time
+      DateTime scheduledDateTime = DateTime(
+        selectedDate!.year,
+        selectedDate!.month,
+        selectedDate!.day,
+        selectedTime!.hour,
+        selectedTime!.minute,
+      );
+
+      // Ensure scheduled time is at least 5 minutes from now
+      final now = DateTime.now();
+      if (scheduledDateTime.isBefore(now.add(const Duration(minutes: 2)))) {
+        scheduledDateTime = now.add(const Duration(minutes: 5));
+      }
+
+      // Format time as HH:mm string
+      String hour = scheduledDateTime.hour.toString().padLeft(2, '0');
+      String minute = scheduledDateTime.minute.toString().padLeft(2, '0');
+      String formattedTime = "$hour:$minute";
+
+      // Build booking request body
       Map<String, dynamic> body = {
         "userId": authController.userModel!.id,
         "productId": productId,
@@ -143,56 +164,69 @@ class _BookingRequestState extends State<BookingRequest> {
         "duration": selectedDuration!.duration,
         "price": selectedDuration!.amount,
         "bookingRequestText": requestTEController.text,
-        "date": selectedDate!.toIso8601String(),
-        "time": "${selectedTime!.hour}:${selectedTime!.minute}",
+        "date": scheduledDateTime.toIso8601String(),
+        "time": formattedTime,
         "transactionId": paymentResult.paymentData?['transactionId'],
       };
 
+      // Call booking API
       bool success = await createBookingController.proceedBooking(body);
 
+      // Stop indicator after booking API completes
+      setState(() {
+        _isProcessingPayment = false;
+      });
+
       if (success) {
+        // Show success dialog
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) {
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Booking Successful!",
-                    style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    "Your Booking has been processed successfully",
-                    textAlign: TextAlign.center,
-                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                  ),
-                ],
-              ),
-            );
-          },
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15.r),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+                SizedBox(height: 16.h),
+                Text(
+                  "Booking Successful!",
+                  style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  "Your Booking has been processed successfully",
+                  textAlign: TextAlign.center,
+                  style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                ),
+              ],
+            ),
+          ),
         );
 
+        // Auto close dialog and navigate back after 2 seconds
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
-          Navigator.of(context).pop(); // Close dialog
-          Get.back(); // Back to previous screen
+          Navigator.of(context).pop();
+          Get.back();
         }
+      } else {
+        // Booking API failed after successful payment
+        _showError("Booking failed. Please contact support.");
       }
     } else {
+      // Payment was cancelled or failed — stop indicator
+      setState(() {
+        _isProcessingPayment = false;
+      });
       _showError("Payment failed or cancelled");
     }
   }
 
-  /// Show date picker
+  // Opens native date picker
   Future<void> showDatePick() async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -208,11 +242,15 @@ class _BookingRequestState extends State<BookingRequest> {
     }
   }
 
-  /// Show time picker
+  // Opens native time picker in 12-hour format
   Future<void> showTimePick() async {
     TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: child!,
+      ),
     );
 
     if (pickedTime != null) {
@@ -225,6 +263,7 @@ class _BookingRequestState extends State<BookingRequest> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text("Booking Request"),
         leading: IconButton(
@@ -232,166 +271,203 @@ class _BookingRequestState extends State<BookingRequest> {
           icon: icons.caretLeft.svg(color: Colors.black, width: 30, height: 30),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Duration selection
-            Text("Duration", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
-            const SizedBox(height: 5),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: priceByDurationList.map((item) {
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      selectedDuration = item;
-                    });
-                  },
-                  child: Container(
-                    height: 50,
-                    width: 150,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color:item==selectedDuration ? AppColors.primary_1 : Colors.grey.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      "${item.duration}  (\$${item.amount})",
-                      style: AppTextStyle.c_regular_12().copyWith(fontSize: 10),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 15),
-
-            // Date picker
-            Text("Select Date", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
-            const SizedBox(height: 5),
-            InkWell(
-              onTap: showDatePick,
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black.withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    icons.calendarDots.svg(height: 25, width: 25),
-                    const SizedBox(width: 10),
-                    Text(
-                      selectedDate == null
-                          ? "Select Date"
-                          : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-                      style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Time picker
-            Text("Select Time", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
-            const SizedBox(height: 5),
-            InkWell(
-              onTap: showTimePick,
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black.withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    icons.time.svg(height: 25, width: 25),
-                    const SizedBox(width: 10),
-                    Text(
-                      selectedTime == null
-                          ? "Select Time"
-                          : "${selectedTime!.hourOfPeriod.toString().padLeft(2,'0')}:${selectedTime!.minute.toString().padLeft(2,'0')} ${selectedTime!.hour >= 12 ? 'PM' : 'AM'}",
-                      style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-
-            // Special request
-            Text("Enter Your Special Request (optional)", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
-            const SizedBox(height: 5),
-            TextField(
-              maxLines: 4,
-              controller: requestTEController,
-              decoration: InputDecoration(
-                hintText: "Your Request",
-                hintStyle: AppTextStyle.sub_h3_regular_14().copyWith(color: Colors.black.withOpacity(0.4)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.black.withOpacity(0.3)),
-                ),
-              ),
-            ),
-            const Spacer(),
-
-            // Checkout button
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(
+      // Use Column so bottom button stays fixed and form scrolls independently
+      body: Column(
+        children: [
+          // Scrollable form area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Price
-                  SizedBox(
-                    width: 110,
-                    child: Text(
-                      selectedDuration != null
-                          ? "\$${selectedDuration!.amount}"
-                          : "\$0.00",
-                      style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1),
+                  // Duration selection chips
+                  Text("Duration", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+                  const SizedBox(height: 5),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: priceByDurationList.map((item) {
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            selectedDuration = item;
+                          });
+                        },
+                        child: Container(
+                          height: 50,
+                          width: 150,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            // Highlight selected duration
+                            color: item == selectedDuration
+                                ? AppColors.primary_1
+                                : Colors.grey.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            "${item.duration}  (\$${item.amount})",
+                            style: AppTextStyle.c_regular_12().copyWith(fontSize: 10),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Date picker field
+                  Text("Select Date", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+                  const SizedBox(height: 5),
+                  InkWell(
+                    onTap: showDatePick,
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          icons.calendarDots.svg(height: 25, width: 25),
+                          const SizedBox(width: 10),
+                          Text(
+                            selectedDate == null
+                                ? "Select Date"
+                                : "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
+                            style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  const SizedBox(height: 15),
 
-                  const SizedBox(width: 10),
+                  // Time picker field
+                  Text("Select Time", style: AppTextStyle.c_regular_12(color: AppColors.black_3)),
+                  const SizedBox(height: 5),
+                  InkWell(
+                    onTap: showTimePick,
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          icons.time.svg(height: 25, width: 25),
+                          const SizedBox(width: 10),
+                          Text(
+                            formatTime(context, selectedTime),
+                            style: AppTextStyle.sub_h3_regular_14().copyWith(fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 15),
 
-                  // Confirm Booking Button
-                  Expanded(
-                    child: SizedBox(
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _isProcessingPayment ? null : _createBooking,
-                        style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: AppColors.primary_1,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: _isProcessingPayment
-                            ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                            : const Text(
-                          "Confirm Booking",
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                        ),
+                  // Optional special request text field
+                  Text(
+                    "Enter Your Special Request (optional)",
+                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                  ),
+                  const SizedBox(height: 5),
+                  TextField(
+                    maxLines: 4,
+                    controller: requestTEController,
+                    decoration: InputDecoration(
+                      hintText: "Your Request",
+                      hintStyle: AppTextStyle.sub_h3_regular_14()
+                          .copyWith(color: Colors.black.withOpacity(0.4)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.black.withOpacity(0.3)),
                       ),
                     ),
                   ),
                 ],
               ),
-            )
-          ],
-        ),
+            ),
+          ),
+
+          // Fixed bottom bar with price and confirm button
+          Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 10,
+              // Extra bottom padding for devices with home indicator
+              bottom: MediaQuery.of(context).padding.bottom + 10,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              // Subtle top shadow to separate from scrollable content
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, -3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Show selected duration price
+                SizedBox(
+                  width: 110,
+                  child: Text(
+                    selectedDuration != null
+                        ? "\$${selectedDuration!.amount}"
+                        : "\$0.00",
+                    style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Confirm booking button — disabled while processing
+                Expanded(
+                  child: SizedBox(
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _isProcessingPayment ? null : _createBooking,
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary_1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      // Show spinner while payment or booking API is running
+                      child: _isProcessingPayment
+                          ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : const Text(
+                        "Confirm Booking",
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

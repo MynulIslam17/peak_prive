@@ -412,7 +412,7 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                       Padding(
                         padding: const EdgeInsets.all(6.0),
                         child: Text(
-                          item?.productName ?? "Item",
+                          item?.productModel ?? "Item",
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

@@ -13,7 +13,10 @@ import 'package:harry_service_app/app/modules/user/pass/models/pass_booking_requ
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/date_parser.dart';
 import '../../../../core/widgets/appBarWithTab.dart';
+import '../../../../routes/app_routes.dart';
+import '../controllers/pass_details_controller.dart';
 
 class SetInformation extends StatefulWidget {
   const SetInformation({super.key});
@@ -28,6 +31,7 @@ class _SetInformationState extends State<SetInformation> {
   /// Find booking controllers
   final bookingController = Get.find<CreateBookingController>();
 
+
   /// Find current user from authcontroller
   final authController = Get.find<AuthController>();
 
@@ -41,105 +45,151 @@ class _SetInformationState extends State<SetInformation> {
   late StripePaymentHelper _paymentHelper;
   bool _isProcessingPayment = false;
 
+  /// Returns valid booking DateTime or null if invalid
+  DateTime? validateBookingDateTime() {
+    if (selectedDate == null || selectedTime == null) {
+      Get.snackbar(
+        "Notice",
+        "Please select Date and Time",
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+
+    final dateTime = DateTime(
+      selectedDate!.year,
+      selectedDate!.month,
+      selectedDate!.day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+
+    if (dateTime.isBefore(DateTime.now())) {
+      Get.snackbar(
+        "Invalid Date",
+        "Please select a future date & time",
+        backgroundColor: AppColors.primary_1,
+        colorText: Colors.white,
+      );
+      return null;
+    }
+
+    return dateTime;
+  }
+
   /// Button checkout
   void _checkoutButton() async {
+
     if (_isProcessingPayment) return;
 
-    if (selectedDate == null || selectedTime == null) {
-      Get.snackbar("Notice", "Please select Date and Time", backgroundColor: Colors.red);
-      return;
-    }
+    final bookingDateTime = validateBookingDateTime();
+    if (bookingDateTime == null) return;
 
     setState(() {
       _isProcessingPayment = true;
     });
 
     try {
-      // Process Stripe payment
+      /// 1️⃣ Start Payment
       final result = await _paymentHelper.processPayment(
         context: context,
-        amount: 100.0, // Payment amount in dollars
+        amount: 100.0,
         currency: 'USD',
         description: 'Pass Booking Payment',
         metadata: {
           'productId': prodoductId.toString(),
           'personCount': selectedPerson.toString(),
-          'date': selectedDate.toString(),
-          'time': selectedTime.toString(),
+          'date': bookingDateTime.toIso8601String(),
+
         },
       );
 
-      /// Wait a moment for the payment sheet to fully close
       await Future.delayed(const Duration(milliseconds: 500));
 
-      /// Check if payment was successful
+      /// 2️⃣ Payment Success Check
       if (result.isSuccess) {
 
-        /// if payment success hit url for saved in booking
         final transactionId = result.paymentData?['transactionId'];
 
-
-      /// calling booking api with transaction id
-
-        Map<String,dynamic>body={
-
-          "userId": authController.userModel!.id,
-          "productId":prodoductId,
-          "personCount":selectedPerson,
-           "date":selectedDate.toString(),
-          "time": selectedTime.toString(),
-          "transactionId": transactionId,
-
-        };
-        await bookingController.proceedBooking(body);
-
-
-
-
-        /// Show success dialog
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 60.sp,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Payment Successful!",
-                    style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    result.message ?? "Your payment has been processed successfully",
-                    textAlign: TextAlign.center,
-                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                  ),
-                ],
-              ),
-            ),
+        /// ⚠️ Transaction null check
+        if (transactionId == null) {
+          Get.snackbar(
+            "Error",
+            "Invalid transaction ID",
+            backgroundColor: Colors.red,
+            colorText: Colors.white,
           );
-
-          // Navigate back after showing success
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) {
-              Navigator.of(context).pop(); // Close dialog
-              Get.back(); // Go back to previous screen
-            }
-          });
+          return;
         }
+
+        /// 3️⃣ Call Booking API
+        Map<String, dynamic> body = {
+          "userId": authController.userModel!.id,
+          "productId": prodoductId,
+          "personCount": selectedPerson,
+          "date": bookingDateTime.toIso8601String(),
+          "transactionId": transactionId,
+        };
+
+        bool success = await bookingController.proceedBooking(body);
+
+        /// 4️⃣ Booking Success Check
+        if (success) {
+
+          /// ✅ Show Success Dialog
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+                    SizedBox(height: 16.h),
+                    Text(
+                      "Booking Confirmed!",
+                      style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      "Your payment & booking completed successfully",
+                      textAlign: TextAlign.center,
+                      style: AppTextStyle.c_regular_12(color: AppColors.black_3),
+                    ),
+                  ],
+                ),
+              ),
+            );
+
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                 Navigator.of(context).pop();
+                // Get.back();
+                Get.toNamed(Routes.ticket);
+              }
+            });
+          }
+
+        } else {
+
+          /// ❌ Booking Failed (Important Case)
+          Get.snackbar(
+            "Booking Failed",
+            bookingController.errorMessage ?? "Payment done but booking failed",
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+          );
+        }
+
       } else {
-        // Show failure dialog
+
+        /// ❌ Payment Failed
         if (mounted) {
           showDialog(
             context: context,
@@ -151,11 +201,7 @@ class _SetInformationState extends State<SetInformation> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.error,
-                    color: Colors.red,
-                    size: 60.sp,
-                  ),
+                  Icon(Icons.error, color: Colors.red, size: 60.sp),
                   SizedBox(height: 16.h),
                   Text(
                     "Payment Failed",
@@ -172,7 +218,10 @@ class _SetInformationState extends State<SetInformation> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text("OK", style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1)),
+                  child: Text(
+                    "OK",
+                    style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
+                  ),
                 ),
               ],
             ),
@@ -181,9 +230,6 @@ class _SetInformationState extends State<SetInformation> {
       }
 
     } catch (e) {
-      setState(() {
-        _isProcessingPayment = false;
-      });
       Get.snackbar(
         "Error",
         "An error occurred: ${e.toString()}",
@@ -191,6 +237,13 @@ class _SetInformationState extends State<SetInformation> {
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP,
       );
+    } finally {
+      /// 🔥 VERY IMPORTANT (reset state)
+      if (mounted) {
+        setState(() {
+          _isProcessingPayment = false;
+        });
+      }
     }
   }
 
@@ -216,6 +269,12 @@ class _SetInformationState extends State<SetInformation> {
     TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: selectedTime ?? TimeOfDay.now(),
+      builder: (context,child){
+       return MediaQuery(
+           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+           child: child!
+       );
+      }
     );
 
     if (picked != null) {
@@ -278,7 +337,7 @@ class _SetInformationState extends State<SetInformation> {
         },
       ),
       body: GetBuilder<CreateBookingController>(builder: (controller) {
-        return bookingController.bookingProgress
+        return bookingController.isLoading
             ? Center(child: CircularProgressIndicator(color: AppColors.primary_1,))
             : Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -369,9 +428,7 @@ class _SetInformationState extends State<SetInformation> {
                       Icon(Icons.access_time, color: AppColors.black_3),
                       SizedBox(width: 20.w),
                       Text(
-                        selectedTime != null
-                            ? "${selectedTime!.format(context)}"
-                            : "Select Time",
+                        formatTime(context, selectedTime),
                         style: AppTextStyle.p_medium_12(),
                       ),
                     ],

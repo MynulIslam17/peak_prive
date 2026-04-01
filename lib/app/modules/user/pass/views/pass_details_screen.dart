@@ -203,7 +203,9 @@ class _SlidingContent extends StatelessWidget {
                     onTap: () {
                       Get.toNamed(
                         Routes.passInformation,
-                        arguments: {"id": pass.id},
+                        arguments: {
+                          "id": pass.id
+                        },
                       );
                     },
                   ),

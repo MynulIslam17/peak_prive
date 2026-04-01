@@ -1,49 +1,54 @@
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/modules/user/pass/models/booking_success_model.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../data/services/network_caller.dart';
 
 class CreateBookingController extends GetxController {
-  bool _bookingProgress = false;
+  bool _isLoading = false;
   String? _errorMessage;
-  String? _sessionUrl;
-  String? _sessionId;
+  String? _successMessage;
+  TicketModel? _successResponse;
 
-  bool get bookingProgress => _bookingProgress;
+  // getters
+  bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String? get sessionUrl => _sessionUrl;
-  String? get sessionId => _sessionId;
+  String? get successMessage => _successMessage;
+  TicketModel? get successResponse => _successResponse;
 
-  /// Now accepting a `Map<String, dynamic>` directly
+  /// Booking method
   Future<bool> proceedBooking(Map<String, dynamic> body) async {
-    _bookingProgress = true;
-    update();
+    _isLoading = true;
+    _errorMessage = null;
+    _successMessage = null;
+    update(); // UI update
 
     try {
-      /// Send the booking request data as a POST request
+      // 1️⃣ Call API
       final response = await Get.find<NetworkCaller>().postRequest(
         url: AppUrls.userBookingUrl,
         body: body,
       );
 
+      // 2️⃣ Success Case
       if (response.isSuccess && response.body != null) {
-        final data = response.body!['data'];
-
-
-        _errorMessage = null;
-        update();
+        // JsonHelper inside TicketModel handles nulls & type safety
+        _successResponse = TicketModel.fromJson(response.body!);
+        _successMessage = response.body!['message'] ?? "Booking successful";
         return true;
-      } else {
-        _errorMessage = response.errorMessage ?? "Booking failed.";
-        update();
-        return false;
       }
-    } catch (e) {
-      _errorMessage = e.toString();
-      update();
+
+      // 3️⃣ API returned failure
+      _errorMessage = response.errorMessage ?? "Booking failed";
       return false;
+
+    } catch (e) {
+      // 4️⃣ Exception Case
+      _errorMessage = e.toString();
+      return false;
+
     } finally {
-      _bookingProgress = false;
-      update();
+      _isLoading = false;
+      update(); // final UI update
     }
   }
 }

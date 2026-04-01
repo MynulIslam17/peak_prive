@@ -487,9 +487,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   fromSkiPasses: true,
                   skiPassType: item.skiPassType ?? "",
                   onTap: () => Get.toNamed(
-                    // Routes.passCardDetails,
-                    // arguments: {"id": item.id},
-                    Routes.ticket
+                    Routes.passCardDetails,
+                    arguments: {"id": item.id},
+                    //Routes.ticket
                   ),
                 ),
               );

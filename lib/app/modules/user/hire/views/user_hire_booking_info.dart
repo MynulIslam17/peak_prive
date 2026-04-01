@@ -142,7 +142,7 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.item?.productName ?? "",
+                              item.item?.productModel ?? "",
                               style: TextStyle(
                                   fontSize: 14.sp, fontWeight: FontWeight.w600),
                             ),

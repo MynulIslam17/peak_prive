@@ -1,4 +1,7 @@
 // lib/core/utils/date_parser_helper.dart
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
 class DateParserHelper {
   /// ✅ Format DateTime to "YYYY-MM-DD" (ISO format for APIs)
   /// Example: DateTime(2026, 1, 15) → "2026-01-15"
@@ -125,6 +128,28 @@ class DateParserHelper {
     return '${toFriendlyDate(dateTime)} at ${toTime(dateTime)}';
   }
 
+  //✅ Helper method to format DateTime into "DD/MM HH:MM AM/PM"
+  static String formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return "Pick Date & Time";
+
+    int hour = dateTime.hour;
+    int minute = dateTime.minute;
+    String period = "AM";
+
+    // Convert 24-hour to 12-hour format
+    if (hour >= 12) {
+      period = "PM";
+      if (hour > 12) hour -= 12;
+    } else if (hour == 0) {
+      hour = 12;
+    }
+
+    String minuteStr = minute.toString().padLeft(2, '0');
+
+    return "${dateTime.day}/${dateTime.month} $hour:$minuteStr $period";
+  }
+
+
   /// 🔒 Private helper: Parse "Jan 15, 2026" format
   static DateTime? _parseFriendlyDate(String text) {
     final months = {
@@ -143,4 +168,14 @@ class DateParserHelper {
     if (month == null || day == null || year == null) return null;
     return DateTime(year, month, day);
   }
+}
+
+
+String formatTime(BuildContext context, TimeOfDay? time) {
+  if (time == null) return "Select Time";
+
+  return MaterialLocalizations.of(context).formatTimeOfDay(
+    time,
+    alwaysUse24HourFormat: false,
+  );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/utils/date_parser.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
@@ -60,8 +61,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   void _initializeStripe() {
     final config = StripeConfig(
-     // secretKey: EnvConfig.stripeSk,
-      secretKey:'sk_test_REDACTED_ROTATE_ME',
+       secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
@@ -158,6 +158,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
   }
 
   Future<void> _pickDate({required bool isStart}) async {
+    // Date Picker
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -166,13 +167,21 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
     );
     if (pickedDate == null) return;
 
+    // Time Picker (12-hour format / AM-PM)
     final pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+          child: child!,
+        );
+      },
     );
     if (pickedTime == null) return;
 
-    final combined = DateTime(
+    // Combine Date & Time
+    final combinedDateTime = DateTime(
       pickedDate.year,
       pickedDate.month,
       pickedDate.day,
@@ -180,7 +189,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       pickedTime.minute,
     );
 
-    if (!isStart && startDate != null && combined.isBefore(startDate!)) {
+    // Validation: End time should not be before start time
+    if (!isStart && startDate != null && combinedDateTime.isBefore(startDate!)) {
       _showSnackBar(
         "Invalid",
         "End time cannot be before start time",
@@ -189,11 +199,13 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       return;
     }
 
+    // Update state
     setState(() {
-      if (isStart)
-        startDate = combined;
-      else
-        endDate = combined;
+      if (isStart) {
+        startDate = combinedDateTime;
+      } else {
+        endDate = combinedDateTime;
+      }
     });
   }
 
@@ -376,9 +388,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                date == null
-                    ? "Pick Time"
-                    : "${date.day}/${date.month} ${date.hour}:${date.minute.toString().padLeft(2, '0')}",
+                DateParserHelper.formatDateTime(date),
                 style: const TextStyle(fontSize: 10),
               ),
             ),
@@ -506,7 +516,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
       width: double.infinity,
       height: 60,
       child: ElevatedButton(
-        onPressed: (bookingController.bookingProgress || _isProcessingPayment)
+        onPressed: (bookingController.isLoading || _isProcessingPayment)
             ? null
             : () async {
                 final phone = phoneController.text.trim();
@@ -545,7 +555,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        child: (bookingController.bookingProgress || _isProcessingPayment)
+        child: (bookingController.isLoading || _isProcessingPayment)
             ? const SizedBox(
                 height: 24,
                 width: 24,
@@ -576,7 +586,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
             final item = hireDetails.items[index];
             return HireCardItem(
               productImg: item.productPhoto,
-              itemName: item.productName,
+                itemName: item.productName,
               productPrice: item.price,
               quantity: controller.getQuantity(item.id),
               addOnTap: () => controller.addItem(item.id),

@@ -681,7 +681,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               width: double.infinity,
               height: 56,
               child: GetBuilder<CreateBookingController>(builder: (controller) {
-                bool isLoading = controller.bookingProgress || _isProcessingPayment;
+                bool isLoading = controller.isLoading || _isProcessingPayment;
 
                 return ElevatedButton(
                   onPressed: isLoading
