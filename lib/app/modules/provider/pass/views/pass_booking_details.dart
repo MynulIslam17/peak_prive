@@ -11,6 +11,8 @@ import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_sh
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_item_controller.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_status_controller.dart';
 import '../../../../core/constants/api_urls.dart';
+import '../../../../core/utils/phone_utils.dart';
+import '../../../../routes/app_routes.dart';
 
 class PassBookingDetails extends StatefulWidget {
   const PassBookingDetails({super.key});
@@ -100,8 +102,28 @@ class _PassBookingDetailsState extends State<PassBookingDetails> {
                           fullName: userName,
                           profileUrl: userProfile,
                           serviceArea: userAddress,
-                          onCallTap: () {},
-                          onMessageTap: () {},
+                          onCallTap: () {
+
+                            //TODO : make call
+                            makePhoneCall(data.phoneNumber);
+                           print("${data.phoneNumber}");
+
+
+                          },
+                          onMessageTap: () {
+                            //TODO : make message
+                            Get.toNamed(Routes.messagingScreen,
+                              arguments: {
+                                'otherUserId':user?.sId,
+                                'chatId': '',
+                                'otherUserName': user?.fullName,
+                                'otherUserProfileUrl': user?.profileUrl,
+                                'isOnline': false,
+                              },
+                            );
+
+
+                          },
                         ),
                         const SizedBox(height: 16),
                         Text("Pass Details", style: AppTextStyle.sub_h3_medium_14()),

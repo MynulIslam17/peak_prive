@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 
 class BookingStatusController extends GetxController {
   bool? _isPermitted;

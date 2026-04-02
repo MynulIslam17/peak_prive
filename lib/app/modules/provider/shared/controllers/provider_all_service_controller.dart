@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/provider_pass_service_model.dart';
 import '../../../../core/controllers/auth_controller.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 import '../models/hire_service_model.dart';
 import '../models/provider_massage_service_model.dart';
 

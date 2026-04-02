@@ -80,6 +80,7 @@ class Data {
   Product? product;
   String? productModel;
   String? category;
+  String? phoneNumber;
 
   String? date;
   String? time;
@@ -102,6 +103,7 @@ class Data {
     this.id,
     this.user,
     this.product,
+    this.phoneNumber,
     this.productModel,
     this.category,
     this.date,
@@ -129,6 +131,7 @@ class Data {
       date: json['date'],
       time: json['time'],
       duration: json['duration'],
+      phoneNumber: json['phoneNumber'],
       slots: json['slots'] ?? [],
       bookingStatus: json['bookingStatus'],
       totalPrice: json['totalPrice'],

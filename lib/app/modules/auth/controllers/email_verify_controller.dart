@@ -4,7 +4,7 @@ import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
 import '../../../core/constants/api_urls.dart';
 import '../../../data/models/network_response.dart';
-import '../../../data/services/network_caller.dart';
+import '../../../data/services/network/network_caller.dart';
 
 class EmailVerifyController extends GetxController {
   bool _emailVerifyProgress = false;

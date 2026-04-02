@@ -466,7 +466,7 @@ class _BookingScreenState extends State<BookingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffFDFAF6),
+      backgroundColor:Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xffFDFAF6),
         elevation: 0,

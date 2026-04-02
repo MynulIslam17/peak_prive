@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:get/get.dart';
 import '../../../../data/models/network_response.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 
 /// Controller to handle creating and updating Transport Services.
 /// Uses multipart requests to handle images and service data.

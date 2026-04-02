@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 
 import 'package:harry_service_app/app/modules/user/pass/models/get_single_pass.dart';
 

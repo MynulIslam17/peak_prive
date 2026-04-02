@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/constants/api_urls.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 
 import '../models/get_single_restarant.dart';
 

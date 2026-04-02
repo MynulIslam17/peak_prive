@@ -28,6 +28,7 @@ class TransportBookingData {
   bool? isHandOver;
   Product? product;
   String? productModel;
+  String? phoneNumber;
   String? category;
   String? startDateAndTime;
   String? endDateAndTime;
@@ -49,6 +50,7 @@ class TransportBookingData {
     this.user,
     this.product,
     this.isHandOver,
+    this.phoneNumber,
 
     this.productModel,
     this.category,
@@ -78,6 +80,7 @@ class TransportBookingData {
     startDateAndTime = json['startDateAndTime'];
     endDateAndTime = json['endDateAndTime'];
     startTime = json['startTime'];
+    phoneNumber=json["phoneNumber"];
     endTime = json['endTime'];
     timeLabel = json['timeLabel'];
     bookingStatus = json['bookingStatus'];

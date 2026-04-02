@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/api_urls.dart';
 import '../../../../data/models/network_response.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 import '../../../../data/models/user_model.dart';
 
 class GetProfileController extends GetxController {

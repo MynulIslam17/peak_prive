@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/model/transport_details_model.dart';
 
 import '../../../../core/constants/api_urls.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 
 class TransportDetailsController extends GetxController {
 

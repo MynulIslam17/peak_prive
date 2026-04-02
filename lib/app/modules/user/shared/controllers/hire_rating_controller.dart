@@ -3,7 +3,7 @@ import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../data/models/network_response.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 
 class HireRatingController extends GetxController {
   final navController=Get.find<NavController>();

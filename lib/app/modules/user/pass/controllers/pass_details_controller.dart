@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../data/models/network_response.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 import '../models/pass_details_model.dart';
 
 class PassDetailsController extends GetxController {

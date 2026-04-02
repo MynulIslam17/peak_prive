@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/core/widgets/custom_appbar.dart';
 import 'package:harry_service_app/app/modules/user/massage/models/massage_details_model.dart';
 import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
 
@@ -72,7 +73,7 @@ class _BookingRequestState extends State<BookingRequest> {
   // Initialize Stripe payment helper with config and callbacks
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: 'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
@@ -264,13 +265,7 @@ class _BookingRequestState extends State<BookingRequest> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text("Booking Request"),
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: icons.caretLeft.svg(color: Colors.black, width: 30, height: 30),
-        ),
-      ),
+      appBar: CustomAppBar(title: "Booking Request"),
       // Use Column so bottom button stays fixed and form scrolls independently
       body: Column(
         children: [

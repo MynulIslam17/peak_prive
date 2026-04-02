@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/controllers/nav_controller.dart';
 import '../../../../core/widgets/custom_appbar.dart';
 import '../contollers/hire_booking_single_controller.dart';
@@ -43,7 +44,9 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
         builder: (controller) {
           if (controller.isLoading) {
             return const Center(
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(
+                color: AppColors.primary_1,
+              ),
             );
           }
 
@@ -142,7 +145,7 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item.item?.productModel ?? "",
+                              item.item?.productName ?? "",
                               style: TextStyle(
                                   fontSize: 14.sp, fontWeight: FontWeight.w600),
                             ),

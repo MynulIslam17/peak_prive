@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 
 class CreatePassController extends GetxController {
   final NetworkCaller _network = Get.find<NetworkCaller>();

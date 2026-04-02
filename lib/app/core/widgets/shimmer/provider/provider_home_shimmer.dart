@@ -29,36 +29,6 @@ class ProviderHomeShimmer extends StatelessWidget {
                 children: [
                   SizedBox(height: 20),
 
-                  /// Profile shimmer
-                  Row(
-                    children: [
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.grey,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(width: 120, height: 15, color: Colors.grey),
-                          SizedBox(height: 6),
-                          Container(width: 80, height: 12, color: Colors.grey),
-                        ],
-                      ),
-                      Spacer(),
-                      Container(width: 30, height: 30, 
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        borderRadius: BorderRadius.circular(12)
-                      ),)
-                    ],
-                  ),
-
-                  SizedBox(height: 20),
 
                   /// Pending requests shimmer
                   Row(

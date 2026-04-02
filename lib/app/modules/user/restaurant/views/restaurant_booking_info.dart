@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
+import 'package:harry_service_app/app/core/widgets/custom_appbar.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/models/restaurant_details_model.dart';
 
 import '../../../../core/constants/text-style.dart';
@@ -578,27 +579,7 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Booking Request',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Colors.black87,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar:CustomAppBar(title: "Booking Request "),
       body: Column(
         children: [
           Expanded(

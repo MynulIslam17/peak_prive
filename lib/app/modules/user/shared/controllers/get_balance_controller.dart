@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 import '../../../../core/utils/json_helper.dart';
 import '../models/get_balance_model.dart';
 

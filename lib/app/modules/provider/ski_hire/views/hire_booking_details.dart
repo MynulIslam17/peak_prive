@@ -11,6 +11,8 @@ import 'package:harry_service_app/app/core/widgets/contact_details_section.dart'
 import 'package:harry_service_app/app/core/widgets/price_section.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
 
+import '../../../../core/utils/phone_utils.dart';
+import '../../../../routes/app_routes.dart';
 import '../controller/booking_item_controller.dart';
 import '../controller/booking_status_controller.dart';
 
@@ -273,8 +275,27 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                             profileUrl: user?.profileUrl,
                             fullName: user?.fullName ?? "Unknown User",
                             serviceArea: product?.serviceArea ?? "N/A",
-                            onCallTap: () {},
-                            onMessageTap: () {},
+                            onCallTap: () {
+
+                              //TODO : make call
+                              makePhoneCall(data.phoneNumber);
+
+                            },
+                            onMessageTap: () {
+
+                               //TODO : make message
+                             Get.toNamed(Routes.messagingScreen,
+                               arguments: {
+                                 'otherUserId':user?.sId,
+                                 'chatId': '',
+                                 'otherUserName': user?.fullName,
+                                 'otherUserProfileUrl': user?.profileUrl,
+                                 'isOnline': false,
+                               },
+
+                             );
+
+                            },
                           ),
                           const SizedBox(height: 20),
                           if (bookingItems != null && bookingItems.isNotEmpty)
@@ -412,7 +433,7 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
                       Padding(
                         padding: const EdgeInsets.all(6.0),
                         child: Text(
-                          item?.productModel ?? "Item",
+                          item?.productName ?? "__",
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,

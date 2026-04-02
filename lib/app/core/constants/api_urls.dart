@@ -12,7 +12,7 @@ class AppUrls{
   static const loginUrl="$baseUrl/auth/login";
 
 
-  ///user signup url
+  ///user signup url5
  static const userSignUp="$baseUrl/auth/register";
 
  /// verify email

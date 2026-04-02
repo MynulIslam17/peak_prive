@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 import '../models/massage_details_model.dart';
 
 class MassageDetailsController extends GetxController {

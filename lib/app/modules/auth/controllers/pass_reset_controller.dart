@@ -4,7 +4,7 @@ import 'package:harry_service_app/app/modules/auth/models/reset_pass_request_mod
 
 import '../../../core/constants/api_urls.dart';
 import '../../../data/models/network_response.dart';
-import '../../../data/services/network_caller.dart';
+import '../../../data/services/network/network_caller.dart';
 
 class PassResetController extends GetxController{
 

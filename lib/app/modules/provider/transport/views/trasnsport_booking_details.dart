@@ -13,6 +13,8 @@ import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_sh
 import 'package:harry_service_app/app/modules/provider/ski_hire/controller/booking_status_controller.dart';
 
 import '../../../../core/constants/api_urls.dart';
+import '../../../../core/utils/phone_utils.dart';
+import '../../../../routes/app_routes.dart';
 import '../../ski_hire/controller/booking_item_controller.dart';
 
 class TransportBookingDetails extends StatefulWidget {
@@ -111,6 +113,24 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                               fullName: user.fullName ?? "N/A",
                               serviceArea: user.address ?? "N/A",
                               profileUrl: user.profileUrl ?? "N/A",
+                              onCallTap: (){
+                                //TODO : make call
+                                makePhoneCall(
+                                  transport.phoneNumber
+                                );
+                              },
+                              onMessageTap: (){
+                                //TODO : make message
+                                Get.toNamed(Routes.messagingScreen,
+                                  arguments: {
+                                    'otherUserId':user?.id,
+                                    'chatId': '',
+                                    'otherUserName': user?.fullName,
+                                    'otherUserProfileUrl': user?.profileUrl,
+                                    'isOnline': false,
+                                  },
+                                );
+                              },
                             ),
 
                           const SizedBox(height: 24),

@@ -187,8 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 12.w),
                   child: CategoryTitle(
                     title: _listTitle(),
-                    text: "See All",
-                    onClick: () {},
                   ),
                 ),
               ),
@@ -214,10 +212,6 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       child: CategoryTitle(
         title: "Category",
-        text: "See All",
-        onClick: () {
-          // Optional: navigate to full category screen
-        },
       ),
     );
 

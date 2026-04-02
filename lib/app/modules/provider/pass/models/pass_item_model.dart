@@ -32,6 +32,7 @@ class Data {
   final String category;
   final int personCount;
   final String date;
+  String? phoneNumber;
   final String time;
   final List<dynamic> slots;
   final String bookingStatus;
@@ -46,6 +47,7 @@ class Data {
     required this.sId,
     this.user,
     this.product,
+    this.phoneNumber,
     required this.productModel,
     required this.category,
     required this.personCount,
@@ -69,6 +71,7 @@ class Data {
       productModel: json['productModel'] ?? '',
       category: json['category'] ?? '',
       personCount: json['personCount'] ?? 0,
+      phoneNumber: json['phoneNumber'],
       date: json['date'] ?? '',
       time: json['time'] ?? '',
       slots: json['slots'] ?? [],

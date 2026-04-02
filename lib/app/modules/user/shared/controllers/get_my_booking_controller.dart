@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../core/controllers/nav_controller.dart';
 import '../../../../data/models/network_response.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 import '../models/booking_model.dart';
 
 class GetMyBookingController extends GetxController {

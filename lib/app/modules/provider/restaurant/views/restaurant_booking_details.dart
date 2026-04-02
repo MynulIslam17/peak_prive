@@ -9,7 +9,9 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../../../core/widgets/build_user_card.dart';
+import '../../../../routes/app_routes.dart';
 import '../../ski_hire/controller/booking_item_controller.dart';
 
 class RestaurantBookingDetails extends StatefulWidget {
@@ -128,8 +130,24 @@ class _RestaurantBookingDetailsState extends State<RestaurantBookingDetails> {
                             profileUrl: user?.profileUrl ?? "",
                             fullName: user?.fullName ?? "N/A",
                             serviceArea: product?.serviceArea ?? "N/A",
-                            onCallTap: () {},
-                            onMessageTap: () {},
+                            onCallTap: () {
+                              //TODO : make call
+                              makePhoneCall(user?.phoneNumber);
+
+                            },
+                            onMessageTap: () {
+                              //TODO : make message
+                              Get.toNamed(Routes.messagingScreen,
+                                  arguments: {
+                                    'otherUserId':user?.sId,
+                                    'chatId': '',
+                                    'otherUserName': user?.fullName,
+                                    'otherUserProfileUrl': user?.profileUrl,
+                                    'isOnline': false,
+                                  },
+                              );
+
+                            },
                           ),
                           const SizedBox(height: 20),
 

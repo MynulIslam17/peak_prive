@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/phone_utils.dart';
 import '../../ski_hire/controller/booking_item_controller.dart';
 
 class MassageBookingDetails extends StatefulWidget {
@@ -109,8 +110,16 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                                   fullName: user.fullName,
                                   serviceArea: user.address,
                                   profileUrl: user.profileUrl,
-                                  onMessageTap: () {},
-                                  onCallTap: () {},
+                                  onMessageTap: () {
+                                    //TODO : make call
+                                    makePhoneCall(user.phoneNumber);
+
+                                  },
+                                  onCallTap: () {
+
+                                    //TODO : make call
+                                    makePhoneCall(data.phoneNumber);
+                                  },
                                 ),
                               const SizedBox(height: 24),
 

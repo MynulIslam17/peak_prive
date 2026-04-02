@@ -297,8 +297,7 @@ class _SetInformationState extends State<SetInformation> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      // secretKey: EnvConfig.stripeSk,
-      secretKey:'sk_test_REDACTED_ROTATE_ME',
+      secretKey: EnvConfig.stripeSk,
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

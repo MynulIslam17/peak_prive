@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:harry_service_app/app/modules/user/massage/models/get_single_massage.dart';
 import '../../../../core/constants/api_urls.dart';
-import '../../../../data/services/network_caller.dart';
+import '../../../../data/services/network/network_caller.dart';
 
 class SingleMassageBookingItem extends GetxController {
   final NetworkCaller _networkCaller = Get.find<NetworkCaller>();

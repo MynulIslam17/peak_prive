@@ -85,7 +85,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                 physics: const AlwaysScrollableScrollPhysics(), // Fixes Pull-to-Refresh
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
+                    horizontal: 12,
                     vertical: 20,
                   ),
                   child: Column(

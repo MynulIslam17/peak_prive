@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 import 'package:harry_service_app/app/modules/user/shared/models/category_model.dart';
 import '../../../../data/models/network_response.dart';
 import '../models/all_restaurant_model.dart' hide Category;

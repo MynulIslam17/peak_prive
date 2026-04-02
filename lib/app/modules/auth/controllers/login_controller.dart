@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
 import 'package:harry_service_app/app/data/models/user_model.dart';
-import 'package:harry_service_app/app/data/services/network_caller.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 import 'package:harry_service_app/app/modules/auth/models/login_request_model.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 
