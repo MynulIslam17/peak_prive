@@ -1,16 +1,39 @@
-# harry_service_app
+# Harry Service App
 
-A new Flutter project.
+**Harry Service App** is a Flutter-based mobile application designed to provide services to clients visiting ski resorts. It allows service providers to offer various amenities and enhances the ski experience for clients by integrating real-time communication.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## Features
 
-A few resources to get you started if this is your first Flutter project:
+- **Service Management**: Clients can access multiple services during their ski trips:
+    - Ski tickets and passes
+    - Ski accessories rental or purchase
+    - Transportation services
+    - Food and restaurant bookings
+    - Massage and spa services
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Real-Time Chat**: Communicate seamlessly with service providers using a chat feature powered by **Socket.IO**.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Flutter-Based**: Built entirely with Flutter, ensuring cross-platform compatibility for both iOS and Android.
+
+---
+
+## Tech Stack
+
+- **Frontend**: Flutter
+- **Real-Time Communication**: Socket.IO
+- **State Management**: GetX
+- **Other Packages**:
+    - Image Picker
+    - Flutter ScreenUtil
+    - Custom UI Components (cards, search bar, etc.)
+
+---
+
+## Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/harry_service_app.git
+   cd harry_service_app
