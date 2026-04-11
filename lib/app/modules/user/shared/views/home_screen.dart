@@ -474,7 +474,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ItemCard(
                   image: item.thumbnail ?? "",
                   title: item.title ?? "",
-                  price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                  price: "\€${item.amount?.toStringAsFixed(2) ?? "0"}",
                   rating: item.averageRating ?? 0.0,
                   reviewCount: "${item.reviews.length}",
                   location: item.serviceArea ?? "",
@@ -510,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ItemCard(
                   image: item.thumbnail ?? "",
                   title: item.title ?? "",
-                  price: "\$${item.totalPrice?.toStringAsFixed(2) ?? "0"}",
+                  price: "\€${item.totalPrice?.toStringAsFixed(2) ?? "0"}",
                   rating: item.averageRating ?? 0.0,
                   reviewCount: "${item.reviews.length}",
                   location: item.serviceArea ?? "",
@@ -545,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ItemCard(
                   image: item.thumbnail ?? "",
                   title: item.title ?? "",
-                  price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                  price: "\€${item.amount?.toStringAsFixed(2) ?? "0"}",
                   rating: item.averageRating ?? 0.0,
                   reviewCount: "${item.reviews.length}",
                   location: item.serviceArea ?? "",
@@ -580,7 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ItemCard(
                   image: item.thumbnail ?? "",
                   title: item.title ?? "",
-                  price: "\$${item.amount?.toStringAsFixed(2) ?? "0"}",
+                  price: "\€${item.amount?.toStringAsFixed(2) ?? "0"}",
                   rating: item.averageRating.toDouble(),
                   reviewCount: "${item.reviews.length}",
                   location: item.serviceArea ?? "",

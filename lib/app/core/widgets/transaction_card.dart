@@ -53,7 +53,7 @@ class TransactionCard extends StatelessWidget {
 
         /// AMOUNT
         trailing: Text(
-          "${isOut ? '-' : '+'} \$${transaction.balance ?? 0}",
+          "${isOut ? '-' : '+'} \€${transaction.balance ?? 0}",
           style: AppTextStyle.sub_h3_medium_14(color: color),
         ),
       ),

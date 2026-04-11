@@ -279,7 +279,7 @@ class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
 
               _infoRow(
                 "Total Paid",
-                "₹ ${data.totalPrice ?? 0}",
+                "€ ${data.totalPrice ?? 0}",
                 isBold: true,
               ),
               _infoRow(

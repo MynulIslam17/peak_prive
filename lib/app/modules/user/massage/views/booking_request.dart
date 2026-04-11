@@ -73,7 +73,8 @@ class _BookingRequestState extends State<BookingRequest> {
   // Initialize Stripe payment helper with config and callbacks
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
+     // secretKey: EnvConfig.stripeSk,
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

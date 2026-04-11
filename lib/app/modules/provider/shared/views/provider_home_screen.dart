@@ -122,11 +122,11 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
   // ── Price label ───────────────────────────────────────────────────────────
 
   String _priceLabel(dynamic service, String providerType) {
-    if (providerType == "Ski_Pass") return "\$${service.amount}/Day";
+    if (providerType == "Ski_Pass") return "\€${service.amount}/Day";
     if (providerType == "Transport" ||
         providerType == "Massage"   ||
-        providerType == "Ski_Hire") return "\$${service.amount}/Hr";
-    return "\$${service.status}";
+        providerType == "Ski_Hire") return "\€${service.amount}/Hr";
+    return "\€${service.status}";
   }
 
   // ── Booking card builder ──────────────────────────────────────────────────
@@ -145,7 +145,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           title2: "SkiPass Type", value2: product.skiPassType ?? '-', icon2Path: "assets/icons/badge.svg",
           title3: "Total Amount",
           value3: (booking.totalPrice != 0 ? booking.totalPrice : product.totalPrice ?? 0).toString(),
-          icon3Path: "assets/icons/amount.svg",
+          icon3Path: "assets/icons/CurrencyCircleDollar.svg",
           title4: "Location", value4: product.serviceArea ?? '-', icon4Path: "assets/icons/MapPinSimpleArea.svg",
         );
 
@@ -156,7 +156,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           title1: "Title",       value1: product.title ?? '-',                     icon1Path: "assets/icons/badge.svg",
           title2: "Duration",    value2: booking.duration ?? '0',                  icon2Path: "assets/icons/time.svg",
           title3: "Date-Time",   value3: _formatDateTime(booking.date.toString()), icon3Path: "assets/icons/CalendarDots.svg",
-          title4: "Total Price", value4: (booking.totalPrice ?? 0).toString(),     icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+          title4: "Total Price", value4: "€${(booking.totalPrice ?? 0).toString()}",     icon4Path: "assets/icons/CurrencyCircleDollar.svg",
         );
 
       case "Transport":
@@ -168,7 +168,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           title3: "Time",
           value3: "${_formatSmartDateTime(booking.startDateAndTime.toString())} → ${_formatSmartDateTime(booking.endDateAndTime.toString())}",
           icon3Path: "assets/icons/time.svg",
-          title4: "Total Price", value4: (booking.totalPrice ?? 0).toString(), icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+          title4: "Total Price", value4: "€${(booking.totalPrice ?? 0).toString()}", icon4Path: "assets/icons/CurrencyCircleDollar.svg",
         );
 
       case "Restaurant":
@@ -181,7 +181,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           title1: "Seat Type",   value1: bookingItem.itemDetails?.seat ?? 'N/A',                    icon1Path: "assets/icons/badge.svg",
           title2: "Seat Count",  value2: bookingItem.quantity?.toString() ?? '0',                   icon2Path: "assets/icons/user3.svg",
           title3: "Slot",        value3: "${slot.startTime ?? 'N/A'} - ${slot.endTime ?? 'N/A'}",  icon3Path: "assets/icons/time.svg",
-          title4: "Total Price", value4: (booking.totalPrice ?? 0).toString(),                      icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+          title4: "Total Price", value4: "€${(booking.totalPrice ?? 0)}",                  icon4Path: "assets/icons/CurrencyCircleDollar.svg",
         );
 
       default: // Ski_Hire
@@ -190,8 +190,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           imageUrl:  product.thumbnail ?? '',
           title1: "Ski Title",    value1: product.title ?? 'N/A',                                                                  icon1Path: "assets/icons/badge.svg",
           title2: "Duration",     value2: _formatDuration(booking.startDateAndTime.toString(), booking.endDateAndTime.toString()),  icon2Path: "assets/icons/user3.svg",
-          title3: "Total Amount", value3: booking.totalPrice.toString(),                                                            icon3Path: "assets/icons/CurrencyCircleDollar.svg",
-          title4: "Location",     value4: product.serviceArea ?? "N/A",                                                            icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+          title3: "Total Amount", value3: "€ ${(booking.totalPrice ?? 0)}",                                                            icon3Path: "assets/icons/CurrencyCircleDollar.svg",
+          title4: "Location",     value4: product.serviceArea ?? "N/A",                                                            icon4Path: "assets/icons/MapPinSimpleArea.svg",
         );
     }
   }
@@ -266,7 +266,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                   final statsMap = {
                     "Today booking":   stats.todayBookingCount,
                     "Booking Request": stats.totalBooking,
-                    "Amount":          "\$${stats.totalBalance}",
+                    "Amount":          "\€${stats.totalBalance}",
                   };
 
                   return RefreshIndicator(

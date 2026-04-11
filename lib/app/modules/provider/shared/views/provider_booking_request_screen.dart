@@ -121,7 +121,7 @@ class _ProviderBookingRequestScreenState
                                 value2: product.skiPassType ?? 'N/A',
                                 icon2Path: "assets/icons/badge.svg",
                                 title3: "Total Amount",
-                                value3: (result.totalPrice ?? 0).toString(),
+                                value3: "€${(result.totalPrice ?? 0)}",
                                 icon3Path: "assets/icons/amount.svg",
                                 title4: "Location",
                                 value4: product.serviceArea ?? 'N/A',
@@ -145,7 +145,7 @@ class _ProviderBookingRequestScreenState
                                 value3: "${slot.startTime ?? 'N/A'} - ${slot.endTime ?? 'N/A'}",
                                 icon3Path: "assets/icons/time.svg",
                                 title4: "Total Price",
-                                value4: (result.totalPrice ?? 0).toString(),
+                                value4: "€${(result.totalPrice ?? 0)}",
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
@@ -163,7 +163,7 @@ class _ProviderBookingRequestScreenState
                                 value3: formatDateTime(result.date),
                                 icon3Path: "assets/icons/CalendarDots.svg",
                                 title4: "Total Price",
-                                value4: (result.totalPrice ?? 0).toString(),
+                                value4: "€${(result.totalPrice ?? 0)}",
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
@@ -192,7 +192,7 @@ class _ProviderBookingRequestScreenState
                                 value3: "${formatSmart(result.startDateAndTime)} → ${formatSmart(result.endDateAndTime)}",
                                 icon3Path: "assets/icons/time.svg",
                                 title4: "Total Price",
-                                value4: (result.totalPrice ?? 0).toString(),
+                                value4: "€${(result.totalPrice ?? 0)}",
                                 icon4Path: "assets/icons/CurrencyCircleDollar.svg",
                               );
 
@@ -218,11 +218,11 @@ class _ProviderBookingRequestScreenState
                                 value2: formatDuration(result.startDateAndTime.toString(), result.endDateAndTime.toString()),
                                 icon2Path: "assets/icons/user3.svg",
                                 title3: "Total Amount",
-                                value3: result.totalPrice.toString(),
+                                value3: "€${result.totalPrice}",
                                 icon3Path: "assets/icons/CurrencyCircleDollar.svg",
                                 title4: "Location",
                                 value4: product.serviceArea ?? "N/A",
-                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
+                                icon4Path: "assets/icons/MapPinSimpleArea.svg",
                               );
 
                             default:

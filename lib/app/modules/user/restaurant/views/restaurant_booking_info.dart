@@ -66,7 +66,8 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
+     // secretKey: EnvConfig.stripeSk,
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

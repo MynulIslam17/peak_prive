@@ -58,7 +58,8 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-      secretKey: EnvConfig.stripeSk,
+     // secretKey: EnvConfig.stripeSk,
+      secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,

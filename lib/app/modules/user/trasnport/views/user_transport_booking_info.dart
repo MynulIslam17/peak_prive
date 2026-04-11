@@ -233,10 +233,10 @@ class _UserTransportBookingInfoState extends State<UserTransportBookingInfo> {
               ),
               SizedBox(height: 12.h),
 
-              _infoRow("Total Paid", "₹ ${data.totalPrice ?? 0}"),
+              _infoRow("Total Paid", "€ ${data.totalPrice ?? 0}"),
               _infoRow(
                 "Overtime Charge",
-                "₹ ${data.overTimeAmount?.toStringAsFixed(2) ?? '0.00'}",
+                "€ ${data.overTimeAmount?.toStringAsFixed(2) ?? '0.00'}",
               ),
               _infoRow("Booked On", _formatDateTime(data.createdAt)),
             ],

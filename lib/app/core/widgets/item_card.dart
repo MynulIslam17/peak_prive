@@ -58,11 +58,11 @@ class ItemCard extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min, // ✅ Shrink-wraps the column
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      /// Rounded Image — AspectRatio replaces fixed height: 160
+
                       AspectRatio(
-                        aspectRatio: 345 / 160, // ✅ Preserves original proportions
+                        aspectRatio: 345 / 160,
                         child: CustomCachedImage(
                           imageUrl: image,
                           width: double.infinity,

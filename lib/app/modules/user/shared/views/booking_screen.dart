@@ -380,7 +380,7 @@ class _BookingScreenState extends State<BookingScreen>
                 double safePrice = (booking.totalPrice != null && booking.totalPrice >= 0)
                     ? booking.totalPrice
                     : 0;
-                String displayPrice = "\$${safePrice.toStringAsFixed(2)}";
+                String displayPrice = "\€${safePrice.toStringAsFixed(2)}";
 
                 if (_navController.getServiceType == "ski_pass") {
                   return BookingCard(

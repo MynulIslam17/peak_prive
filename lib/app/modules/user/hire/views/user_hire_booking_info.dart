@@ -217,7 +217,7 @@ class _UserHireBookingInfoState extends State<UserHireBookingInfo> {
               _infoRow("Time Slot", data.timeLabel ?? "-"),
               _infoRow("Location", product?.serviceArea ?? "N/A"),
               _infoRow("Booking ID", data.id ?? "N/A"),
-              _infoRow("Total Paid", "₹ ${data.totalPrice ?? 0}"),
+              _infoRow("Total Paid", "€ ${data.totalPrice ?? 0}"),
 
               if (data.overTimeAmount != null)
                 _infoRow(

@@ -696,7 +696,7 @@ class _AddPassScreenState extends State<AddPassScreen> {
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        prefixText: '\$ ',
+        prefixText: '\€ ',
         prefixStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.primary_1),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.shade300)),

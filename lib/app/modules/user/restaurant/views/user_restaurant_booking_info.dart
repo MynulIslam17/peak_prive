@@ -183,7 +183,7 @@ class _UserRestaurantBookingInfoState extends State<UserRestaurantBookingInfo> {
                                   fontSize: 15.sp, fontWeight: FontWeight.w600),
                             ),
                             Text(
-                              "Price: ₹${seat?.price ?? 0}",
+                              "Price: €${seat?.price ?? 0}",
                               style: TextStyle(
                                   fontSize: 12.sp, color: Colors.grey[600]),
                             ),
@@ -259,9 +259,9 @@ class _UserRestaurantBookingInfoState extends State<UserRestaurantBookingInfo> {
               SizedBox(height: 15.h),
               _infoRow("Booking Date", _formatDate(data.date)),
               _infoRow("Time Slot", slotDisplay),
-              _infoRow("Service Fee", "₹ ${data.product?.serviceFee ?? 0}"),
+              _infoRow("Service Fee", "€${data.product?.serviceFee ?? 0}"),
               const Divider(),
-              _infoRow("Total Paid", "₹ ${data.totalPrice ?? 0}", isBold: true),
+              _infoRow("Total Paid", "€ ${data.totalPrice ?? 0}", isBold: true),
               _infoRow("Booking Status", data.bookingStatus ?? "-"),
               _infoRow("Order ID",
                   "#${data.id?.substring(data.id!.length - 6).toUpperCase() ?? "-"}"),

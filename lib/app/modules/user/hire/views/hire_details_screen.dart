@@ -61,7 +61,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
 
   void _initializeStripe() {
     final config = StripeConfig(
-       secretKey: EnvConfig.stripeSk,
+      // secretKey: EnvConfig.stripeSk,
+       secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
       allowsDelayedPaymentMethods: true,
