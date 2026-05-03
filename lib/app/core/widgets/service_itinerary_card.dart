@@ -9,7 +9,6 @@ class ServiceItineraryCard extends StatelessWidget {
   final String imageUrl;
   final VoidCallback onDetailsPressed;
 
-  /// Middle row content: icon + text
   final IconData middleIcon;
   final String middleText;
 
@@ -26,7 +25,6 @@ class ServiceItineraryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -37,7 +35,6 @@ class ServiceItineraryCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image on the left
             CustomCachedImage(
               width: 100,
               height: 100,
@@ -45,12 +42,10 @@ class ServiceItineraryCard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
 
-            // Content on the right
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title and Price
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -61,15 +56,15 @@ class ServiceItineraryCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      // UPDATED: Changed $ to €
                       Text(
-                        '\$$price',
-                        style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1)
+                        '€$price',
+                        style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
 
-                  // Flexible Middle Row (icon + text)
                   Row(
                     children: [
                       Icon(middleIcon, size: 15, color: Colors.black),
@@ -80,14 +75,12 @@ class ServiceItineraryCard extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
                           color: Colors.black54,
-
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
 
-                  // Details Button
                   Align(
                     alignment: Alignment.bottomRight,
                     child: InkWell(

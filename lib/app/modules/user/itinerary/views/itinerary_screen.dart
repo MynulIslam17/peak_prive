@@ -146,7 +146,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   child: ServiceItineraryCard(
                     title: item.product?.title ?? "",
-                    price: item.totalPrice.toString(),
+                    price: "${item.totalPrice}",
                     imageUrl: item.product?.thumbnail ?? "",
                     middleIcon: _buildIcon(item),
                     middleText: _buildLabel(item),
