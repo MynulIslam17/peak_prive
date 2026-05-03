@@ -272,7 +272,6 @@ class _UserMassageBookingInfoState extends State<UserMassageBookingInfo> {
               /// ---------------- API-DRIVEN INFO ----------------
               _infoRow("Session Date", _formatDate(data.date)),
               _infoRow("Session Time", data.time ?? "-"),
-              _infoRow("Persons", data.personCount?.toString() ?? "-"),
               _infoRow("Duration", data.duration ?? "-"),
 
               const Divider(),

@@ -221,7 +221,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
           SizedBox(
             width: 110,
             child: Text(
-              "\$ ${massage.amount}",
+              "€ ${massage.amount}",
               style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
             ),
           ),
@@ -265,7 +265,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen>
               ),
             ),
             Text(
-              "\$ ${massage.amount}",
+              "€ ${massage.amount}",
               style: AppTextStyle.sub_h2_medium_16(color: AppColors.primary_1),
             ),
           ],

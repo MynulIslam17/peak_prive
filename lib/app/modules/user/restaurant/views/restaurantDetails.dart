@@ -293,7 +293,9 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                     "seatType": item.seat,
                     "totalSeat": item.totalQty,
                     "seatPrice": item.price,
-
+                    "serviceFee": restaurantDetailsController
+                        .restaurantDetails!
+                        .serviceFee,
                     "availableSeat": item.availableQty,
                     "price": item.price,
                     "description": item.description,
@@ -426,7 +428,7 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                             style: const TextStyle(fontFamily: 'Roboto'),
                             children: [
                               TextSpan(
-                                text: '\$${pricePerSeat.toStringAsFixed(0)}',
+                                text: '€${pricePerSeat.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   fontSize: 18.0,
                                   fontWeight: FontWeight.bold,

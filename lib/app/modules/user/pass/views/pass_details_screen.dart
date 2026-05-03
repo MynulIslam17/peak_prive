@@ -36,7 +36,7 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    PanelController panelController=PanelController();
+    PanelController panelController = PanelController();
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
@@ -62,20 +62,19 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(32),
               ),
+              // ===== FIXED FOOTER =====
+              footer: _buildFooter(pass),
               panelBuilder: (scrollController) =>
                   _SlidingContent(pass, scrollController),
               body: SafeArea(
                 child: Stack(
                   children: [
-                    // Background Image
                     Image.network(
                       pass.thumbnail,
                       height: size.height * 0.6,
                       width: double.infinity,
                       fit: BoxFit.cover,
                     ),
-                
-                    // Back Button
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -91,7 +90,47 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
       ),
     );
   }
+
+  Widget _buildFooter(dynamic pass) {
+    return Container(
+      width: MediaQuery.of(context).size.width,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        10,
+        20,
+        MediaQuery.of(context).padding.bottom + 10,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      ),
+      child: Row(
+        children: [
+          Text(
+            "€${pass.amount}",
+            style: AppTextStyle.sub_h1_medium_18(
+              color: AppColors.primary_1,
+            ),
+          ),
+          SizedBox(width: 24.w),
+          Expanded(
+            child: CustomButton(
+              text: "Book Ski Pass",
+              backgroundColor: AppColors.primary_1,
+              onTap: () {
+                Get.toNamed(
+                  Routes.passInformation,
+                  arguments: {"id": pass.id},
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
+
 class _SlidingContent extends StatelessWidget {
   final dynamic pass;
   final ScrollController scrollController;
@@ -103,7 +142,6 @@ class _SlidingContent extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-
         children: [
           // Drag Handle
           Padding(
@@ -121,6 +159,8 @@ class _SlidingContent extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               controller: scrollController,
+              // extra padding so content not hidden behind footer
+              padding: EdgeInsets.only(bottom: 100.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -129,22 +169,19 @@ class _SlidingContent extends StatelessWidget {
                     providerName: pass.owner.ownerName,
                     rating: pass.averageRating.toString(),
                     onTapCall: () {
-                      //TODO : call provider 
                       makePhoneCall(pass.owner.phoneNumber);
                     },
                     onTapMessage: () {
-                      //TODO : message provider 
                       Get.toNamed(
                         Routes.messagingScreen,
                         arguments: {
-                          'otherUserId':pass.owner.id,
+                          'otherUserId': pass.owner.id,
                           'chatId': '',
                           'otherUserName': pass.owner.ownerName,
                           'otherUserProfileUrl': pass.owner.profileUrl,
                           'isOnline': false,
                         },
                       );
-                      
                     },
                   ),
 
@@ -154,8 +191,7 @@ class _SlidingContent extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: pass.services.length,
-                    gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       crossAxisSpacing: 12.w,
                       mainAxisSpacing: 6.h,
@@ -181,36 +217,6 @@ class _SlidingContent extends StatelessWidget {
                   SizedBox(height: 30.h),
                 ],
               ),
-            ),
-          ),
-
-          // Bottom Action
-          Padding(
-            padding: EdgeInsets.only(bottom: 20.h),
-            child: Row(
-              children: [
-                Text(
-                  "\$${pass.amount}",
-                  style: AppTextStyle.sub_h1_medium_18(
-                    color: AppColors.primary_1,
-                  ),
-                ),
-                SizedBox(width: 24.w),
-                Expanded(
-                  child: CustomButton(
-                    text: "Book Ski Pass",
-                    backgroundColor: AppColors.primary_1,
-                    onTap: () {
-                      Get.toNamed(
-                        Routes.passInformation,
-                        arguments: {
-                          "id": pass.id
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
             ),
           ),
         ],

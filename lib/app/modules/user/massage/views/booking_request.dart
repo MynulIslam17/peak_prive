@@ -127,7 +127,7 @@ class _BookingRequestState extends State<BookingRequest> {
     final paymentResult = await _paymentHelper.processPayment(
       context: context,
       amount: selectedDuration!.amount.toDouble(),
-      currency: 'USD',
+      currency: 'EUR',
       description: 'Pass Booking Payment',
       metadata: {
         "userId": authController.userModel?.id ?? "",
@@ -164,7 +164,7 @@ class _BookingRequestState extends State<BookingRequest> {
         "productId": productId,
         "durationId": selectedDuration!.id,
         "duration": selectedDuration!.duration,
-        "price": selectedDuration!.amount,
+        "totalPrice": selectedDuration!.amount,
         "bookingRequestText": requestTEController.text,
         "date": scheduledDateTime.toIso8601String(),
         "time": formattedTime,
@@ -303,7 +303,7 @@ class _BookingRequestState extends State<BookingRequest> {
                           ),
                           alignment: Alignment.center,
                           child: Text(
-                            "${item.duration}  (\$${item.amount})",
+                            "${item.duration}  (€${item.amount})",
                             style: AppTextStyle.c_regular_12().copyWith(fontSize: 10),
                             textAlign: TextAlign.center,
                             maxLines: 2,
@@ -420,8 +420,8 @@ class _BookingRequestState extends State<BookingRequest> {
                   width: 110,
                   child: Text(
                     selectedDuration != null
-                        ? "\$${selectedDuration!.amount}"
-                        : "\$0.00",
+                        ? "€${selectedDuration!.amount}"
+                        : "€0.00",
                     style: AppTextStyle.sub_h1_medium_18(color: AppColors.primary_1),
                   ),
                 ),

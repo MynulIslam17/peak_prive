@@ -4,10 +4,10 @@ class AppUrls{
   //https://wn85j8p6-5000.asse.devtunnels.ms/api/v1
 
 /// base url
-  static const baseUrl="https://wn85j8p6-5000.asse.devtunnels.ms/api/v1";
+  static const baseUrl="https://api.peakprivee.com/api/v1";
 
   /// socket base url
-  static const socketBaseUrl = "https://wn85j8p6-5000.asse.devtunnels.ms";
+  static const socketBaseUrl = "https://api.peakprivee.com";
 
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";

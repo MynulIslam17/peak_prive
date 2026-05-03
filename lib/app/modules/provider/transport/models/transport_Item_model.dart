@@ -171,7 +171,7 @@ class Product {
   String? personCount;
   String? milage;
   String? power;
-  String? extraChargePerHours;
+  num? extraChargePerHours;
   int? insuranceFee;
   int? maintainCharge;
   String? serviceArea;
@@ -202,7 +202,11 @@ class Product {
     personCount = json['personCount'];
     milage = json['milage'];
     power = json['power'];
-    extraChargePerHours = json['extraChargePerHours'];
+    if (json['extraChargePerHours'] != null) {
+      extraChargePerHours = json['extraChargePerHours'] is num
+          ? json['extraChargePerHours']
+          : num.tryParse(json['extraChargePerHours'].toString());
+    }
     insuranceFee = json['insuranceFee'];
     maintainCharge = json['maintainCharge'];
     serviceArea = json['serviceArea'];

@@ -175,7 +175,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                         child: MyServiceCard(
                                           image: pass.thumbnail,
                                           title: pass.title,
-                                          status: "\$${pass.amount}/Day",
+                                          status: "€${pass.amount}/Day",
                                           rating: pass.averageRating.toDouble(),
                                           reviews: pass.reviews.length,
                                           location: pass.serviceArea,
@@ -245,7 +245,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                         child: MyServiceCard(
                                           image: massage.thumbnail ?? "",
                                           title: massage.title ?? "",
-                                          status: "\$${massage.amount.toString()}",
+                                          status: "€${massage.amount.toString()}",
                                           rating: massage.averageRating ?? 0.0,
                                           reviews: massage.reviews?.length ?? 0,
                                           location: massage.serviceArea ?? "N/A",
@@ -286,7 +286,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                         child: MyServiceCard(
                                           image: transport.thumbnail ?? "",
                                           title: transport.title ?? "",
-                                          status: "\$${transport.amount.toString()}",
+                                          status: "€${transport.amount.toString()}",
                                           rating: transport.averageRating!.toDouble(),
                                           reviews: transport.reviews?.length ?? 0,
                                           location: transport.serviceArea ?? "N/A",
@@ -327,7 +327,7 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
                                         child: MyServiceCard(
                                           image: hire.thumbnail ?? "",
                                           title: hire.title ?? "",
-                                          status: "\$${hire.totalPrice.toString()}",
+                                          status: "€${hire.totalPrice.toString()}",
                                           rating: hire.averageRating?.toDouble() ?? 0,
                                           reviews: hire.reviews?.length ?? 0,
                                           location: hire.serviceArea ?? "N/A",

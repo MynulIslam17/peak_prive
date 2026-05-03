@@ -304,7 +304,7 @@ class _AddTransportScreenState extends State<AddTransportScreen> {
                     children: [
                       Text("Extra Charge/hr", style: AppTextStyle.c_regular_12()),
                       SizedBox(height: 8.h),
-                      _buildTextField("\$ Extra/hr", extraChargeTEController, isNumber: true),
+                      _buildTextField("€ Fee", insuranceTEController, isNumber: true),
                     ],
                   )),
                   SizedBox(width: 12.w),

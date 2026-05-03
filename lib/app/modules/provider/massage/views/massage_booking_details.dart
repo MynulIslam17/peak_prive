@@ -11,6 +11,7 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import '../../../../core/constants/api_urls.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/utils/phone_utils.dart';
+import '../../../../routes/app_routes.dart';
 import '../../ski_hire/controller/booking_item_controller.dart';
 
 class MassageBookingDetails extends StatefulWidget {
@@ -111,8 +112,16 @@ class _MassageBookingDetailsState extends State<MassageBookingDetails> {
                                   serviceArea: user.address,
                                   profileUrl: user.profileUrl,
                                   onMessageTap: () {
-                                    //TODO : make call
-                                    makePhoneCall(user.phoneNumber);
+                                    //TODO : make message
+                                    Get.toNamed(Routes.messagingScreen,
+                                      arguments: {
+                                        'otherUserId':user.id,
+                                        'chatId': '',
+                                        'otherUserName': user.fullName,
+                                        'otherUserProfileUrl': user.profileUrl,
+                                        'isOnline': false,
+                                      },
+                                    );
 
                                   },
                                   onCallTap: () {

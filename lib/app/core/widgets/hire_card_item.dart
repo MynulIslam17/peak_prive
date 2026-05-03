@@ -10,7 +10,7 @@ class HireCardItem extends StatelessWidget {
   final String itemName;
   final int productPrice;
 
-  final int quantity; // <-- NEW
+  final int quantity;
   final VoidCallback addOnTap;
   final VoidCallback removeOnTap;
 
@@ -19,7 +19,7 @@ class HireCardItem extends StatelessWidget {
     required this.productImg,
     required this.itemName,
     required this.productPrice,
-    required this.quantity, // <-- NEW
+    required this.quantity,
     required this.addOnTap,
     required this.removeOnTap,
   });
@@ -57,7 +57,7 @@ class HireCardItem extends StatelessWidget {
             SizedBox(height: 4.h),
 
             Text(
-              "\$$productPrice",
+              "€${productPrice}",
               style: AppTextStyle.sub_h3_medium_14(
                 color: AppColors.primary_1,
               ),

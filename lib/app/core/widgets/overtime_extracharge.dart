@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class OvertimeAndChargeSection extends StatelessWidget {
-  final String timeLabel;          // e.g. "Over Time: 475h 30m"
-  final num overtimeAmount;        // e.g. 2853.03
-  final String? extraChargePerHour; // optional
+  final String timeLabel;
+  final num overtimeAmount;
+  final num? extraChargePerHour;
 
   const OvertimeAndChargeSection({
     Key? key,
@@ -39,7 +39,8 @@ class OvertimeAndChargeSection extends StatelessWidget {
           _buildDivider(),
           _buildInfoCard(
             label: "Overtime Cost",
-            value: "৳ ${overtimeAmount.toStringAsFixed(2)}",
+            // UPDATED: Changed to Euro symbol
+            value: "€ ${overtimeAmount.toStringAsFixed(2)}",
             icon: Icons.payments_outlined,
             isHighlight: true,
           ),
@@ -47,7 +48,8 @@ class OvertimeAndChargeSection extends StatelessWidget {
             _buildDivider(),
             _buildInfoCard(
               label: "Extra / Hour",
-              value: "৳ $extraChargePerHour",
+              // UPDATED: Changed to Euro symbol
+              value: "€ ${extraChargePerHour!.toStringAsFixed(2)}",
               icon: Icons.add_circle_outline,
             ),
           ],
@@ -64,6 +66,7 @@ class OvertimeAndChargeSection extends StatelessWidget {
   }) {
     return Expanded(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
@@ -80,9 +83,7 @@ class OvertimeAndChargeSection extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isHighlight
-                    ? const Color(0xFFF59E0B)
-                    : Colors.grey.shade600,
+                color: isHighlight ? const Color(0xFFF59E0B) : Colors.grey.shade600,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -90,11 +91,9 @@ class OvertimeAndChargeSection extends StatelessWidget {
                   value,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isHighlight
-                        ? const Color(0xFFF59E0B)
-                        : Colors.grey.shade800,
+                    color: isHighlight ? const Color(0xFFF59E0B) : Colors.grey.shade800,
                   ),
                 ),
               ),
@@ -107,9 +106,9 @@ class OvertimeAndChargeSection extends StatelessWidget {
 
   Widget _buildDivider() {
     return Container(
-      height: 40,
+      height: 30,
       width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       color: Colors.grey.shade300,
     );
   }

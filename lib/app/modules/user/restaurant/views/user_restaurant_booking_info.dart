@@ -259,7 +259,10 @@ class _UserRestaurantBookingInfoState extends State<UserRestaurantBookingInfo> {
               SizedBox(height: 15.h),
               _infoRow("Booking Date", _formatDate(data.date)),
               _infoRow("Time Slot", slotDisplay),
-              _infoRow("Service Fee", "€${data.product?.serviceFee ?? 0}"),
+              _infoRow(
+                  "Service Fee",
+                  "${data.product?.serviceFee ?? 0}%"
+              ),
               const Divider(),
               _infoRow("Total Paid", "€ ${data.totalPrice ?? 0}", isBold: true),
               _infoRow("Booking Status", data.bookingStatus ?? "-"),

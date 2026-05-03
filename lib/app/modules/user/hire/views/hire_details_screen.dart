@@ -241,7 +241,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
               ),
               parallaxEnabled: true,
               parallaxOffset: 0.2,
-              footer: _buildPersistentFooter(controller), // Added Footer
+              footer: _buildPersistentFooter(controller),
               body: Stack(
                 children: [
                   SizedBox(
@@ -480,7 +480,7 @@ class _HireDetailsScreenState extends State<HireDetailsScreen>
         Expanded(
           flex: 2,
           child: Text(
-            "\$${controller.totalSelectedPrice}",
+            "€${controller.totalSelectedPrice}",
             style: TextStyle(
               fontSize: 20.sp,
               color: Colors.amber,

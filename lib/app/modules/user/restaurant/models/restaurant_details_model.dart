@@ -9,6 +9,7 @@ class RestaurantDetailsModel {
   final String? openTime;
   final String? closeTime;
   final String? serviceArea;
+  final double serviceFee;
   final String? foodType;
   final String? status;
   final List<RestaurantItem> items;
@@ -32,6 +33,7 @@ class RestaurantDetailsModel {
     this.serviceArea,
     this.foodType,
     this.status,
+    this.serviceFee = 0.0,
     this.items = const [],
     this.description,
     this.slots = const [],
@@ -55,6 +57,7 @@ class RestaurantDetailsModel {
       openTime: data['openTime'],
       closeTime: data['closeTime'],
       serviceArea: data['serviceArea'],
+      serviceFee: (data['serviceFee'] is num) ? (data['serviceFee'] as num).toDouble() : 0.0,
       foodType: data['foodType'],
       status: data['status'],
       items: (data['items'] as List<dynamic>? ?? []).map((e) => RestaurantItem.fromJson(e)).toList(),

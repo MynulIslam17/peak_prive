@@ -10,7 +10,6 @@ import '../../../../core/constants/text-style.dart';
 import '../../../../data/services/stripe/payment_result.dart';
 import '../../../../data/services/stripe/stripe_config.dart';
 import '../../../../data/services/stripe/stripe_helper.dart';
-import '../../../../core/constants/env_config.dart';
 import '../../../../routes/app_routes.dart';
 import '../../pass/controllers/pass_booking_controller.dart';
 
@@ -22,39 +21,24 @@ class RestaurantBookingInfo extends StatefulWidget {
 }
 
 class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
-
-  // Stripe payment helper
+  // --- Controllers & Helpers ---
   late StripePaymentHelper _paymentHelper;
-  bool _isProcessingPayment = false;
-
-  late final Map<String, dynamic> productInfo;
-
-  ///finds controllers
   final createBookingController = Get.find<CreateBookingController>();
   final authController = Get.find<AuthController>();
-  final _formKey = GlobalKey<FormState>();
   final TextEditingController _bookingSeatController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
+  // --- State Variables ---
+  late final Map<String, dynamic> productInfo;
+  late final List<Slot> slotsList;
+  bool _isProcessingPayment = false;
   String? _selectedDate;
-  String? _selectedTime;
-  String? _selectedSlot;
+  String? _selectedSlotId;
 
+  // --- Styling ---
   final Color goldColor = const Color(0xFFD4AF37);
   final Color textColor = Colors.black;
   final Color greyTextColor = Colors.grey;
-
-  late final List<Slot> slotsList;
-
-  /// Show error message
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -66,7 +50,6 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
   void _initializeStripeHelper() {
     final config = StripeConfig(
-     // secretKey: EnvConfig.stripeSk,
       secretKey: 'sk_test_REDACTED_ROTATE_ME',
       merchantDisplayName: 'Harry Service',
       paymentSheetTheme: ThemeMode.light,
@@ -75,512 +58,109 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
 
     _paymentHelper = StripePaymentHelper(
       config: config,
-      onPaymentSuccess: _handlePaymentSuccess,
-      onPaymentFailure: _handlePaymentFailure,
-      onLog: (message) => debugPrint('StripeLog: $message'),
+      onPaymentSuccess: (_) => setState(() => _isProcessingPayment = false),
+      onPaymentFailure: (_) {
+        setState(() => _isProcessingPayment = false);
+        _showError("Payment Failed");
+      },
     );
   }
 
-  void _handlePaymentSuccess(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
+  // --- Logic & Calculations ---
+
+  /// Calculates the service fee amount based on percentage
+  double _getCalculatedServiceFee() {
+    int seatCount = int.tryParse(_bookingSeatController.text) ?? 0;
+    int available = productInfo["availableQty"] ?? 0;
+    double seatPrice = (productInfo["seatPrice"] as num).toDouble();
+
+    // If input is invalid, return 0
+    if (seatCount <= 0 || seatCount > available) return 0.0;
+
+    double totalSeatPrice = seatCount * seatPrice;
+    double percentage = (productInfo["serviceFee"] as num).toDouble(); // e.g., 10 for 10%
+
+    return (totalSeatPrice * percentage) / 100;
   }
 
-  void _handlePaymentFailure(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
-    _showError("Payment Failed");
+  double _calculateTotalAmount() {
+    int seatCount = int.tryParse(_bookingSeatController.text) ?? 0;
+    int available = productInfo["availableQty"] ?? 0;
+    double seatPrice = (productInfo["seatPrice"] as num).toDouble();
+
+    if (seatCount <= 0 || seatCount > available) return 0.0;
+
+    double totalSeatPrice = seatCount * seatPrice;
+    return totalSeatPrice + _getCalculatedServiceFee();
   }
 
-  /// --- Convert selected date & time to ISO 8601 ---
-  DateTime? _getIsoDateTime() {
-    if (_selectedDate == null || _selectedTime == null) return null;
+  String? _getFormattedUtcDateTime() {
+    if (_selectedDate == null || _selectedSlotId == null) return null;
     try {
-      // Split date
+      final selectedSlot = slotsList.firstWhere((s) => s.id == _selectedSlotId);
       List<String> dateParts = _selectedDate!.split('/');
       int day = int.parse(dateParts[0]);
       int month = int.parse(dateParts[1]);
-      int year = 2000 + int.parse(dateParts[2]); // convert "25" -> 2025
+      int year = 2000 + int.parse(dateParts[2]);
 
-      // Parse time
-      TimeOfDay timeOfDay = TimeOfDay(
-        hour: int.parse(_selectedTime!.split(":")[0]),
-        minute: int.parse(_selectedTime!.split(":")[1].split(" ")[0]),
-      );
+      String timeStr = selectedSlot.startTime!.toLowerCase();
+      List<String> timeParts = timeStr.split(RegExp(r'[:\s]'));
+      int hour = int.parse(timeParts[0]);
+      int minute = int.parse(timeParts[1]);
 
-      // Handle AM/PM
-      if (_selectedTime!.toLowerCase().contains("pm") && timeOfDay.hour < 12) {
-        timeOfDay = TimeOfDay(
-          hour: timeOfDay.hour + 12,
-          minute: timeOfDay.minute,
-        );
-      } else if (_selectedTime!.toLowerCase().contains("am") &&
-          timeOfDay.hour == 12) {
-        timeOfDay = TimeOfDay(hour: 0, minute: timeOfDay.minute);
-      }
+      if (timeStr.contains("pm") && hour < 12) hour += 12;
+      if (timeStr.contains("am") && hour == 12) hour = 0;
 
-      return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
+      return DateTime.utc(year, month, day, hour, minute).toIso8601String();
     } catch (e) {
       return null;
     }
   }
 
-  // --- Date/Time Pickers ---
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2030),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: goldColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = "${picked.day}/${picked.month}/${picked.year % 100}";
-      });
-    }
-  }
+  // --- Main Actions ---
 
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: goldColor,
-              onPrimary: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked.format(context);
-      });
-    }
-  }
+  Future<void> _handleConfirmBooking() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedDate == null) return _showError("Please select a date");
+    if (_selectedSlotId == null) return _showError("Please select a time slot");
 
-  // --- Booking Function ---
-  Future<void> _createBooking(Map<String, dynamic> reqBody) async {
-    if (_formKey.currentState!.validate()) {
+    setState(() => _isProcessingPayment = true);
+
+    final paymentResult = await _paymentHelper.processPayment(
+      context: context,
+      amount: _calculateTotalAmount(),
+      currency: 'USD',
+      description: 'Restaurant Booking',
+      metadata: {"userId": authController.userModel?.id ?? "", "productId": productInfo["productId"]},
+    );
+
+    if (paymentResult.isSuccess) {
+      Map<String, dynamic> reqBody = {
+        "userId": productInfo["userId"],
+        "productId": productInfo["productId"],
+        "bookingItems": [
+          {"itemId": productInfo["itemId"], "quantity": int.parse(_bookingSeatController.text)}
+        ],
+        "totalPrice": _calculateTotalAmount(),
+        "slots": [_selectedSlotId],
+        "date": _getFormattedUtcDateTime(),
+        "transactionId": paymentResult.paymentData?['transactionId'] ?? '',
+      };
+
       bool success = await createBookingController.proceedBooking(reqBody);
-
-      if (success) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
-                SizedBox(height: 16),
-                Text(
-                  "Booking Successful!",
-                  style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  "Your Booking has been processed successfully",
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                ),
-              ],
-            ),
-          ),
-        );
-
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          Navigator.of(context).pop(); // Close dialog
-          Get.offAllNamed(Routes.bottomNav);
-        }
-      }
+      if (success) _showSuccessDialog();
+    } else {
+      setState(() => _isProcessingPayment = false);
     }
   }
 
-  String _totalSeatPrice(dynamic price, dynamic seat) {
-    int seatCount = int.tryParse(seat.toString()) ?? 0;
-    double seatPrice = (price as num).toDouble();
-    return (seatPrice * seatCount).toStringAsFixed(2);
-  }
-
-  // --- Widgets ---
-  Widget _buildSeatSelection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [goldColor.withOpacity(0.1), goldColor.withOpacity(0.05)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: goldColor.withOpacity(0.3), width: 1.5),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [goldColor, goldColor.withOpacity(0.8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: goldColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Image.asset(
-              productInfo["seatType"] == "VIP"
-                  ? "assets/icons/crown.png"
-                  : "assets/icons/star1.png",
-              width: 28,
-              height: 28,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                productInfo["seatType"] ?? "VIP",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: goldColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                "Premium seating experience",
-                style: TextStyle(fontSize: 12, color: greyTextColor),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBookingSeatField() {
-    return Form(
-      key: _formKey,
-      child: TextFormField(
-        controller: _bookingSeatController,
-        keyboardType: TextInputType.number,
-        validator: (value) {
-          if (value == null || value.isEmpty) return "Enter number of seats";
-          int availableSeat = productInfo["availableQty"];
-          int selectedSeat = int.tryParse(value) ?? 0;
-          if (selectedSeat <= 0) return "Enter a valid seat number";
-          if (selectedSeat > availableSeat)
-            return "$availableSeat seats available";
-          return null;
-        },
-        decoration: InputDecoration(
-          hintText: "Enter number of seats",
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
-          prefixIcon: Icon(Icons.event_seat, color: goldColor),
-          suffix: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: goldColor.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                "Total: ${productInfo["availableQty"]}",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: goldColor,
-                ),
-              ),
-            ),
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: goldColor, width: 2),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
-        ),
-        style: TextStyle(
-          fontSize: 15,
-          color: textColor,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateTimeSelector() {
-    final String dateText = _selectedDate ?? 'Select Date';
-    final String timeText = _selectedTime ?? 'Select Time';
-    final bool hasDate = _selectedDate != null;
-    final bool hasTime = _selectedTime != null;
-
-    return GestureDetector(
-      onTap: () async {
-        await _selectDate(context);
-        if (mounted) await _selectTime(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: (hasDate && hasTime)
-                ? goldColor.withOpacity(0.3)
-                : Colors.grey.shade200,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: goldColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.calendar_today, size: 20, color: goldColor),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateText,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: hasDate ? FontWeight.w600 : FontWeight.normal,
-                      color: hasDate ? textColor : Colors.grey[400],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    timeText,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: hasTime ? greyTextColor : Colors.grey[400],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeSlotGrid(List<Slot> slots) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 2.2,
-      ),
-      itemCount: slots.length,
-      itemBuilder: (context, index) {
-        final slot = slots[index];
-        final bool isSelected = _selectedSlot == slot.id;
-
-        return GestureDetector(
-          onTap: () =>
-              setState(() => _selectedSlot = isSelected ? null : slot.id),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: isSelected
-                  ? LinearGradient(
-                colors: [goldColor, goldColor.withOpacity(0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-                  : LinearGradient(
-                colors: [Colors.white, Colors.grey.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected
-                    ? goldColor.withOpacity(0.5)
-                    : Colors.grey.shade300,
-                width: isSelected ? 0 : 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isSelected
-                      ? goldColor.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.05),
-                  blurRadius: isSelected ? 12 : 6,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white.withOpacity(0.25)
-                        : goldColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.access_time_rounded,
-                    size: 18,
-                    color: isSelected ? Colors.white : goldColor,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        slot.startTime!,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : textColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        slot.endTime!,
-                        style: TextStyle(
-                          color: isSelected
-                              ? Colors.white.withOpacity(0.9)
-                              : greyTextColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.check, size: 16, color: goldColor),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 17 : 15,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
-              color: isTotal ? textColor : greyTextColor,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 15,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? goldColor : textColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) => Text(
-    title,
-    style: TextStyle(
-      fontSize: 16,
-      color: textColor,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2,
-    ),
-  );
+  // --- UI Components ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar:CustomAppBar(title: "Booking Request "),
+      appBar: CustomAppBar(title: "Booking Request"),
       body: Column(
         children: [
           Expanded(
@@ -589,197 +169,216 @@ class _RestaurantBookingInfoState extends State<RestaurantBookingInfo> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Selected Seat Type'),
-                  const SizedBox(height: 12),
+                  _sectionTitle('Selected Seat Type'),
                   _buildSeatSelection(),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Number of Seats'),
-                  const SizedBox(height: 12),
-                  _buildBookingSeatField(),
+                  _sectionTitle('Number of Seats'),
+                  _buildSeatField(),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Select Start Date & Time'),
-                  const SizedBox(height: 12),
-                  _buildDateTimeSelector(),
+                  _sectionTitle('Select Date'),
+                  _buildDatePicker(),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Available Time Slots'),
-                  const SizedBox(height: 12),
-                  _buildTimeSlotGrid(slotsList),
+                  _sectionTitle('Available Time Slots'),
+                  _buildTimeSlotGrid(),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Booking Summary'),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        _buildSummaryRow(
-                          'Total Seat',
-                          _totalSeatPrice(
-                            productInfo["seatPrice"],
-                            _bookingSeatController.text,
-                          ),
-                        ),
-                        Divider(color: Colors.grey[200], height: 1),
-                        _buildSummaryRow('Service Fee', '\$25.00'),
-                        Divider(color: Colors.grey[200], height: 1),
-                        const SizedBox(height: 4),
-                        _buildSummaryRow(
-                          'Total Amount',
-                          '\$275.00',
-                          isTotal: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  _sectionTitle('Booking Summary'),
+                  _buildSummaryCard(),
                 ],
               ),
             ),
           ),
-
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: GetBuilder<CreateBookingController>(builder: (controller) {
-                bool isLoading = controller.isLoading || _isProcessingPayment;
-
-                return ElevatedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () async {
-                    // --- VALIDATIONS ---
-                    if (_bookingSeatController.text.isEmpty) {
-                      _showError("Please enter number of seats");
-                      return;
-                    }
-
-                    int selectedSeat = int.tryParse(_bookingSeatController.text) ?? 0;
-                    int availableSeat = productInfo["availableQty"];
-
-                    if (selectedSeat <= 0) {
-                      _showError("Please enter a valid seat number");
-                      return;
-                    }
-
-                    if (selectedSeat > availableSeat) {
-                      _showError("Only $availableSeat seats available");
-                      return;
-                    }
-
-                    if (_selectedDate == null) {
-                      _showError("Please select a date");
-                      return;
-                    }
-
-                    if (_selectedTime == null) {
-                      _showError("Please select a time");
-                      return;
-                    }
-
-                    if (_selectedSlot == null || _selectedSlot!.isEmpty) {
-                      _showError("Please select a time slot");
-                      return;
-                    }
-
-                    // --- ISO DATE TIME ---
-                    DateTime? isoDateTime = _getIsoDateTime();
-                    if (isoDateTime == null) {
-                      _showError("Invalid date/time");
-                      return;
-                    }
-
-                    setState(() {
-                      _isProcessingPayment = true;
-                    });
-
-                    // Process Stripe payment
-                    final paymentResult = await _paymentHelper.processPayment(
-                      context: context,
-                      amount: 100.0,
-                      currency: 'USD',
-                      description: 'Restaurant Booking Payment',
-                      metadata: {
-                        "userId": authController.userModel?.id ?? "",
-                        "productId": productInfo["productId"],
-                      },
-                    );
-
-                    if (paymentResult.isSuccess) {
-                      /// --- BOOKING REQUEST BODY ---
-                      Map<String, dynamic> reqBody = {
-                        "userId": productInfo["userId"],
-                        "productId": productInfo["productId"],
-                        "bookingItems": [
-                          {"itemId": productInfo["itemId"], "quantity": selectedSeat},
-                        ],
-                        "slots": [_selectedSlot],
-                        "date": isoDateTime.toIso8601String(),
-                        "transactionId": paymentResult.paymentData?['transactionId'] ?? '',
-                      };
-
-                      /// --- CALL API ---
-                      await _createBooking(reqBody);
-                    } else {
-                      setState(() {
-                        _isProcessingPayment = false;
-                      });
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: goldColor,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: isLoading
-                      ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary_1,
-                      strokeWidth: 3,
-                    ),
-                  )
-                      : const Text(
-                    'Confirm Booking',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                );
-              }),
-            ),
-          )
-
+          _buildBottomButton(),
         ],
       ),
     );
+  }
+
+  Widget _sectionTitle(String title) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(title, style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w600)),
+  );
+
+  Widget _buildSummaryCard() {
+    int seatCount = int.tryParse(_bookingSeatController.text) ?? 0;
+    int available = productInfo["availableQty"] ?? 0;
+    double seatPrice = (productInfo["seatPrice"] as num).toDouble();
+    double feePercent = (productInfo["serviceFee"] as num).toDouble();
+
+    double seatTotal = (seatCount > 0 && seatCount <= available) ? (seatCount * seatPrice) : 0.0;
+    double serviceFee = _getCalculatedServiceFee();
+    double totalAmount = _calculateTotalAmount();
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
+      child: Column(
+        children: [
+          _summaryRow('Total Seat', '\$${seatTotal.toStringAsFixed(2)}'),
+          Divider(color: Colors.grey[200]),
+          _summaryRow('Service Fee ($feePercent%)', '\$${serviceFee.toStringAsFixed(2)}'),
+          Divider(color: Colors.grey[200]),
+          _summaryRow('Total Amount', '\$${totalAmount.toStringAsFixed(2)}', isTotal: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: isTotal ? 17 : 15, fontWeight: isTotal ? FontWeight.bold : FontWeight.w500, color: isTotal ? textColor : greyTextColor)),
+          Text(value, style: TextStyle(fontSize: isTotal ? 18 : 15, fontWeight: isTotal ? FontWeight.bold : FontWeight.w600, color: isTotal ? goldColor : textColor)),
+        ],
+      ),
+    );
+  }
+
+  // --- Custom Widget Partials (Design Maintained) ---
+
+  Widget _buildSeatSelection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [goldColor.withOpacity(0.1), goldColor.withOpacity(0.05)]),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: goldColor.withOpacity(0.3), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: goldColor, borderRadius: BorderRadius.circular(12)),
+            child: Image.asset(productInfo["seatType"] == "VIP" ? "assets/icons/crown.png" : "assets/icons/star1.png", width: 28, height: 28),
+          ),
+          const SizedBox(width: 16),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(productInfo["seatType"] ?? "VIP", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: goldColor)),
+            Text("Premium seating experience", style: TextStyle(fontSize: 12, color: greyTextColor)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSeatField() {
+    return Form(
+      key: _formKey,
+      child: TextFormField(
+        controller: _bookingSeatController,
+        keyboardType: TextInputType.number,
+        onChanged: (_) => setState(() {}),
+        validator: (v) => (int.tryParse(v ?? '') ?? 0) <= 0 || (int.tryParse(v!)! > productInfo["availableQty"]) ? "Invalid seat number" : null,
+        decoration: InputDecoration(
+          hintText: "Enter number of seats",
+          prefixIcon: Icon(Icons.event_seat, color: goldColor),
+          suffix: Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(color: goldColor.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+            child: Text("Total: ${productInfo["availableQty"]}", style: TextStyle(fontSize: 12, color: goldColor, fontWeight: FontWeight.bold)),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDatePicker() {
+    return GestureDetector(
+      onTap: () async {
+        final date = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2030));
+        if (date != null) setState(() => _selectedDate = "${date.day}/${date.month}/${date.year % 100}");
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
+        child: Row(children: [
+          Icon(Icons.calendar_today, color: goldColor),
+          const SizedBox(width: 12),
+          Text(_selectedDate ?? 'Select Date', style: TextStyle(color: _selectedDate != null ? textColor : Colors.grey[400], fontWeight: FontWeight.w600)),
+          const Spacer(),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildTimeSlotGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 2.2),
+      itemCount: slotsList.length,
+      itemBuilder: (context, index) {
+        final slot = slotsList[index];
+        final isSelected = _selectedSlotId == slot.id;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedSlotId = isSelected ? null : slot.id),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              gradient: isSelected ? LinearGradient(colors: [goldColor, goldColor.withOpacity(0.85)]) : null,
+              color: isSelected ? null : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: isSelected ? Colors.transparent : Colors.grey.shade300),
+            ),
+            child: Row(children: [
+              Icon(Icons.access_time_rounded, size: 18, color: isSelected ? Colors.white : goldColor),
+              const SizedBox(width: 10),
+              Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(slot.startTime!, style: TextStyle(color: isSelected ? Colors.white : textColor, fontWeight: FontWeight.bold)),
+                Text(slot.endTime!, style: TextStyle(color: isSelected ? Colors.white70 : greyTextColor, fontSize: 12)),
+              ]),
+            ]),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomButton() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))]),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: GetBuilder<CreateBookingController>(builder: (controller) {
+          bool isLoading = controller.isLoading || _isProcessingPayment;
+          return ElevatedButton(
+            onPressed: isLoading ? null : _handleConfirmBooking,
+            style: ElevatedButton.styleFrom(backgroundColor: goldColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: isLoading
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                : const Text('Confirm Booking', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+          );
+        }),
+      ),
+    );
+  }
+
+  void _showError(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m), backgroundColor: Colors.red));
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
+          const SizedBox(height: 16),
+          Text("Booking Successful!", style: AppTextStyle.sub_h2_medium_16(color: Colors.green)),
+        ]),
+      ),
+    );
+    Future.delayed(const Duration(seconds: 2), () => Get.offAllNamed(Routes.bottomNav));
   }
 
   @override

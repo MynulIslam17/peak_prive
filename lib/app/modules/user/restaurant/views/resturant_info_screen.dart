@@ -53,7 +53,7 @@ class _RestaurantInfoScreenState extends State<RestaurantInfoScreen> {
               style: const TextStyle(fontFamily: 'Roboto', color: Colors.black),
               children: [
                 TextSpan(
-                  text: '\$$price',
+                  text: '€$price',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: goldColor),
                 ),
                 const TextSpan(

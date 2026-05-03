@@ -38,8 +38,9 @@ class DurationAndPriceSection extends StatelessWidget {
           _buildDivider(),
           _buildInfoCard(
             "Price",
-            price.toString(),
-            icon: Icons.attach_money,
+
+            "${price.toStringAsFixed(2)}",
+            icon: Icons.euro,
             isHighlight: true,
           ),
         ],
@@ -75,12 +76,15 @@ class DurationAndPriceSection extends StatelessWidget {
                 color: isHighlight ? const Color(0xFF10B981) : Colors.grey.shade600,
               ),
               const SizedBox(width: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isHighlight ? const Color(0xFF10B981) : Colors.grey.shade800,
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isHighlight ? const Color(0xFF10B981) : Colors.grey.shade800,
+                  ),
                 ),
               ),
             ],

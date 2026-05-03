@@ -172,24 +172,7 @@ class _HireBookingDetailsState extends State<HireBookingDetails>
     );
   }
 
-  // ✅ Helper: Back button widget (optional, can inline as above)
-  Widget _backButton() {
-    return GestureDetector(
-      onTap: () => Get.back(),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.4),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.white,
-          size: 20,
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {

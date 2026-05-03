@@ -32,12 +32,14 @@ class PricingSection extends StatelessWidget {
         children: [
           _buildPriceCard(
             "Extra Charge/Hour",
-            "$extraChargePerHour",
+
+            "${extraChargePerHour.toStringAsFixed(2)}",
           ),
           _buildDivider(),
           _buildPriceCard(
             "Total Price",
-            "$totalPrice",
+
+            " ${totalPrice.toStringAsFixed(2)}",
             isHighlight: true,
           ),
         ],
@@ -67,20 +69,24 @@ class PricingSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.attach_money,
+
+                Icons.euro,
                 size: 18,
                 color: isHighlight
                     ? const Color(0xFF10B981)
                     : Colors.grey.shade600,
               ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: isHighlight
-                      ? const Color(0xFF10B981)
-                      : Colors.grey.shade800,
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isHighlight
+                        ? const Color(0xFF10B981)
+                        : Colors.grey.shade800,
+                  ),
                 ),
               ),
             ],

@@ -189,8 +189,7 @@ class _TransportBookingDetailsState extends State<TransportBookingDetails> {
                                   timeLabel: transport.timeLabel!,
                                   overtimeAmount:
                                   transport.overTimeAmount ?? 0,
-                                  extraChargePerHour:
-                                  product?.extraChargePerHours ?? "0",
+                                  extraChargePerHour:product?.extraChargePerHours,
                                 ),
                               ],
                             ),
