@@ -1,0 +1,89 @@
+# Peak Privee iOS workflow. Start it manually from the personal repository
+# (MynulIslam17/peak_prive). It uploads a signed IPA for TestFlight processing
+# and does not submit the app for App Store review.
+#
+# submit_to_testflight stays false on purpose:
+#   false — internal testers (App Store Connect users) can install after Apple
+#           finishes processing the upload. No beta review.
+#   true  — also sends the build to TestFlight Beta App Review, which external
+#           tester groups need. That is not an App Store release.
+# Add beta_groups only when submit_to_testflight is true, using the exact
+# group names from App Store Connect.
+workflows:
+  peak-privee-ios-testflight:
+    name: Peak Privee - iOS TestFlight
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      # Must match the App Store Connect API key name in Codemagic
+      # Team settings > Integrations. The key belongs to team 82TK45X459.
+      app_store_connect: peak-privee-asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.peakprivee.serviceapp
+      vars:
+        APP_STORE_APPLE_ID: 6759319535
+      flutter: 3.47.9
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up iOS code signing
+        script: xcode-project use-profiles
+      - name: Fetch Flutter dependencies
+        script: flutter pub get
+      - name: Install CocoaPods dependencies
+        script: find . -name "Podfile" -execdir pod install \;
+      - name: Build signed iOS release IPA
+        script: |
+          set -eu
+          cd "$CM_BUILD_DIR"
+
+          read_build() {
+            raw="$("$@" 2>/dev/null || true)"
+            raw=$(printf '%s' "$raw" | tr -d '[:space:]')
+            case "$raw" in
+              ''|*[!0-9]*) printf '0' ;;
+              *) printf '%s' "$raw" ;;
+            esac
+          }
+
+          # Highest build already used on TestFlight or the App Store.
+          # A new upload must be strictly greater, including across versions.
+          TESTFLIGHT_BUILD="$(read_build app-store-connect get-latest-testflight-build-number --all-versions "$APP_STORE_APPLE_ID")"
+          APP_STORE_BUILD="$(read_build app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")"
+          if [ "$TESTFLIGHT_BUILD" -gt "$APP_STORE_BUILD" ]; then
+            LATEST_BUILD="$TESTFLIGHT_BUILD"
+          else
+            LATEST_BUILD="$APP_STORE_BUILD"
+          fi
+          BUILD_NUMBER="$((LATEST_BUILD + 1))"
+          APP_VERSION="$(awk '/^version:/ { split($2, v, "+"); print v[1]; exit }' pubspec.yaml)"
+
+          echo "Building $APP_VERSION ($BUILD_NUMBER)"
+
+          flutter_build() {
+            flutter build ipa --release \
+              --build-name="$APP_VERSION" \
+              --build-number="$BUILD_NUMBER" \
+              --export-options-plist=/Users/builder/export_options.plist \
+              "$@"
+          }
+
+          case "${STRIPE_PUBLISHABLE_KEY-}" in
+            pk_*)
+              STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" python3 -c 'import json,os; json.dump({"STRIPE_PUBLISHABLE_KEY": os.environ["STRIPE_PUBLISHABLE_KEY"]}, open("/tmp/stripe_define.json","w"))'
+              flutter_build --dart-define-from-file=/tmp/stripe_define.json
+              ;;
+            *)
+              flutter_build
+              ;;
+          esac
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
