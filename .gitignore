@@ -49,3 +49,10 @@ app.*.map.json
 # Build-time keys (loaded with --dart-define-from-file). Never commit real keys.
 /env/*.json
 !/env/keys.example.json
+
+# Apple signing material. Codemagic fetches certificates and profiles at build time.
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+*.certSigningRequest
