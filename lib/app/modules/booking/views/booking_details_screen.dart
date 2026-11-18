@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/text-style.dart';
-import '../../../core/controllers/role_controller.dart';
+import '../../../core/controllers/auth_controller.dart';
 import '../../../core/utils/app_toast.dart';
 import '../../../core/utils/phone_utils.dart';
 import '../../../core/widgets/booking_details_parts.dart';
@@ -56,7 +56,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
     _openReview = args is Map && args['openReview'] == true;
     final id = BookingDetailsScreen.bookingIdFrom(args);
     final initial = args is Map && args['booking'] is Booking ? args['booking'] as Booking : null;
-    final isProvider = Get.isRegistered<RoleController>() && Get.find<RoleController>().getRole == 'Provider';
+    final isProvider = Get.isRegistered<AuthController>() &&
+        (Get.find<AuthController>().role ?? '').toLowerCase() == 'provider';
     // The same booking can be opened twice (notification → details → …).
     _tag = 'booking-$id-${identityHashCode(this)}';
     c = Get.put(

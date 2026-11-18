@@ -16,12 +16,23 @@ class ListingDetailController<T extends ListingDetail> extends GetxController {
   bool isLoading = false;
   String? errorMessage;
 
+  static const int reviewPreviewLimit = 3;
+
   List<Review> reviews = const [];
   RatingSummary? reviewRating;
   bool reviewsLoading = false;
+  bool reviewsHasMore = false;
 
   /// Set when reviews failed; the listing still shows.
   String? reviewsError;
+
+  /// The listing shows three reviews. More than that opens the full list.
+  bool get canSeeAllReviews {
+    if (reviewsError != null && reviews.isEmpty) return false;
+    return reviewsHasMore ||
+        reviews.length > reviewPreviewLimit ||
+        rating.count > reviewPreviewLimit;
+  }
 
   String? _loadingId;
 
@@ -41,6 +52,7 @@ class ListingDetailController<T extends ListingDetail> extends GetxController {
       listing = null;
       reviews = const [];
       reviewRating = null;
+      reviewsHasMore = false;
       onListingChanged();
     }
     _loadingId = id;
@@ -71,14 +83,17 @@ class ListingDetailController<T extends ListingDetail> extends GetxController {
   Future<void> _loadReviews(String id) async {
     reviewsLoading = true;
     reviewsError = null;
-    final r = await _api.listings.reviews(kind, id, limit: 20);
+    final r = await _api.listings.reviews(kind, id, limit: reviewPreviewLimit);
     if (_loadingId != id) return;
     reviewsLoading = false;
     if (r.isSuccess) {
       reviews = r.data!.reviews;
       reviewRating = r.data!.rating;
+      final total = r.meta?.total ?? reviews.length;
+      reviewsHasMore = r.meta?.hasMore == true || total > reviewPreviewLimit;
     } else {
       reviewsError = r.errorMessage;
+      reviewsHasMore = false;
     }
     update();
   }

@@ -180,6 +180,44 @@ void main() {
     expect(chip('9:00 AM').onSelected, isNotNull);
     expect(chip('10:00 AM').onSelected, isNull);
     expect(find.text('Crossed-out times are booked.'), findsOneWidget);
-    expect(find.text('This massage is for one guest at a time.'), findsOneWidget);
+    // One guest: a plain "1 guest" label (no greyed-out counter) and a hint
+    // for groups.
+    expect(find.text('1 guest'), findsOneWidget);
+    expect(find.byTooltip('More'), findsNothing);
+    expect(find.textContaining('For a group, book separate times'), findsOneWidget);
+  });
+
+  testWidgets('massage for groups: people go up to the capacity, capped at 6', (tester) async {
+    tallScreen(tester);
+    MassageDetail massage(int capacity) => MassageDetail({
+          'id': 'm2',
+          'title': 'Group massage',
+          'openTime': '9:00 AM',
+          'closeTime': '6:00 PM',
+          'capacity': capacity,
+          'durations': [
+            {'_id': 'd1', 'duration': '60 min', 'minutes': 60, 'price': 80},
+          ],
+        });
+    expect(massage(1).guestsLabel, 'For 1 guest');
+    expect(massage(4).guestsLabel, 'Up to 4 guests');
+    expect(massage(12).maxPeople, 6);
+    // The server's limit wins once it sends one (as for Ski Pass).
+    final serverLimit = MassageDetail({'id': 'm3', 'title': 'Spa', 'capacity': 12, 'maxPeoplePerBooking': 8});
+    expect(serverLimit.maxPeople, 8);
+    expect(serverLimit.guestsLabel, 'Up to 8 guests');
+
+    await tester.pumpWidget(host(MassageCheckoutForm(
+      massage: massage(3),
+      checkout: CheckoutController(sheet: NeverSheet()),
+      loadSlots: (_, __, ___) async => ApiResult.success(Availability.fromJson({'slots': []})),
+    )));
+    await tester.pump();
+    expect(find.text('Up to 3 people can come together at the same time.'), findsOneWidget);
+    for (var i = 0; i < 5; i++) {
+      await tester.tap(find.byTooltip('More'), warnIfMissed: false);
+      await tester.pump();
+    }
+    expect(find.text('3'), findsOneWidget);
   });
 }

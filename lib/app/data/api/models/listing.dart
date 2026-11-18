@@ -414,10 +414,24 @@ class MassageDetail extends ListingDetail {
         benefits = readText(json['benefits']),
         recommendations = readText(json['recommendations']),
         capacity = readInt(json['capacity']) ?? readInt(json['therapists']) ?? 1,
+        maxPeoplePerBooking = (readInt(json['maxPeoplePerBooking']) ?? defaultMaxPeople).clamp(1, 50),
         super(json, kind: ServiceKind.massage);
 
   /// Guests treated at the same time (number of therapists). Older listings: 1.
   final int capacity;
+
+  /// Used while the server doesn't send `maxPeoplePerBooking` for massage.
+  static const defaultMaxPeople = 6;
+
+  /// Most people one booking can include, whatever the capacity: the
+  /// server's limit when it sends one (like Ski Pass), else 6.
+  final int maxPeoplePerBooking;
+
+  /// People one booking can take: the capacity, capped per booking.
+  int get maxPeople => capacity.clamp(1, maxPeoplePerBooking);
+
+  /// "For 1 guest" / "Up to 4 guests": shown before checkout.
+  String get guestsLabel => maxPeople == 1 ? 'For 1 guest' : 'Up to $maxPeople guests';
 
   final String? openTime;
   final String? closeTime;

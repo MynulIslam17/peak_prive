@@ -42,8 +42,27 @@ void main() {
       expect(c.priceUnit, HirePriceUnit.perDay);
       expect(c.reviews.single.rating, 2);
       expect(c.rating.count, 1);
+      expect(c.canSeeAllReviews, isFalse);
+      expect(h.requests.where(isReviews).single.url.queryParameters['limit'], '3');
       expect(c.canBook, isTrue);
       expect(h.requests.map((r) => r.url.path), containsAll(['/api/v1/ski-hire/6939508f6fd3cd7f26c29698', '/api/v1/ski-hire/6939508f6fd3cd7f26c29698/reviews']));
+    });
+
+    test('more than three reviews exposes see all', () async {
+      registerHarness(withDetail(hire(), reviews: json({
+        'success': true,
+        'data': [
+          for (var i = 1; i <= 3; i++)
+            {'rating': 5, 'comment': 'Review $i', 'createdAt': '2026-01-0${i}T00:00:00.000Z'},
+        ],
+        'meta': {'page': 1, 'limit': 3, 'total': 8, 'totalPages': 3},
+        'rating': {'average': 4.5, 'count': 8},
+      })));
+      final c = HireDetailsController();
+      await c.fetch('x');
+      await Future<void>.delayed(Duration.zero);
+      expect(c.reviews, hasLength(3));
+      expect(c.canSeeAllReviews, isTrue);
     });
 
     test('selection respects stock and totals per unit', () async {

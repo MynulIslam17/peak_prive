@@ -438,15 +438,23 @@ class ListingReviewsSection extends StatelessWidget {
     required this.count,
     this.isLoading = false,
     this.error,
+    this.showSeeAll = false,
+    this.onSeeAll,
   });
+
+  /// How many reviews stay on the listing before "See all".
+  static const int previewLimit = 3;
 
   final List<Review> reviews;
   final int count;
   final bool isLoading;
   final String? error;
+  final bool showSeeAll;
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
+    final canOpenAll = showSeeAll && onSeeAll != null && !(isLoading && reviews.isEmpty);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -454,21 +462,43 @@ class ListingReviewsSection extends StatelessWidget {
         if (isLoading && reviews.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: Column(children: [SkeletonTile(), SizedBox(height: 10), SkeletonTile()]),
+            child: Column(children: [ReviewSkeleton(), SizedBox(height: 10), ReviewSkeleton()]),
           )
         else if (error != null && reviews.isEmpty)
           ListingNote(icon: Icons.cloud_off_rounded, text: "Reviews couldn't be loaded.")
         else
-          ListingReviews(reviews: [for (final r in reviews) ListingReview.fromApi(r)]),
+          ListingReviews(
+            reviews: [for (final r in reviews) ListingReview.fromApi(r)],
+            maxVisible: previewLimit,
+          ),
+        if (canOpenAll) ...[
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onSeeAll,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.goldDeep,
+                side: const BorderSide(color: AppColors.primary_1),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('See all', style: AppTextStyle.sub_h3_semibold_14(color: AppColors.goldDeep)),
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
 class ListingReviews extends StatelessWidget {
-  const ListingReviews({super.key, required this.reviews});
+  const ListingReviews({super.key, required this.reviews, this.maxVisible});
 
   final List<ListingReview> reviews;
+
+  /// Null shows every review. The listing preview passes 3.
+  final int? maxVisible;
 
   @override
   Widget build(BuildContext context) {
@@ -496,11 +526,12 @@ class ListingReviews extends StatelessWidget {
 
     final sorted = [...reviews]
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final visible = maxVisible == null ? sorted : sorted.take(maxVisible!).toList();
 
     return Column(
       children: [
-        for (final r in sorted) ...[
-          _ReviewTile(review: r),
+        for (final r in visible) ...[
+          ListingReviewTile(review: r),
           const SizedBox(height: 10),
         ],
       ],
@@ -508,8 +539,8 @@ class ListingReviews extends StatelessWidget {
   }
 }
 
-class _ReviewTile extends StatelessWidget {
-  const _ReviewTile({required this.review});
+class ListingReviewTile extends StatelessWidget {
+  const ListingReviewTile({super.key, required this.review});
 
   final ListingReview review;
 

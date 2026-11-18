@@ -10,6 +10,7 @@ import '../../../../core/widgets/listing_details_parts.dart';
 import '../../../../routes/app_routes.dart';
 import '../controllers/restaurant_details_controller.dart';
 import '../../../../data/api/peak_api.dart';
+import '../../shared/views/listing_reviews_screen.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
 /// User → Restaurant listing: pick a seating, then continue to checkout.
@@ -59,7 +60,11 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
       builder: (_) {
         final r = controller.listing;
         if (r == null && controller.isLoading) {
-          return const DetailsPageSkeleton(sections: [SkeletonSection.lines, SkeletonSection.tiles, SkeletonSection.list]);
+          return const DetailsPageSkeleton(sections: [
+            SkeletonSection.lines,
+            SkeletonSection.list,
+            SkeletonSection.chips,
+          ]);
         }
         if (r == null) {
           return ListingErrorView(
@@ -185,6 +190,8 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
               count: rating.count,
               isLoading: controller.reviewsLoading,
               error: controller.reviewsError,
+              showSeeAll: controller.canSeeAllReviews,
+              onSeeAll: () => openListingReviews(kind: controller.kind, id: controller.listing?.id),
             ),
           ],
         );

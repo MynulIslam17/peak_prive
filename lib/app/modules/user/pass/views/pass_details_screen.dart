@@ -9,6 +9,7 @@ import '../../../../routes/app_routes.dart';
 import '../controllers/pass_details_controller.dart';
 import '../../../../core/utils/price_label.dart';
 import '../../../../data/api/peak_api.dart';
+import '../../shared/views/listing_reviews_screen.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
 class PassDetailsScreen extends StatefulWidget {
@@ -101,6 +102,8 @@ class _PassDetailsScreenState extends State<PassDetailsScreen> {
               count: rating.count,
               isLoading: controller.reviewsLoading,
               error: controller.reviewsError,
+              showSeeAll: controller.canSeeAllReviews,
+              onSeeAll: () => openListingReviews(kind: controller.kind, id: controller.listing?.id),
             ),
           ],
         );

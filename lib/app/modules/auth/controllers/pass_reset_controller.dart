@@ -1,4 +1,3 @@
-
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/modules/auth/models/reset_pass_request_model.dart';
 
@@ -6,8 +5,7 @@ import '../../../core/constants/api_urls.dart';
 import '../../../data/models/network_response.dart';
 import '../../../data/services/network/network_caller.dart';
 
-class PassResetController extends GetxController{
-
+class PassResetController extends GetxController {
   bool _resetProgress = false;
   bool get resetProgress => _resetProgress;
 
@@ -16,14 +14,15 @@ class PassResetController extends GetxController{
 
   /// Verify OTP with backend
   Future<bool> resetPassword(ResetPassRequestModel model) async {
-
     bool isSuccess = false;
     _resetProgress = true;
     update();
 
     try {
-      NetworkResponse response = await Get.find<NetworkCaller>()
-          .postRequest(url: AppUrls.passResetUrl, body:model.toJson());
+      NetworkResponse response = await Get.find<NetworkCaller>().postRequest(
+        url: AppUrls.passResetUrl,
+        body: model.toJson(),
+      );
 
       if (response.isSuccess) {
         isSuccess = true;
@@ -40,7 +39,4 @@ class PassResetController extends GetxController{
 
     return isSuccess;
   }
-
-
-
 }

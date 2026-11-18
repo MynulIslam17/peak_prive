@@ -1,20 +1,21 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
-import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
+import 'package:harry_service_app/app/core/widgets/app_form_field.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/otp_controller.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/resend_otp_controller.dart';
 import 'package:harry_service_app/app/modules/auth/models/otp_request_model.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
-import '../../../../gen/assets.gen.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/widgets/custome_button.dart';
 import '../../../routes/app_routes.dart';
-import 'package:harry_service_app/app/core/utils/app_toast.dart';
+import '../widgets/auth_scaffold.dart';
 
+/// The 6-digit code sent by email, after signup (then sign in) or for a
+/// forgotten password (then a new password).
 class OtpVerification extends StatefulWidget {
   const OtpVerification({super.key});
 
@@ -23,8 +24,7 @@ class OtpVerification extends StatefulWidget {
 }
 
 class _OtpVerificationState extends State<OtpVerification> {
-  final icons = Assets.icons;
-  final image = Assets.images;
+  static const _resendAfter = 30;
 
   final otpTEController = TextEditingController();
 
@@ -34,228 +34,145 @@ class _OtpVerificationState extends State<OtpVerification> {
   final otpController = Get.find<OtpController>();
   final resendController = Get.find<ResendOtpController>();
 
-  bool isResendEnabled = true; // /Flag to check if resend is allowed
-  int resendTimer = 30;
-
-  /// Timer duration in seconds
-  late String resendText;
+  /// Seconds until "Resend" works again. A code was just sent, so it starts
+  /// counting down straight away.
+  int _wait = _resendAfter;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-
-    var arguments = Get.arguments;
-    fromSignup = arguments["isFromSignUp"];
-    email = arguments["email"];
-    resendText = "Resend"; // Initial resend text
-
-    /// Start countdown for resend
-    _startResendTimer();
+    final arguments = Get.arguments;
+    fromSignup = arguments['isFromSignUp'] == true;
+    email = '${arguments['email'] ?? ''}';
+    _startCountdown();
   }
 
-  /// Function to start the resend timer========
-  void _startResendTimer() {
-    if (!isResendEnabled) {
-      setState(() {
-        resendText = "Resend in $resendTimer seconds"; // Update resend text
-      });
-      Future.delayed(const Duration(seconds: 1), () {
-        if (resendTimer > 0) {
-          setState(() {
-            resendTimer--;
-            resendText =
-                "Resend in $resendTimer seconds"; // Update text dynamically
-          });
-          _startResendTimer(); // Recurse every second
-        } else {
-          setState(() {
-            isResendEnabled = true;
-            resendText = "Resend"; // Allow resend once timer completes
-          });
-        }
-      });
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    _timer?.cancel();
+    setState(() => _wait = _resendAfter);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      setState(() => _wait--);
+      if (_wait <= 0) t.cancel();
+    });
+  }
+
+  void _resendOtp() async {
+    if (_wait > 0 || resendController.resendOtpProgress) return;
+    otpTEController.clear();
+    _startCountdown();
+    final response = await resendController.resendOtp(email);
+    if (!mounted) return;
+    if (response) {
+      showAppToast(type: ToastType.success, title: 'Code sent', message: 'A new code was sent to $email');
+    } else {
+      setState(() => _wait = 0); // let them try again now
+      showAppToast(type: ToastType.error, title: 'Failed', message: 'Failed to resend the code. Please try again.');
     }
   }
 
-  /// Function to handle resendOTP logic==============
-  void _resendOtp() async {
-    otpTEController.clear();
-    if (isResendEnabled) {
-      /// Disable the resend button for the duration of the timer
-      setState(() {
-        otpTEController.clear();
-        isResendEnabled = false;
-        resendTimer = 30; // Reset timer to 30 seconds
-        _startResendTimer(); // Start the resend timer
-      });
+  void _verifyOtpButton() async {
+    if (otpController.otpProgress) return; // a request is already running
+    FocusScope.of(context).unfocus();
 
-      /// call the resend api
+    final otp = otpTEController.text;
+    if (otp.length < 6) {
+      showAppToast(type: ToastType.error, title: 'Error', message: 'The code must be 6 digits.');
+      return;
+    }
 
-      bool response = await resendController.resendOtp(email);
+    final response = await otpController.otpVerify(OtpRequestModel(otp: otp, email: email));
+    if (!mounted) return;
 
-      if (response) {
-        // Successfully sent OTP
-        showAppToast(type: ToastType.success, title: "Success", message: "OTP sent successfully to $email");
-      } else {
-        // If API returns false (unsuccessful)
-        showAppToast(type: ToastType.error, title: "Failed", message: "Failed to resend OTP. Please try again.");
-      }
+    if (!response) {
+      showAppToast(type: ToastType.error, title: 'Error', message: otpController.errorMessage ?? 'Invalid code.');
+      return;
+    }
+    if (fromSignup) {
+      // Account verified: start fresh on the sign-in screen (no signup or
+      // code screens left underneath).
+      showAppToast(type: ToastType.success, title: 'Email verified', message: 'Your account is ready. Please sign in.');
+      Get.offAllNamed(Routes.login);
+    } else {
+      Get.toNamed(Routes.passReset, arguments: {'email': email});
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBarWithTitle(
-        icons: icons,
-        onTap: () => Navigator.pop(context),
-        title: "OTP Verification",
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-                    height: 100,
-                    width: 260,
-                    "assets/images/app_logo2.png",
-                  ),
-                ),
-
-                // Top illustration or info text
-                Text(
-                  "Enter the 6-digit verification code sent to your email or phone.",
-                  style: AppTextStyle.c_regular_12(
-                    color: Colors.black.withOpacity(0.6),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 40.h),
-
-                // PIN CODE TEXT FIELD
-                PinCodeTextField(
-                  controller: otpTEController,
-                  appContext: context,
-                  length: 6,
-                  animationType: AnimationType.fade,
-                  keyboardType: TextInputType.number,
-                  cursorColor: AppColors.primary_1,
-                  pinTheme: PinTheme(
-                    shape: PinCodeFieldShape.box,
-                    borderRadius: BorderRadius.circular(8.r),
-                    fieldHeight: 50.h,
-                    fieldWidth: 45.w,
-                    inactiveColor: AppColors.black_3 ?? Colors.grey.shade300,
-                    selectedColor: AppColors.primary_1,
-                    activeColor: AppColors.primary_1,
-                  ),
-                  animationDuration: const Duration(milliseconds: 300),
-                  onCompleted: (v) {
-                    debugPrint("Completed: $v");
-                  },
-                  onChanged: (value) {},
-                  textStyle: AppTextStyle.sub_h2_medium_16(color: Colors.black),
-                  validator: (value) {
-                    if (value == null || value.length != 6) {
-                      return "Enter the 6-digit code";
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 40.h),
-
-                // Verify Button
-                GetBuilder<OtpController>(
-                  builder: (controller) {
-                    return otpController.otpProgress
-                        ? CircularProgressIndicator(color: AppColors.primary_1)
-                        : CustomButton(
-                            width: double.infinity,
-                            height: 50,
-                            onTap: _verifyOtpButton,
-                            text: "Verify",
-                            backgroundColor: AppColors.primary_1,
-                          );
-                  },
-                ),
-
-                SizedBox(height: 20.h),
-
-                // Resend option
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Didn’t receive the code? ",
-                      style: AppTextStyle.c_regular_12(
-                        color: Colors.black.withOpacity(0.6),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _resendOtp, // Call the resend OTP function
-                      child: Text(
-                        resendText,
-                        style: AppTextStyle.c_regular_12(
-                          color: isResendEnabled
-                              ? AppColors.primary_1
-                              : Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+    return AuthScaffold(
+      title: 'Check your email',
+      subtitle: 'Enter the 6-digit code we sent to\n$email',
+      children: [
+        // Boxes sized to the width, so six always fit (small phones too).
+        LayoutBuilder(
+          builder: (context, c) {
+            final box = ((c.maxWidth - 5 * 8) / 6).clamp(36.0, 52.0);
+            return PinCodeTextField(
+              controller: otpTEController,
+              appContext: context,
+              length: 6,
+              autoFocus: true,
+              animationType: AnimationType.scale,
+              keyboardType: TextInputType.number,
+              cursorColor: AppColors.primary_1,
+              enableActiveFill: true,
+              pinTheme: PinTheme(
+                shape: PinCodeFieldShape.box,
+                borderRadius: BorderRadius.circular(12),
+                fieldHeight: box + 8,
+                fieldWidth: box,
+                borderWidth: 1.2,
+                inactiveColor: AppColors.border,
+                inactiveFillColor: AppColors.surfaceAlt,
+                selectedColor: AppColors.primary_1,
+                selectedFillColor: Colors.white,
+                activeColor: AppColors.primary_1,
+                activeFillColor: Colors.white,
+              ),
+              animationDuration: const Duration(milliseconds: 200),
+              textStyle: AppTextStyle.h3_semibold_20(color: AppColors.textPrimary),
+              // All 6 digits typed: verify straight away.
+              onCompleted: (_) => _verifyOtpButton(),
+              onChanged: (_) {},
+            );
+          },
         ),
-      ),
+        const SizedBox(height: 16),
+        GetBuilder<OtpController>(
+          builder: (c) => AppPrimaryButton(label: 'Verify', loading: c.otpProgress, onPressed: _verifyOtpButton),
+        ),
+        const SizedBox(height: 18),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text("Didn't get the code? ", style: AppTextStyle.sub_h3_regular_14(color: AppColors.textSecondary)),
+            if (_wait > 0)
+              Text(
+                'Resend in 0:${_wait.toString().padLeft(2, '0')}',
+                style: AppTextStyle.sub_h3_medium_14(color: AppColors.textTertiary),
+              )
+            else
+              TextButton(
+                onPressed: _resendOtp,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF9A7A12),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: const Size(0, 36),
+                ),
+                child: Text('Resend', style: AppTextStyle.sub_h3_semibold_14(color: const Color(0xFF9A7A12))),
+              ),
+          ],
+        ),
+      ],
     );
-  }
-
-  /// Verify OTP event
-  void _verifyOtpButton() async {
-    if (otpController.otpProgress) return; // a request is already running
-    /// hide the keyboard
-    FocusScope.of(context).unfocus();
-
-    String otp = otpTEController.text;
-
-    if (otp.length < 6) {
-      showAppToast(type: ToastType.error, title: "Error", message: "The code must be 6 digits.");
-      return;
-    }
-
-    /// Create model with the necessary value
-    OtpRequestModel model = OtpRequestModel(otp: otp, email: email);
-
-    /// Call OTP verification
-    bool response = await otpController.otpVerify(model);
-
-    /// If success, navigate to the next page
-    if (response) {
-      if (fromSignup == false) {
-        Get.toNamed(
-          Routes.passReset,
-
-          /// Navigate to password reset
-          arguments: {"email": email},
-        );
-      } else {
-        Get.toNamed(Routes.login);
-
-        ///  Navigate to login
-      }
-    } else {
-      /// is unsuccessful
-      showAppToast(type: ToastType.error, title: "Error", message: otpController.errorMessage!);
-    }
   }
 }

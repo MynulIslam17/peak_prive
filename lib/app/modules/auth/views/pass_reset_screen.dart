@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
 import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
+import 'package:harry_service_app/app/core/widgets/app_form_field.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/pass_reset_controller.dart';
 import 'package:harry_service_app/app/modules/auth/models/reset_pass_request_model.dart';
-import '../../../../gen/assets.gen.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/text-style.dart';
-import '../../../core/widgets/appbar_with_title.dart';
-import '../../../core/widgets/cusom_text_fiield.dart';
-import '../../../core/widgets/custome_button.dart';
-import '../../../routes/app_routes.dart';
-import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
+import '../../../routes/app_routes.dart';
+import '../widgets/auth_scaffold.dart';
+
+/// Forgot password, last step: the new password.
 class PassResetScreen extends StatefulWidget {
   const PassResetScreen({super.key});
 
@@ -22,38 +19,14 @@ class PassResetScreen extends StatefulWidget {
 }
 
 class _PassResetScreenState extends State<PassResetScreen> {
-  final authController=Get.find<AuthController>();
-  final icons = Assets.icons;
-  final images = Assets.images;
+  final authController = Get.find<AuthController>();
+  final resetController = Get.find<PassResetController>();
 
-  /// TextEditing controllers
   final passTEController = TextEditingController();
   final confirmPassTEController = TextEditingController();
-  
-  
-   late final String email;
-
-
-  /// GETx controllers
-
-   final resetController=Get.find<PassResetController>();
-
   final _formKey = GlobalKey<FormState>();
-  
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    
-    /// gets email from previous class
-    var argument=Get.arguments;
-    
-    email=argument["email"];
-    
-    
-  }
-  
-  
+
+  late final String email = '${Get.arguments?['email'] ?? ''}';
 
   @override
   void dispose() {
@@ -62,125 +35,73 @@ class _PassResetScreenState extends State<PassResetScreen> {
     super.dispose();
   }
 
-  /// Reset password button
   void _resetPasswordHandler() async {
     if (resetController.resetProgress) return; // a request is already running
-    if (_formKey.currentState!.validate()) {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
 
-      String password = confirmPassTEController.text;
+    final model = ResetPassRequestModel(email: email, newPassword: confirmPassTEController.text);
+    final response = await resetController.resetPassword(model);
+    if (!mounted) return;
 
-      // Create model with necessary values
-      ResetPassRequestModel model = ResetPassRequestModel(email: email, newPassword: password);
-
-      // Call the reset password API
-      bool response = await resetController.resetPassword(model);
-
-      if (response) {
-        /// If the password reset is successful
-        showAppToast(type: ToastType.success, title: "Success", message: "Password reset successfully");
-
-        if(authController.isLoggedIn){
-          Get.find<NavController>().changeIndex(3);
-          Get.offAllNamed(Routes.bottomNav);
-
-        }else{
-          // Redirect to login page after success
-          Get.offAllNamed(Routes.login);
-        }
-
+    if (response) {
+      showAppToast(type: ToastType.success, title: 'Password changed', message: 'Password reset successfully');
+      if (authController.isLoggedIn) {
+        Get.find<NavController>().changeIndex(3);
+        Get.offAllNamed(Routes.bottomNav);
       } else {
-        ///  If the API call fails
-        showAppToast(type: ToastType.error, title: "Error", message: resetController.errorMessage!);
+        Get.offAllNamed(Routes.login);
       }
+    } else {
+      showAppToast(
+        type: ToastType.error,
+        title: 'Error',
+        message: resetController.errorMessage ?? 'Something went wrong.',
+      );
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBarWithTitle(
-        icons: icons,
-        onTap: () => Get.back(),
-        title: "Reset Password",
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 30.h),
-          child: Form(
-            key: _formKey,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            child: Column(
-              children: [
-
-
-                ClipRRect(
-
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(
-
-                      height: 100,
-                      width: 260,
-                      "assets/images/app_logo2.png"),
-
-                ),
-
-
-                /// New Password
-                CustomTextField(
-                  controller: passTEController,
-                  hintText: "New Password",
-                  filledColor: const Color(0xffF0F0F0),
-                  prefixIcon: Icons.lock,
-                  isPassword: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Password can't be empty";
-                    } else if (value.length < 6) {
-                      return "Password must be at least 6 characters";
-                    }
-                    return null;
-                  },
-                ),
-
-
-                SizedBox(height: 20.h),
-
-                /// Confirm Password
-                CustomTextField(
-                  controller: confirmPassTEController,
-                  hintText: "Confirm Password",
-                  filledColor: const Color(0xffF0F0F0),
-                  prefixIcon: Icons.lock,
-                  isPassword: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please confirm your password";
-                    } else if (value != passTEController.text) {
-                      return "Passwords do not match";
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 40.h),
-
-                /// Reset Button
-                ///
-               GetBuilder<PassResetController>(builder: (controller){
-                 return  resetController.resetProgress
-                     ? CircularProgressIndicator(color: AppColors.primary_1,)
-                     : CustomButton(
-                   width: double.infinity,
-                   onTap: _resetPasswordHandler,
-                   text: "Reset Password",
-                   backgroundColor: AppColors.primary_1,
-                 );
-               })
-              ],
-            ),
+    return Form(
+      key: _formKey,
+      child: AuthScaffold(
+        title: 'Set a new password',
+        subtitle: 'Choose a password you haven\'t used before, at least 6 characters.',
+        children: [
+          AppFormField(
+            label: 'New password',
+            hint: 'At least 6 characters',
+            controller: passTEController,
+            icon: Icons.lock_outline_rounded,
+            isPassword: true,
+            textInputAction: TextInputAction.next,
+            validator: (value) {
+              if (value == null || value.isEmpty) return "Password can't be empty";
+              if (value.length < 6) return 'Password must be at least 6 characters';
+              return null;
+            },
           ),
-        ),
+          const SizedBox(height: 16),
+          AppFormField(
+            label: 'Confirm password',
+            hint: 'Type it again',
+            controller: confirmPassTEController,
+            icon: Icons.lock_outline_rounded,
+            isPassword: true,
+            textInputAction: TextInputAction.done,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Please confirm your password';
+              if (value != passTEController.text) return 'Passwords do not match';
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          GetBuilder<PassResetController>(
+            builder: (c) =>
+                AppPrimaryButton(label: 'Reset password', loading: c.resetProgress, onPressed: _resetPasswordHandler),
+          ),
+        ],
       ),
     );
   }

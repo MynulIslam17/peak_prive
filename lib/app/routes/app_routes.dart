@@ -72,10 +72,6 @@ abstract class Routes {
   /// splash
   static const splash="/splash";
 
-  /// role selection
-  static const role = "/role";
-
-
   /// Authentication
   static const login = "/login";
   static const signup = "/signUp";

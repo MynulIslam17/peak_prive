@@ -22,14 +22,29 @@ class NetworkCaller {
   final VoidCallback onUnAuthorize;
   final String Function() accessToken;
 
+  /// Exchanges the refresh token for a new access token.
+  /// Null keeps the old behaviour: a 401 ends the session immediately.
+  final Future<bool> Function()? refreshSession;
+
   /// Injected in tests (`MockClient`); a real client otherwise.
   final http.Client _http;
+
+  final _AuthRecovery _recovery = _AuthRecovery();
+  int _generation = 0;
+  bool _sessionEnded = false;
 
   NetworkCaller({
     required this.onUnAuthorize,
     required this.accessToken,
+    this.refreshSession,
     http.Client? client,
   }) : _http = client ?? http.Client();
+
+  /// A new login may follow a failed refresh. Later 401s can refresh again.
+  void resetAuthRecovery() {
+    _recovery.gaveUp = false;
+    _sessionEnded = false;
+  }
 
   // ===========================================================
   // DECODING
@@ -156,8 +171,6 @@ class NetworkCaller {
       );
     }
 
-    if (!isFromLogin) _handleAuthErrors(effective);
-
     return NetworkResponse(
       isSuccess: false,
       statusCode: statusCode,
@@ -177,18 +190,91 @@ class NetworkCaller {
   }
 
   // ===========================================================
-  // CENTRAL UNAUTHORIZED HANDLER
+  // UNAUTHORIZED RECOVERY
+  // The first 401 starts one refresh. Every other request waits, then
+  // runs once with the new access token. A failed refresh logs out once.
   // ===========================================================
-  void _handleAuthErrors(int statusCode) {
-    if (statusCode == 401) {
-      onUnAuthorize();
-    }
-    // 403 does not call onUnAuthorize because the token is still valid —
-    // the user simply lacks permission. Handle UI feedback via errorMessage.
+  bool _skipsRefresh(String url) {
+    final path = Uri.tryParse(url)?.path ?? url;
+    return path.endsWith('/auth/login') ||
+        path.endsWith('/auth/register') ||
+        path.endsWith('/auth/refresh-token') ||
+        path.endsWith('/auth/logout') ||
+        path.endsWith('/auth/change-password') ||
+        path.endsWith('/auth/verify-otp') ||
+        path.endsWith('/auth/forgot-password') ||
+        path.endsWith('/auth/reset-password') ||
+        path.endsWith('/auth/resend-otp');
   }
 
-  Map<String, String> _headers({bool json = true, String? overrideToken}) {
-    final token = overrideToken ?? accessToken();
+  Future<NetworkResponse> _send({
+    required String url,
+    required bool recoverAuth,
+    required Future<NetworkResponse> Function() request,
+  }) {
+    return _withRecovery(
+      request,
+      recoverable: recoverAuth && !_skipsRefresh(url),
+    );
+  }
+
+  Future<NetworkResponse> _withRecovery(
+    Future<NetworkResponse> Function() request, {
+    required bool recoverable,
+  }) async {
+    if (!recoverable || refreshSession == null) {
+      final response = await request();
+      if (recoverable && refreshSession == null && response.isUnauthorized) {
+        _unauthorizedOnce();
+      }
+      return response;
+    }
+
+    await _recovery.waitIfRefreshing();
+    final generation = _generation;
+    var response = await request();
+    if (!response.isUnauthorized) return response;
+
+    // This request left with the previous access token while a refresh
+    // that was already running finished. Replay it; do not refresh again.
+    if (generation != _generation) {
+      response = await request();
+      if (response.isUnauthorized) _unauthorizedOnce();
+      return response;
+    }
+
+    if (_recovery.gaveUp) {
+      _unauthorizedOnce();
+      return response;
+    }
+
+    final refreshed = await _recovery.refreshOnce(() async {
+      final ok = await refreshSession!();
+      if (ok) _generation++;
+      return ok;
+    });
+    if (!refreshed) {
+      _unauthorizedOnce();
+      return response;
+    }
+
+    response = await request();
+    if (response.isUnauthorized) _unauthorizedOnce();
+    return response;
+  }
+
+  void _unauthorizedOnce() {
+    if (_sessionEnded) return;
+    _sessionEnded = true;
+    onUnAuthorize();
+  }
+
+  Map<String, String> _headers({
+    bool json = true,
+    String? overrideToken,
+    bool authorize = true,
+  }) {
+    final token = authorize ? (overrideToken ?? accessToken()) : '';
     return {
       if (json) 'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -199,7 +285,11 @@ class NetworkCaller {
   // ===========================================================
   // GET REQUEST
   // ===========================================================
-  Future<NetworkResponse> getRequest({required String url}) async {
+  Future<NetworkResponse> getRequest({required String url, bool recoverAuth = true}) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth,
+      request: () async {
     try {
       final headers = _headers();
       _logRequest('GET', url, null, headers);
@@ -217,6 +307,8 @@ class NetworkCaller {
       _logger.e('GET request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -226,10 +318,16 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     bool isFromLogin = false,
+    bool recoverAuth = true,
+    bool authorize = true,
     String? overrideToken,
-  }) async {
+  }) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth && !isFromLogin,
+      request: () async {
     try {
-      final headers = _headers(overrideToken: overrideToken);
+      final headers = _headers(overrideToken: overrideToken, authorize: authorize);
       _logRequest('POST', url, body, headers);
 
       final response = await _http.post(
@@ -248,6 +346,8 @@ class NetworkCaller {
       _logger.e('POST request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -257,7 +357,12 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     bool isFromLogin = false,
-  }) async {
+    bool recoverAuth = true,
+  }) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth && !isFromLogin,
+      request: () async {
     try {
       final headers = _headers();
       _logRequest('PATCH', url, body, headers);
@@ -278,6 +383,8 @@ class NetworkCaller {
       _logger.e('PATCH request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -287,7 +394,12 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     bool isFromLogin = false,
-  }) async {
+    bool recoverAuth = true,
+  }) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth && !isFromLogin,
+      request: () async {
     try {
       final headers = _headers();
       _logRequest('PUT', url, body, headers);
@@ -308,6 +420,8 @@ class NetworkCaller {
       _logger.e('PUT request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -317,7 +431,12 @@ class NetworkCaller {
     required String url,
     Map<String, dynamic>? body,
     bool isFromLogin = false,
-  }) async {
+    bool recoverAuth = true,
+  }) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth && !isFromLogin,
+      request: () async {
     try {
       final headers = _headers();
       _logRequest('DELETE', url, body, headers);
@@ -338,6 +457,8 @@ class NetworkCaller {
       _logger.e('DELETE request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -349,7 +470,12 @@ class NetworkCaller {
     Map<String, String>? fields,
     Map<String, File>? files,
     bool isFromLogin = false,
-  }) async {
+    bool recoverAuth = true,
+  }) {
+    return _send(
+      url: url,
+      recoverAuth: recoverAuth && !isFromLogin,
+      request: () async {
     try {
       final request =
           http.MultipartRequest(method.toUpperCase(), Uri.parse(url));
@@ -398,6 +524,8 @@ class NetworkCaller {
       _logger.e('MULTIPART request failed: $e');
       return _buildExceptionResponse(e);
     }
+      },
+    );
   }
 
   // ===========================================================
@@ -513,5 +641,31 @@ BODY        : ${_redactSecrets(response.body)}
     }
     if (body is String) return _redactSecrets(body);
     return body;
+  }
+}
+
+/// Shares one refresh among every request that is waiting on a 401.
+class _AuthRecovery {
+  Future<bool>? _inFlight;
+  bool gaveUp = false;
+
+  Future<void> waitIfRefreshing() async {
+    final pending = _inFlight;
+    if (pending != null) await pending;
+  }
+
+  Future<bool> refreshOnce(Future<bool> Function() refresh) {
+    if (gaveUp) return Future.value(false);
+    final existing = _inFlight;
+    if (existing != null) return existing;
+    late final Future<bool> tracked;
+    tracked = refresh().then((ok) {
+      if (!ok) gaveUp = true;
+      return ok;
+    }).whenComplete(() {
+      if (identical(_inFlight, tracked)) _inFlight = null;
+    });
+    _inFlight = tracked;
+    return tracked;
   }
 }

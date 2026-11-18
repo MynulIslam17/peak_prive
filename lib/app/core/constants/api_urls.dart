@@ -14,6 +14,12 @@ class AppUrls{
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
 
+  /// New access token from a stored refresh token.
+  static const refreshTokenUrl = "$baseUrl/auth/refresh-token";
+
+  /// Ends the session on the server.
+  static const logoutUrl = "$baseUrl/auth/logout";
+
 
   ///user signup url5
  static const userSignUp="$baseUrl/auth/register";

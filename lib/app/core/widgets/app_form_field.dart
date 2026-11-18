@@ -126,7 +126,11 @@ class _AppFormFieldState extends State<AppFormField> {
             helperMaxLines: 2,
             errorMaxLines: 2,
             filled: true,
-            fillColor: widget.readOnly ? AppColors.surfaceAlt : Colors.white,
+            // A read-only field that opens a picker is still editable, so it
+            // keeps the white fill; only truly locked ones look greyed out.
+            fillColor: widget.readOnly && widget.onTap == null
+                ? AppColors.surfaceAlt
+                : Colors.white,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             border: _border(AppColors.border),
@@ -185,9 +189,16 @@ class AppPrimaryButton extends StatelessWidget {
                     Icon(icon, size: 20),
                     const SizedBox(width: 8),
                   ],
-                  Text(label,
-                      style: AppTextStyle.sub_h2_medium_16(
-                          color: AppColors.textOnPrimary)),
+                  // Shrinks rather than overflowing with very large text.
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(label,
+                          maxLines: 1,
+                          style: AppTextStyle.sub_h2_medium_16(
+                              color: AppColors.textOnPrimary)),
+                    ),
+                  ),
                 ],
               ),
       ),

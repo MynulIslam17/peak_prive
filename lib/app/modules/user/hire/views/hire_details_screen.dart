@@ -10,6 +10,7 @@ import '../../../../core/widgets/listing_details_parts.dart';
 import '../../../../routes/app_routes.dart';
 import '../contollers/hire_details_controller.dart';
 import '../../../../data/api/peak_api.dart';
+import '../../shared/views/listing_reviews_screen.dart';
 import '../models/hire_price_unit.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
@@ -163,6 +164,8 @@ class _HireDetailsScreenState extends State<HireDetailsScreen> {
               count: rating.count,
               isLoading: controller.reviewsLoading,
               error: controller.reviewsError,
+              showSeeAll: controller.canSeeAllReviews,
+              onSeeAll: () => openListingReviews(kind: controller.kind, id: controller.listing?.id),
             ),
           ],
         );

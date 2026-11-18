@@ -44,7 +44,7 @@ class _AllTransactionState extends State<AllTransaction> {
       body: GetBuilder<WalletController>(
         builder: (c) {
           if (c.isActivityLoading && !c.hasActivity) {
-            return const SkeletonList(tiles: true, count: 8);
+            return const TransactionListSkeleton();
           }
           if (!c.hasActivity) {
             return RefreshIndicator(
@@ -75,7 +75,7 @@ class _AllTransactionState extends State<AllTransaction> {
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (_, i) {
                 if (i >= count) {
-                  return const SkeletonLoadMore(tiles: true);
+                  return const TransactionSkeleton();
                 }
                 return c.isProvider
                     ? TransactionCard.withdrawal(c.withdrawals[i])

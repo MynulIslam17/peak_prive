@@ -400,7 +400,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         builder: (controller) {
           // ── Loading State ──────────────────────────────────────────────────
           if (controller.isLoading && controller.balance == null) {
-            return const WalletSkeleton(rows: 2);
+            return const WithdrawSkeleton();
           }
 
           // ── Error State ────────────────────────────────────────────────────

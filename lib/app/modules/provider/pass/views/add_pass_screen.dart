@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/app_form_field.dart';
+import '../../../../core/widgets/location/location_picker.dart';
 import '../../../../data/api/peak_api.dart';
 import '../../shared/models/listing_drafts.dart';
 import '../../shared/views/listing_editor/editor_base.dart';
@@ -143,11 +144,11 @@ class _AddPassScreenState extends ListingEditorState<AddPassScreen> {
                   inputFormatters: decimalInput,
                 ),
                 const SizedBox(height: 16),
-                AppFormField(
+                LocationFormField(
                   label: 'Resort / area',
                   controller: _area,
                   hint: 'e.g. Courchevel',
-                  icon: Icons.location_on_outlined,
+                  sheetTitle: 'Resort or area',
                 ),
                 const SizedBox(height: 16),
                 AppFormField(

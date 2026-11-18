@@ -7,6 +7,7 @@ import '../../../../core/utils/price_label.dart';
 import '../../../../core/widgets/collapsible_details_layout.dart';
 import '../../../../core/widgets/listing_details_parts.dart';
 import '../../../../data/api/peak_api.dart';
+import '../../shared/views/listing_reviews_screen.dart';
 import '../../../../routes/app_routes.dart';
 import '../controllers/message_details_controller.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
@@ -49,7 +50,7 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen> {
       builder: (_) {
         final m = controller.listing;
         if (m == null && controller.isLoading) {
-          return const DetailsPageSkeleton(sections: [SkeletonSection.list, SkeletonSection.lines]);
+          return const DetailsPageSkeleton(sections: [SkeletonSection.durations, SkeletonSection.lines]);
         }
         if (m == null) {
           return ListingErrorView(
@@ -94,6 +95,11 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen> {
                     icon: Icons.location_on_outlined,
                     label: m.serviceArea!,
                   ),
+                // How many can come together, so a group knows before checkout.
+                ListingInfoChip(
+                  icon: m.maxPeople == 1 ? Icons.person_outline_rounded : Icons.people_outline_rounded,
+                  label: m.guestsLabel,
+                ),
                 if (m.openTime != null && m.closeTime != null)
                   ListingInfoChip(
                     icon: Icons.schedule_rounded,
@@ -139,6 +145,8 @@ class _MassageDetailsScreenState extends State<MassageDetailsScreen> {
               count: rating.count,
               isLoading: controller.reviewsLoading,
               error: controller.reviewsError,
+              showSeeAll: controller.canSeeAllReviews,
+              onSeeAll: () => openListingReviews(kind: controller.kind, id: controller.listing?.id),
             ),
           ],
         );

@@ -118,7 +118,7 @@ class _TicketScreenState extends State<TicketScreen> {
                 onAction: _fromBooking ? () => Get.back() : () => Get.offAllNamed(Routes.bottomNav),
               )
             : _error == null
-            ? const TicketSkeleton()
+            ? TicketSkeleton(actions: _fromBooking ? 1 : 2)
             : CheckoutStateView(
                 icon: Icons.wifi_off_rounded,
                 title: 'Could not load your ticket',

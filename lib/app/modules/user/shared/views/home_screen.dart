@@ -194,6 +194,10 @@ class _HomeScreenState extends State<HomeScreen> {
             hasMore: source.hasMore,
             itemCount: source.listings.length,
             endMessage: "You're all caught up",
+            loadingPlaceholder: Padding(
+              padding: EdgeInsets.fromLTRB(padding, 16, padding, 0),
+              child: const ListingCardSkeleton(),
+            ),
           ),
         ),
       ),

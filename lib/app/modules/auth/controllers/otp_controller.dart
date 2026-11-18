@@ -5,7 +5,6 @@ import 'package:harry_service_app/app/data/services/network/network_caller.dart'
 
 import '../models/otp_request_model.dart';
 
-
 class OtpController extends GetxController {
   bool _otpProgress = false;
   bool get otpProgress => _otpProgress;
@@ -20,8 +19,10 @@ class OtpController extends GetxController {
     update();
 
     try {
-      NetworkResponse response = await Get.find<NetworkCaller>()
-          .postRequest(url: AppUrls.verifyOtp, body: model.toJson());
+      NetworkResponse response = await Get.find<NetworkCaller>().postRequest(
+        url: AppUrls.verifyOtp,
+        body: model.toJson(),
+      );
 
       if (response.isSuccess) {
         isSuccess = true;

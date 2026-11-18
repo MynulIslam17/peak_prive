@@ -95,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (!seen) {
       Get.offAllNamed(Routes.onBoarding);
     } else if (!auth.isLoggedIn) {
-      Get.offAllNamed(Routes.role);
+      Get.offAllNamed(Routes.login);
     } else if (auth.role == 'Provider') {
       Get.offAllNamed(Routes.providerNavScreen);
     } else {

@@ -1,59 +1,61 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class ConnectivityController extends GetxController {
+  /// Radios report "none" for a moment while the app starts and while the
+  /// device hands off between Wi-Fi and mobile data. Only a drop that lasts
+  /// longer than this is worth interrupting the user for.
+  static const Duration _offlineGrace = Duration(seconds: 3);
+
   final Connectivity _connectivity = Connectivity();
+
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
+  Timer? _offlineTimer;
   bool _isDialogOpen = false;
 
   @override
   void onInit() {
     super.onInit();
-    // 1. Check connectivity status on app startup
     _checkInitialConnection();
+    _subscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectivityStatus);
+  }
 
-    // 2. Listen for real-time connectivity changes
-    // Note: Use List<ConnectivityResult> for newer versions of connectivity_plus
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      debugPrint("NETWORK_DEBUG: Connectivity Changed! Current Status: $results");
-      _updateConnectivityStatus(results);
-    });
+  @override
+  void onClose() {
+    _offlineTimer?.cancel();
+    _subscription?.cancel();
+    super.onClose();
   }
 
   Future<void> _checkInitialConnection() async {
-    List<ConnectivityResult> results = await _connectivity.checkConnectivity();
-    debugPrint("NETWORK_DEBUG: Initial Check Result: $results");
-    _updateConnectivityStatus(results);
+    _updateConnectivityStatus(await _connectivity.checkConnectivity());
   }
 
   void _updateConnectivityStatus(List<ConnectivityResult> results) {
-    bool hasNoInternet = results.contains(ConnectivityResult.none);
-
-    if (hasNoInternet) {
-      debugPrint("NETWORK_DEBUG: No Internet detected!");
-
-      if (!_isDialogOpen) {
-        _isDialogOpen = true;
-        _showNoInternetDialog();
-      }
+    if (results.contains(ConnectivityResult.none)) {
+      _offlineTimer ??= Timer(_offlineGrace, _showNoInternetDialog);
     } else {
-      debugPrint("NETWORK_DEBUG: Internet is Connected!");
-
-      if (_isDialogOpen) {
-        _isDialogOpen = false;
-        if (Get.isDialogOpen ?? false) {
-          Get.back(); // Closes the dialog
-        }
-
-        // Brief confirmation snackbar when back online
-showAppToast(type: ToastType.success, title: "Back online", message: "Your internet connection is restored.");
-
-      }
+      _offlineTimer?.cancel();
+      _offlineTimer = null;
+      _dismissNoInternetDialog();
     }
   }
 
+  void _dismissNoInternetDialog() {
+    if (!_isDialogOpen) return;
+    _isDialogOpen = false;
+    if (Get.isDialogOpen ?? false) Get.back();
+  }
+
   void _showNoInternetDialog() {
+    _offlineTimer = null;
+    if (_isDialogOpen) return;
+    _isDialogOpen = true;
+
     Get.dialog(
       PopScope(
         canPop: false, // Prevents closing with the back button
@@ -71,11 +73,9 @@ showAppToast(type: ToastType.success, title: "Back online", message: "Your inter
           actions: [
             TextButton(
               onPressed: () async {
-                // Manually re-check if needed
-                List<ConnectivityResult> results = await _connectivity.checkConnectivity();
+                final results = await _connectivity.checkConnectivity();
                 if (!results.contains(ConnectivityResult.none)) {
-                  _isDialogOpen = false;
-                  Get.back();
+                  _dismissNoInternetDialog();
                 }
               },
               child: const Text("RETRY"),

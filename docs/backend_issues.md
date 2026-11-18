@@ -16,6 +16,16 @@ field). Decide: keep it as a label, or make real multi-day passes (`days` on the
 day + days − 1, shown as "Fri 20 – Wed 25 Nov"). If it becomes real, the app will show the range
 on the checkout, ticket, booking and itinerary.
 
+### Q2. Massage: people per booking limit (6)
+
+Backend confirmed the group rules work: `capacity` is sent, bookings above it are refused before
+payment, and overlapping guests are counted. The only gap: the app caps one massage booking at
+**6 people**, but the server only checks `capacity` (1–50), so another client could book more.
+Decide: leave it (the app is the only client), or add a fixed massage limit on the server (like
+`SKI_PASS_MAX_PEOPLE`) and send it as `maxPeoplePerBooking` on the massage listing. The app
+already reads `maxPeoplePerBooking` for massage when present (falls back to 6), so no app change
+is needed if the backend adds it.
+
 ## Fixed, to check on the next completed booking
 
 - **M4:** the "You can now leave a review" sentence is now sent only when the customer can still

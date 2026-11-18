@@ -1,8 +1,13 @@
 // lib/core/controllers/auth_controller.dart
 
 import 'dart:convert';
+
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/controllers/nav_controller.dart';
+import 'package:harry_service_app/app/core/widgets/native_loader_dialog.dart';
+import 'package:harry_service_app/app/data/models/auth_tokens.dart';
+import 'package:harry_service_app/app/data/services/network/network_caller.dart';
 import 'package:harry_service_app/app/data/services/socket/socket_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/user_model.dart';
@@ -24,6 +29,7 @@ class AuthController extends GetxController {
   // KEYS FOR SHARED PREFERENCES
   // -------------------------
   static const String _tokenKey = 'access-token';
+  static const String _refreshTokenKey = 'refresh-token';
   static const String _userDataKey = 'user-model';
   static const String _roleKey = 'role';
   static const String _providerTypeKey = 'providerType';
@@ -32,8 +38,11 @@ class AuthController extends GetxController {
   // VARIABLES
   // -------------------------
   String? accessToken;
+  String? refreshToken;
   String? role;
   UserModel? userModel;
+  bool _loggingOut = false;
+  OverlayEntry? _loaderEntry;
 
   // -------------------------
   // SAVE USER DATA + TOKEN + ROLE
@@ -43,6 +52,8 @@ class AuthController extends GetxController {
   Future<void> saveUserData({
     required UserModel model,
     required String token,
+    String? refreshToken,
+    bool storeRefreshToken = false,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -53,11 +64,21 @@ class AuthController extends GetxController {
     if (model.providerType != null) {
       await prefs.setString(_providerTypeKey, model.providerType!);
     }
+    if (storeRefreshToken) {
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await prefs.setString(_refreshTokenKey, refreshToken);
+        this.refreshToken = refreshToken;
+      } else {
+        await prefs.remove(_refreshTokenKey);
+        this.refreshToken = null;
+      }
+    }
 
     // Update local variables
     accessToken = token;
     userModel = model;
     role = model.role;
+    _resumeSession();
 
     // -------------------------
     // Socket initialization
@@ -96,6 +117,7 @@ class AuthController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
 
     accessToken = prefs.getString(_tokenKey);
+    refreshToken = prefs.getString(_refreshTokenKey);
     role = prefs.getString(_roleKey);
 
     final userJson = prefs.getString(_userDataKey);
@@ -152,17 +174,39 @@ class AuthController extends GetxController {
   // -------------------------
   // LOGOUT
   // -------------------------
-  /// Logout the user, clear all local data, and disconnect the socket.
+  /// Asks the server to drop this session, then clears the device.
+  ///
+  /// The native loader stays up for the whole logout request.
   Future<void> logout() async {
+    if (_loggingOut) return;
+    _loggingOut = true;
+    await _showLoader();
+    try {
+      final refresh = refreshToken;
+      final access = accessToken;
+      if (Get.isRegistered<NetworkCaller>() &&
+          ((refresh != null && refresh.isNotEmpty) || (access != null && access.isNotEmpty))) {
+        await Get.find<NetworkCaller>().postRequest(
+          url: AppUrls.logoutUrl,
+          body: {'refreshToken': refresh ?? ''},
+          recoverAuth: false,
+        );
+      }
+    } catch (_) {
+      // The device session still ends if the server cannot be reached.
+    }
+
     final prefs = await SharedPreferences.getInstance();
 
     // Clear stored data
     await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userDataKey);
     await prefs.remove(_roleKey);
     await prefs.remove(_providerTypeKey);
 
     accessToken = null;
+    refreshToken = null;
     userModel = null;
     role = null;
 
@@ -178,10 +222,88 @@ class AuthController extends GetxController {
       await Get.delete<SocketService>(force: true);
     }
 
-    // Navigate to login screen
-    if (Get.currentRoute != Routes.login) {
+    _hideLoader();
+    _loggingOut = false;
+
+    // Navigate to login screen once a navigator exists.
+    if (Get.key.currentState != null && Get.currentRoute != Routes.login) {
       Get.offAllNamed(Routes.login);
     }
+  }
+
+  /// `POST /auth/refresh-token` with the stored refresh token.
+  ///
+  /// One in-flight refresh is shared by every request that received 401.
+  /// Returns false when there is no refresh token or the server rejects it.
+  Future<bool> refreshSession(NetworkCaller caller) async {
+    final refresh = refreshToken;
+    if (refresh == null || refresh.isEmpty) return false;
+
+    final response = await caller.postRequest(
+      url: AppUrls.refreshTokenUrl,
+      body: {'refreshToken': refresh},
+      recoverAuth: false,
+      authorize: false,
+    );
+    if (!response.isSuccess) return false;
+
+    final tokens = AuthTokens.fromBody(response.body);
+    if (!tokens.hasAccess) return false;
+    await saveTokens(
+      accessToken: tokens.accessToken!,
+      refreshToken: tokens.refreshToken,
+    );
+    return true;
+  }
+
+  /// Stores a new access token, and a rotated refresh token when the server sends one.
+  Future<void> saveTokens({
+    required String accessToken,
+    String? refreshToken,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tokenKey, accessToken);
+    this.accessToken = accessToken;
+    userModel?.token = accessToken;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await prefs.setString(_refreshTokenKey, refreshToken);
+      this.refreshToken = refreshToken;
+    }
+    _resumeSession();
+    _syncSocket(accessToken);
+  }
+
+  void _resumeSession() {
+    if (Get.isRegistered<NetworkCaller>()) {
+      Get.find<NetworkCaller>().resetAuthRecovery();
+    }
+  }
+
+  void _syncSocket(String token) {
+    final userId = userModel?.id;
+    if (userId == null || userId.isEmpty) return;
+    if (!Get.isRegistered<SocketService>()) return;
+    Get.find<SocketService>().reset(
+      userId: userId,
+      token: token,
+      baseUrl: AppUrls.socketBaseUrl,
+    );
+  }
+
+  Future<void> _showLoader() async {
+    if (_loaderEntry != null) return;
+    final overlay = Get.key.currentState?.overlay;
+    if (overlay == null) return;
+    final entry = OverlayEntry(builder: (_) => const NativeLoaderDialog());
+    _loaderEntry = entry;
+    overlay.insert(entry);
+    // Paint it before the request returns, including when the server answers quickly.
+    await SchedulerBinding.instance.endOfFrame;
+  }
+
+  void _hideLoader() {
+    _loaderEntry?.remove();
+    _loaderEntry = null;
   }
 
   // -------------------------

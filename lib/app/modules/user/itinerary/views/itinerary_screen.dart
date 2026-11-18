@@ -9,7 +9,6 @@ import '../../../../core/widgets/shimmer/booking_Item_shimmer.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../booking/widgets/booking_list_card.dart';
 import '../controllers/itinerary_controller.dart';
-import '../../../../core/widgets/shimmer/skeleton.dart';
 
 /// Itinerary: running and upcoming bookings of every service, by day.
 class ItineraryScreen extends StatefulWidget {
@@ -100,8 +99,7 @@ class _ItineraryScreenState extends State<ItineraryScreen> {
                   SizedBox(height: 12.h),
                 ],
               ],
-              if (c.isLoadingMore)
-                const SkeletonLoadMore(),
+              if (c.isLoadingMore) const BookingCardSkeleton(),
             ],
           );
         }

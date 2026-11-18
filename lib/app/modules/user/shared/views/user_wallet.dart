@@ -105,11 +105,11 @@ class _UserWalletState extends State<UserWallet> {
   List<Widget> _activity(WalletController c) {
     if (c.isActivityLoading) {
       return const [
-        SkeletonTile(),
-        SizedBox(height: 10),
-        SkeletonTile(),
-        SizedBox(height: 10),
-        SkeletonTile(),
+        TransactionSkeleton(),
+        SizedBox(height: 8),
+        TransactionSkeleton(),
+        SizedBox(height: 8),
+        TransactionSkeleton(),
       ];
     }
     if (!c.hasActivity && c.activityError != null) {

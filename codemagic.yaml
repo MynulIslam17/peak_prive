@@ -19,9 +19,16 @@ workflows:
       # Team settings > Integrations. The key belongs to team 82TK45X459.
       app_store_connect: peak-privee-asc
     environment:
+      # These are the reference names in Codemagic > Code signing identities.
+      # The certificate is Apple Distribution for team 82TK45X459.
+      # The profile is the App Store profile for com.peakprivee.serviceapp.
+      # Codemagic does not allow distribution_type or bundle_identifier
+      # in the same block as these reference names.
       ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.peakprivee.serviceapp
+        certificates:
+          - peak_privee_distribution
+        provisioning_profiles:
+          - peak_privee_appstore
       vars:
         APP_STORE_APPLE_ID: 6759319535
       flutter: 3.47.9
@@ -39,24 +46,48 @@ workflows:
           set -eu
           cd "$CM_BUILD_DIR"
 
-          read_build() {
-            raw="$("$@" 2>/dev/null || true)"
-            raw=$(printf '%s' "$raw" | tr -d '[:space:]')
-            case "$raw" in
-              ''|*[!0-9]*) printf '0' ;;
-              *) printf '%s' "$raw" ;;
-            esac
+          # Highest build already used on TestFlight or the App Store.
+          # A missing build is the only result that starts at zero.
+          # An Apple API failure stops the build instead of becoming zero.
+          read_latest_build() {
+            out=$(mktemp)
+            err=$(mktemp)
+            set +e
+            app-store-connect get-latest-build-number --all-versions "$APP_STORE_APPLE_ID" >"$out" 2>"$err"
+            status=$?
+            set -e
+            raw=$(awk 'NF { line = $0 } END { gsub(/[[:space:]]/, "", line); print line }' "$out")
+            if [ "$status" -eq 0 ]; then
+              case "$raw" in
+                ''|*[!0-9]*)
+                  echo "App Store Connect returned a non-numeric build number." >&2
+                  cat "$err" >&2
+                  printf '%s\n' "$raw" >&2
+                  rm -f "$out" "$err"
+                  exit 1
+                  ;;
+              esac
+              printf '%s' "$raw"
+            elif grep -q "Did not find latest build" "$out" "$err"; then
+              case "$raw" in
+                ''|*[!0-9]*) printf '0' ;;
+                *)
+                  echo "App Store Connect reported no build, but also returned a number." >&2
+                  rm -f "$out" "$err"
+                  exit 1
+                  ;;
+              esac
+            else
+              echo "App Store Connect build lookup failed. The build number was not set to 0." >&2
+              cat "$err" >&2
+              cat "$out" >&2
+              rm -f "$out" "$err"
+              exit 1
+            fi
+            rm -f "$out" "$err"
           }
 
-          # Highest build already used on TestFlight or the App Store.
-          # A new upload must be strictly greater, including across versions.
-          TESTFLIGHT_BUILD="$(read_build app-store-connect get-latest-testflight-build-number --all-versions "$APP_STORE_APPLE_ID")"
-          APP_STORE_BUILD="$(read_build app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")"
-          if [ "$TESTFLIGHT_BUILD" -gt "$APP_STORE_BUILD" ]; then
-            LATEST_BUILD="$TESTFLIGHT_BUILD"
-          else
-            LATEST_BUILD="$APP_STORE_BUILD"
-          fi
+          LATEST_BUILD="$(read_latest_build)"
           BUILD_NUMBER="$((LATEST_BUILD + 1))"
           APP_VERSION="$(awk '/^version:/ { split($2, v, "+"); print v[1]; exit }' pubspec.yaml)"
 

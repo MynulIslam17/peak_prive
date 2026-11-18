@@ -1,5 +1,3 @@
-
-
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
@@ -17,18 +15,14 @@ class ResendOtpController extends GetxController {
 
   /// Verify OTP with backend
   Future<bool> resendOtp(String email) async {
-
-    Map<String,dynamic>body={
-      "email" : email
-    };
+    Map<String, dynamic> body = {"email": email};
 
     bool isSuccess = false;
     _resendOtpProgress = true;
     update();
 
     try {
-      NetworkResponse response = await Get.find<NetworkCaller>()
-          .postRequest(url: AppUrls.resendOtp, body:body);
+      NetworkResponse response = await Get.find<NetworkCaller>().postRequest(url: AppUrls.resendOtp, body: body);
 
       if (response.isSuccess) {
         isSuccess = true;

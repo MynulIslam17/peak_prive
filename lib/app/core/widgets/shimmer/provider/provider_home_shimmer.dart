@@ -20,6 +20,13 @@ class ProviderHomeShimmer extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       );
 
+  /// `MyServiceCard` and the booking tiles carry a soft lift.
+  static BoxDecoration get _liftedCard => _card.copyWith(
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      );
+
   Widget _statCard() => Container(
         padding: const EdgeInsets.all(12),
         decoration: _card,
@@ -85,12 +92,13 @@ class ProviderHomeShimmer extends StatelessWidget {
   Widget _serviceCard() => Container(
         width: 280,
         height: 255,
-        decoration: _card,
+        clipBehavior: Clip.antiAlias,
+        decoration: _liftedCard,
         child: const SkeletonShimmer(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: SkeletonBox(width: double.infinity, height: double.infinity, radius: 15)),
+              Expanded(child: SkeletonBox(width: double.infinity, height: double.infinity, radius: 0)),
               Padding(
                 padding: EdgeInsets.fromLTRB(12, 10, 12, 12),
                 child: Column(

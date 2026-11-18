@@ -200,13 +200,17 @@ class _AllServiceScreenState extends State<AllServiceScreen> with TickerProvider
                 child: LayoutBuilder(
                   builder: (context, c) {
                     final pad = c.maxWidth > 600 ? (c.maxWidth - 560) / 2 : 20.0;
+                    // Padding + badge + gap stay fixed; the two text lines
+                    // grow with the phone's font size, so the tile does too.
+                    final textScale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6);
+                    final tileHeight = 96 + 44 * textScale;
                     final all = [..._services, _itinerary];
                     final rows = <Widget>[];
                     for (var i = 0; i < all.length; i += 2) {
                       if (i > 0) rows.add(const SizedBox(height: 12));
                       rows.add(
                         SizedBox(
-                          height: 128,
+                          height: tileHeight,
                           child: Row(
                             children: [
                               for (var j = i; j < i + 2 && j < all.length; j++) ...[

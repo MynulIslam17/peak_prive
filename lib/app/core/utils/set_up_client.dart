@@ -5,13 +5,19 @@ import '../../routes/app_routes.dart';
 import '../controllers/auth_controller.dart';
 
 NetworkCaller setUpNetworkClient() {
-  return NetworkCaller(
+  late final NetworkCaller caller;
+  caller = NetworkCaller(
     onUnAuthorize: _onUnAuthorize,
     accessToken: () =>
         Get.isRegistered<AuthController>()
             ? (Get.find<AuthController>().accessToken ?? "")
             : "",
+    refreshSession: () async {
+      if (!Get.isRegistered<AuthController>()) return false;
+      return Get.find<AuthController>().refreshSession(caller);
+    },
   );
+  return caller;
 }
 
 /// A single screen often fires several requests at once, so an expired token

@@ -15,9 +15,7 @@ class EmailVerifyController extends GetxController {
 
   /// Verify OTP with backend
   Future<bool> emailVerify(String email) async {
-    Map<String, dynamic> body = {
-      "email": email,
-    };
+    Map<String, dynamic> body = {"email": email};
 
     bool isSuccess = false;
     _emailVerifyProgress = true;
@@ -25,8 +23,7 @@ class EmailVerifyController extends GetxController {
 
     try {
       // Making the network call
-      NetworkResponse response = await Get.find<NetworkCaller>()
-          .postRequest(url: AppUrls.verifyEmail, body: body);
+      NetworkResponse response = await Get.find<NetworkCaller>().postRequest(url: AppUrls.verifyEmail, body: body);
 
       if (response.isSuccess) {
         isSuccess = true;

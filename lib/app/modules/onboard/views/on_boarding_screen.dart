@@ -106,7 +106,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
                     height: 52,
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {  /// move to role selection
+                      onPressed: () async {
 
 
                         ///  check if onboard seen or not
@@ -114,7 +114,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen>
                        await prefs.setBool("onboarding_seen",true);
                         
                         
-                        Get.offAllNamed(Routes.role);
+                        Get.offAllNamed(Routes.login);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,

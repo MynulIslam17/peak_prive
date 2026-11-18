@@ -9,6 +9,7 @@ import '../../../../core/widgets/listing_details_parts.dart';
 import '../../../../routes/app_routes.dart';
 import '../controlers/trasnport_details_controller.dart';
 import '../../../../data/api/peak_api.dart';
+import '../../shared/views/listing_reviews_screen.dart';
 import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
 /// User → Transport listing: vehicle details, then continue to checkout.
@@ -44,7 +45,11 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
       builder: (_) {
         final t = controller.listing;
         if (t == null && controller.isLoading) {
-          return const DetailsPageSkeleton(sections: [SkeletonSection.infoCard, SkeletonSection.lines]);
+          return const DetailsPageSkeleton(sections: [
+            SkeletonSection.specs,
+            SkeletonSection.lines,
+            SkeletonSection.infoCard,
+          ]);
         }
         if (t == null) {
           return ListingErrorView(
@@ -111,6 +116,8 @@ class _TransportDetailsScreenState extends State<TransportDetailsScreen> {
               count: rating.count,
               isLoading: controller.reviewsLoading,
               error: controller.reviewsError,
+              showSeeAll: controller.canSeeAllReviews,
+              onSeeAll: () => openListingReviews(kind: controller.kind, id: controller.listing?.id),
             ),
           ],
         );

@@ -5,6 +5,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 
 import '../../../../../gen/assets.gen.dart';
+import '../../../../core/controllers/auth_controller.dart';
 import '../../../../core/widgets/profile_field_box.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -125,7 +126,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 30),
                 child: InkWell(
-                  onTap: (){},
+                  onTap: () => Get.find<AuthController>().logout(),
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     height: 60,

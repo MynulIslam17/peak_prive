@@ -525,8 +525,6 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
       bool success = await signUpController.signup(model);
 
       if (success) {
-        showAppToast(type: ToastType.success, title: "Success", message: "Registration successful! An OTP has been sent to your phone/email for verification.");
-
         Get.offAllNamed(  Routes.otpVerify,
             arguments: {
               "isFromSignUp" : true,

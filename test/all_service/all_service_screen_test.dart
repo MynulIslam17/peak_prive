@@ -61,4 +61,27 @@ void main() {
     expect(find.text('Last used'), findsOneWidget);
     expect(find.bySemanticsLabel(RegExp('Massage.*Last used')), findsOneWidget);
   });
+
+  testWidgets('tiles fit with large text (no 1px overflow)', (tester) async {
+    tester.view.physicalSize = const Size(360, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Get.put(NavController());
+    for (final scale in [1.0, 1.15, 1.3]) {
+      await tester.pumpWidget(ScreenUtilInit(
+        designSize: const Size(360, 690),
+        child: GetMaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+            child: child!,
+          ),
+          home: const AllServiceScreen(),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(seconds: 2));
+      expect(tester.takeException(), isNull, reason: 'text ×$scale');
+      await tester.pumpWidget(const SizedBox());
+    }
+  });
 }

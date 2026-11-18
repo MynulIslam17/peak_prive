@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/app_form_field.dart';
+import '../../../../core/widgets/location/location_picker.dart';
 import '../../../../data/api/peak_api.dart';
 import '../../shared/models/listing_drafts.dart';
 import '../../shared/views/listing_editor/editor_base.dart';
@@ -147,7 +148,7 @@ class _AddMassageScreenState extends ListingEditorState<AddMassageScreen> {
                 const SizedBox(height: 16),
                 AppFormField(label: 'Title', controller: _title, hint: 'e.g. Deep tissue', icon: Icons.title_rounded),
                 const SizedBox(height: 16),
-                AppFormField(label: 'Service area', controller: _area, hint: 'e.g. Chamonix', icon: Icons.location_on_outlined),
+                LocationFormField(label: 'Service area', controller: _area, hint: 'e.g. Chamonix'),
                 const SizedBox(height: 16),
                 AppFormField(label: 'Description (optional)', controller: _description, maxLines: 3, hint: 'About the session'),
               ],
@@ -170,6 +171,31 @@ class _AddMassageScreenState extends ListingEditorState<AddMassageScreen> {
               subtitle: 'How many guests you can treat at once: your number of therapists. '
                   'A time is full when this many guests are booked.',
               children: [
+                // Groups can only book together when this is above 1.
+                if (_capacity == 1)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBF3DC),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.groups_outlined, size: 18, color: Color(0xFF9A7A12)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Have more than one therapist? Increase this so families and friends '
+                            'can book together (up to ${MassageDetail.defaultMaxPeople} per booking).',
+                            style: AppTextStyle.p_regular_12(color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Row(
                   children: [
                     Expanded(

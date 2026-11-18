@@ -62,8 +62,6 @@ class MassageCheckoutForm extends StatefulWidget {
 }
 
 class _MassageCheckoutFormState extends State<MassageCheckoutForm> {
-  static const maxPersons = 6;
-
   /// Start times from the server (places left); null until loaded or when
   /// the call fails (then every time in opening hours is offered and the
   /// server still checks on payment).
@@ -116,8 +114,8 @@ class _MassageCheckoutFormState extends State<MassageCheckoutForm> {
     return null;
   }
 
-  /// Guests the listing can take at once (never more than [maxPersons] here).
-  int get _maxPersons => _m.capacity.clamp(1, maxPersons);
+  /// Guests one booking can include (the listing's capacity, capped).
+  int get _maxPersons => _m.maxPeople;
 
   SessionSlot? _slotAt(int minutes) {
     final label = formatClock(minutes);
@@ -352,28 +350,58 @@ class _MassageCheckoutFormState extends State<MassageCheckoutForm> {
                         Row(
                           children: [
                             Expanded(child: Text('Number of people', style: AppTextStyle.sub_h3_medium_14())),
-                            CheckoutQuantityStepper(
-                              value: _persons,
-                              min: 1,
-                              max: _maxPersons,
-                              enabled: !locked,
-                              unit: 'people',
-                              onChanged: (v) {
-                                setState(() => _persons = v);
-                                _checkout.clearProblem();
-                                _loadSlots();
-                              },
-                            ),
+                            // One guest only: a plain label, not a counter
+                            // with both buttons greyed out.
+                            if (_maxPersons == 1)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceAlt,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.person_outline_rounded, size: 16, color: AppColors.textSecondary),
+                                    const SizedBox(width: 4),
+                                    Text('1 guest', style: AppTextStyle.sub_h3_medium_14()),
+                                  ],
+                                ),
+                              )
+                            else
+                              CheckoutQuantityStepper(
+                                value: _persons,
+                                min: 1,
+                                max: _maxPersons,
+                                enabled: !locked,
+                                unit: 'people',
+                                onChanged: (v) {
+                                  setState(() => _persons = v);
+                                  _checkout.clearProblem();
+                                  _loadSlots();
+                                },
+                              ),
                           ],
                         ),
-                        if (_m.capacity == 1)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text(
-                              'This massage is for one guest at a time.',
-                              style: AppTextStyle.p_regular_12(color: AppColors.textTertiary),
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.info_outline_rounded, size: 15, color: AppColors.textTertiary),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _maxPersons == 1
+                                      ? 'This massage is for one person at a time. For a group, '
+                                          'book separate times or choose a massage for more guests.'
+                                      : 'Up to $_maxPersons people can come together at the same time.',
+                                  style: AppTextStyle.p_regular_12(color: AppColors.textTertiary),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
                       ],
                     ),
                   ),

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.harry_service_app"
+    namespace = "com.peakprivee.serviceapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -20,8 +20,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.harry_service_app"
+        // Matches PRODUCT_BUNDLE_IDENTIFIER in ios/Runner.xcodeproj.
+        applicationId = "com.peakprivee.serviceapp"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

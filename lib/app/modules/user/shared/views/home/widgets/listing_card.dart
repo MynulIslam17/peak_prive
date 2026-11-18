@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 
 import '../../../../../../core/constants/app_colors.dart';
 import '../../../../../../core/constants/text-style.dart';
 import '../../../../../../core/widgets/custom_image_container.dart';
+import '../../../../../../core/widgets/shimmer/skeleton.dart';
 import '../home_service_source.dart';
 
 /// Card for a single service listing on the home feed.
@@ -201,22 +201,13 @@ class _RatingBadge extends StatelessWidget {
   }
 }
 
-/// Placeholder shown while listings load; mirrors [ListingCard]'s layout.
+/// Placeholder shown while listings load; mirrors [ListingCard]'s layout,
+/// down to the rating badge on the photo and the location line.
 class ListingCardSkeleton extends StatelessWidget {
   const ListingCardSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Widget block({double? width, required double height, double radius = 6}) =>
-        Container(
-          width: width,
-          height: height,
-          decoration: BoxDecoration(
-            color: AppColors.shimmerBase,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-        );
-
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -224,44 +215,78 @@ class ListingCardSkeleton extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Shimmer.fromColors(
-        baseColor: AppColors.shimmerBase,
-        highlightColor: AppColors.shimmerHighlight,
-        child: _content(block),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                SkeletonShimmer(
+                  child: SkeletonBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    radius: 0,
+                  ),
+                ),
+                // `_RatingBadge` sits on the photo: white pill, top right.
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: _BadgePlaceholder(width: 64),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: SkeletonShimmer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: SkeletonBox(height: 16)),
+                      SizedBox(width: 12),
+                      SkeletonBox(width: 56, height: 16),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      SkeletonBox(width: 16, height: 16, radius: 4),
+                      SizedBox(width: 4),
+                      SkeletonBox(width: 130, height: 12),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _content(
-    Widget Function({double? width, required double height, double radius})
-    block,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: block(height: double.infinity, radius: 0),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: block(height: 16)),
-                  const SizedBox(width: 40),
-                  block(width: 48, height: 16),
-                ],
-              ),
-              const SizedBox(height: 10),
-              block(width: 140, height: 12),
-            ],
-          ),
-        ),
-      ],
+/// A pill on the photo, drawn in white (the real badges are opaque too, so
+/// shimmering it would read as content).
+class _BadgePlaceholder extends StatelessWidget {
+  const _BadgePlaceholder({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 26,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(20),
+      ),
     );
   }
 }

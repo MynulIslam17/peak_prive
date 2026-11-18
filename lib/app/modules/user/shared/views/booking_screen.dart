@@ -12,7 +12,6 @@ import '../../../../routes/app_routes.dart';
 import '../../../booking/controllers/my_bookings_controller.dart';
 import '../../../booking/widgets/booking_list_card.dart';
 import '../../../booking/widgets/review_dialog.dart';
-import '../../../../core/widgets/shimmer/skeleton.dart';
 import '../../../../core/widgets/collapsing_header.dart';
 
 /// Bookings tab of the customer bottom nav (`/booking/my`), filtered by the
@@ -132,7 +131,7 @@ class _BookingScreenState extends State<BookingScreen> with SingleTickerProvider
             separatorBuilder: (_, __) => SizedBox(height: 12.h),
             itemBuilder: (_, i) {
               if (i >= s.items.length) {
-                return const SkeletonLoadMore();
+                return const BookingCardSkeleton();
               }
               final b = s.items[i];
               return BookingListCard(

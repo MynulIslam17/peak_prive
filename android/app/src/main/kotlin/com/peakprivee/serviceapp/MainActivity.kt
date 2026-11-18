@@ -1,4 +1,4 @@
-package com.example.harry_service_app
+package com.peakprivee.serviceapp
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

@@ -18,7 +18,7 @@ class UserSignupController extends GetxController {
 
     /// Set the signup progress to true when the request starts
     _signupProgress = true;
-    update();  // This will trigger the UI to update
+    update(); // This will trigger the UI to update
 
     try {
       // Making the network call using your network service
@@ -29,12 +29,11 @@ class UserSignupController extends GetxController {
 
       /// Set the signup progress to false once the request completes
       _signupProgress = false;
-      update();  // Trigger UI update
+      update(); // Trigger UI update
 
       if (response.isSuccess) {
         _errorMessage = null;
         isSuccess = true;
-
       } else {
         _errorMessage = response.errorMessage;
       }
@@ -42,7 +41,7 @@ class UserSignupController extends GetxController {
       ///Handle any exceptions (like network issues)
       _signupProgress = false;
       _errorMessage = "An error occurred: ${error.toString()}";
-      update();  // Trigger UI update
+      update(); // Trigger UI update
     }
 
     return isSuccess;

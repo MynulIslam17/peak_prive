@@ -11,6 +11,7 @@ import '../controllers/auth_controller.dart';
 import '../controllers/nav_controller.dart';
 import '../utils/app_toast.dart';
 import 'checkout_parts.dart';
+import 'location/location_picker.dart';
 import 'shimmer/skeleton.dart';
 
 /// Resolves a checkout's listing from `Get.arguments`
@@ -34,7 +35,8 @@ class CheckoutListingGate<T extends ListingDetail> extends StatefulWidget {
   State<CheckoutListingGate<T>> createState() => _CheckoutListingGateState<T>();
 }
 
-class _CheckoutListingGateState<T extends ListingDetail> extends State<CheckoutListingGate<T>> {
+class _CheckoutListingGateState<T extends ListingDetail>
+    extends State<CheckoutListingGate<T>> {
   T? _listing;
   String? _id;
   String? _error;
@@ -100,13 +102,20 @@ class _CheckoutListingGateState<T extends ListingDetail> extends State<CheckoutL
 /// Phone + address state for a checkout, pre-filled from the profile.
 class CheckoutContact {
   CheckoutContact() {
-    final auth = Get.isRegistered<AuthController>() ? Get.find<AuthController>() : null;
-    final saved = (auth?.userModel?.phone ?? '').replaceAll(RegExp(r'[\s-]'), '');
+    final auth = Get.isRegistered<AuthController>()
+        ? Get.find<AuthController>()
+        : null;
+    final saved = (auth?.userModel?.phone ?? '').replaceAll(
+      RegExp(r'[\s-]'),
+      '',
+    );
     Country? savedCountry;
     if (saved.startsWith('+')) {
       for (final c in countries) {
         if (saved.substring(1).startsWith(c.fullCountryCode) &&
-            (savedCountry == null || c.fullCountryCode.length > savedCountry.fullCountryCode.length)) {
+            (savedCountry == null ||
+                c.fullCountryCode.length >
+                    savedCountry.fullCountryCode.length)) {
           savedCountry = c; // longest matching code wins ("+1 684" before "+1")
         }
       }
@@ -118,7 +127,8 @@ class CheckoutContact {
       national = saved.substring(1 + dialCode.length);
     } else {
       initialPhone = '';
-      final region = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+      final region =
+          WidgetsBinding.instance.platformDispatcher.locale.countryCode;
       final country = countries.firstWhere(
         (c) => c.code == region,
         orElse: () => countries.firstWhere((c) => c.code == 'FR'),
@@ -144,7 +154,9 @@ class CheckoutContact {
   String? phoneError({bool required = true}) {
     final digits = national.replaceAll(RegExp(r'\D'), '').length;
     if (digits == 0 && !required) return null;
-    if (digits < 6 || digits + dialCode.length > 15) return 'Please enter a valid phone number';
+    if (digits < 6 || digits + dialCode.length > 15) {
+      return 'Please enter a valid phone number';
+    }
     return null;
   }
 
@@ -195,7 +207,10 @@ class CheckoutContactCard extends StatelessWidget {
             disableLengthCheck: true,
             invalidNumberMessage: null,
             autovalidateMode: AutovalidateMode.disabled,
-            decoration: checkoutInputDecoration(label: 'Phone number', error: phoneError),
+            decoration: checkoutInputDecoration(
+              label: 'Phone number',
+              error: phoneError,
+            ),
             onChanged: (p) {
               contact.national = p.number.replaceAll(RegExp(r'\D'), '');
               contact.dialCode = p.countryCode.replaceAll('+', '');
@@ -210,26 +225,30 @@ class CheckoutContactCard extends StatelessWidget {
             // The phone field reserves no space under it; keep its error clear
             // of the address label.
             SizedBox(height: phoneError != null ? 12 : 6),
-            TextField(
+            LocationPickerField(
               controller: contact.address,
               enabled: enabled,
-              textCapitalization: TextCapitalization.words,
-              minLines: 1,
               maxLines: 3,
-              onChanged: (_) => onChanged(),
-              decoration: checkoutInputDecoration(label: addressLabel, hint: addressHint, error: addressError),
+              sheetTitle: addressLabel,
+              onPicked: (_) => onChanged(),
+              decoration: checkoutInputDecoration(
+                label: addressLabel,
+                hint: addressHint,
+                error: addressError,
+              ),
             ),
           ],
           if (showDestination) ...[
             const SizedBox(height: 12),
-            TextField(
+            LocationPickerField(
               controller: contact.destination,
               enabled: enabled,
-              textCapitalization: TextCapitalization.words,
-              minLines: 1,
-              maxLines: 2,
-              onChanged: (_) => onChanged(),
-              decoration: checkoutInputDecoration(label: 'Destination (optional)', hint: 'e.g. Geneva airport'),
+              sheetTitle: 'Destination',
+              onPicked: (_) => onChanged(),
+              decoration: checkoutInputDecoration(
+                label: 'Destination (optional)',
+                hint: 'e.g. Geneva airport',
+              ),
             ),
           ],
         ],
@@ -238,11 +257,15 @@ class CheckoutContactCard extends StatelessWidget {
   }
 }
 
-InputDecoration checkoutInputDecoration({required String label, String? hint, String? error}) {
+InputDecoration checkoutInputDecoration({
+  required String label,
+  String? hint,
+  String? error,
+}) {
   OutlineInputBorder border(Color c) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: c),
-      );
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: c),
+  );
   return InputDecoration(
     labelText: label,
     hintText: hint,
@@ -266,37 +289,56 @@ void showCheckoutProblem(BuildContext context, CheckoutProblem problem) {
     context,
     problem.title,
     problem.message,
-    isError: problem.kind != CheckoutProblemKind.paymentProcessing &&
+    isError:
+        problem.kind != CheckoutProblemKind.paymentProcessing &&
         problem.kind != CheckoutProblemKind.priceChanged,
-    actionLabel: !lateFee ? null : (problem.bookingId != null ? 'Pay late fee' : 'Go to My bookings'),
+    actionLabel: !lateFee
+        ? null
+        : (problem.bookingId != null ? 'Pay late fee' : 'Go to My bookings'),
     onAction: !lateFee
         ? null
         : problem.bookingId != null
-            ? () => Get.toNamed(Routes.bookingDetails, arguments: {'bookingId': problem.bookingId})
-            : openMyBookings,
+        ? () => Get.toNamed(
+            Routes.bookingDetails,
+            arguments: {'bookingId': problem.bookingId},
+          )
+        : openMyBookings,
   );
 }
 
 /// Bottom nav → Bookings tab.
 void openMyBookings() {
-  if (Get.isRegistered<NavController>()) Get.find<NavController>().changeIndex(1);
+  if (Get.isRegistered<NavController>()) {
+    Get.find<NavController>().changeIndex(1);
+  }
   Get.offAllNamed(Routes.bottomNav);
 }
 
 /// After a successful checkout: ski pass → ticket, others → booking details.
 /// Removes the checkout and the listing screen from the stack.
-void finishCheckout(Booking booking, {required String checkoutRoute, required String detailsRoute}) {
+void finishCheckout(
+  Booking booking, {
+  required String checkoutRoute,
+  required String detailsRoute,
+}) {
   final pending = booking.status == BookingStatus.pending;
   showAppToast(
     type: ToastType.success,
     title: pending ? 'Booking requested' : 'Booking confirmed',
-    message: pending ? 'Paid. Waiting for the provider to approve.' : 'You can find it under Bookings.',
+    message: pending
+        ? 'Paid. Waiting for the provider to approve.'
+        : 'You can find it under Bookings.',
   );
-  bool keep(Route<dynamic> r) => r.settings.name != checkoutRoute && r.settings.name != detailsRoute;
+  bool keep(Route<dynamic> r) =>
+      r.settings.name != checkoutRoute && r.settings.name != detailsRoute;
   if (booking.kind == ServiceKind.skiPass) {
     Get.offNamedUntil(Routes.ticket, keep, arguments: {'booking': booking});
   } else {
-    Get.offNamedUntil(Routes.bookingDetails, keep, arguments: {'bookingId': booking.id, 'booking': booking});
+    Get.offNamedUntil(
+      Routes.bookingDetails,
+      keep,
+      arguments: {'bookingId': booking.id, 'booking': booking},
+    );
   }
 }
 
@@ -310,7 +352,11 @@ bool handleCheckoutOutcome(
   required String detailsRoute,
 }) {
   if (outcome == CheckoutOutcome.booked && checkout.booking != null) {
-    finishCheckout(checkout.booking!, checkoutRoute: checkoutRoute, detailsRoute: detailsRoute);
+    finishCheckout(
+      checkout.booking!,
+      checkoutRoute: checkoutRoute,
+      detailsRoute: detailsRoute,
+    );
     return true;
   }
   final p = checkout.problem;
@@ -322,7 +368,11 @@ bool handleCheckoutOutcome(
 
 /// PopScope wrapper: blocks back while busy, warns when paid but not booked.
 class CheckoutPopGuard extends StatelessWidget {
-  const CheckoutPopGuard({super.key, required this.checkout, required this.child});
+  const CheckoutPopGuard({
+    super.key,
+    required this.checkout,
+    required this.child,
+  });
 
   final CheckoutController checkout;
   final Widget child;
@@ -336,7 +386,11 @@ class CheckoutPopGuard extends StatelessWidget {
         canPop: !c.isBusy && !c.needsConfirmRetry,
         onPopInvokedWithResult: (didPop, _) async {
           if (didPop || c.isBusy) return;
-          if (await confirmLeaveUnbookedPayment(context, c.paidIntentId ?? '') && context.mounted) {
+          if (await confirmLeaveUnbookedPayment(
+                context,
+                c.paidIntentId ?? '',
+              ) &&
+              context.mounted) {
             Navigator.of(context).pop();
           }
         },
@@ -348,11 +402,11 @@ class CheckoutPopGuard extends StatelessWidget {
 
 /// [CheckoutStage] for the shared [CheckoutBar].
 CheckoutStage checkoutStageOf(CheckoutController c) => switch (c.phase) {
-      CheckoutPhase.preparing || CheckoutPhase.paying => CheckoutStage.paying,
-      CheckoutPhase.confirming => CheckoutStage.booking,
-      CheckoutPhase.done => CheckoutStage.completed,
-      CheckoutPhase.idle => CheckoutStage.idle,
-    };
+  CheckoutPhase.preparing || CheckoutPhase.paying => CheckoutStage.paying,
+  CheckoutPhase.confirming => CheckoutStage.booking,
+  CheckoutPhase.done => CheckoutStage.completed,
+  CheckoutPhase.idle => CheckoutStage.idle,
+};
 
 /// Date then time picker. Days before today (or [firstDate]) can't be picked.
 Future<DateTime?> pickCheckoutDateTime(
@@ -364,7 +418,9 @@ Future<DateTime?> pickCheckoutDateTime(
   int windowDays = 365,
 }) async {
   final today = DateUtils.dateOnly(DateTime.now());
-  final first = DateUtils.dateOnly(firstDate).isBefore(today) ? today : DateUtils.dateOnly(firstDate);
+  final first = DateUtils.dateOnly(firstDate).isBefore(today)
+      ? today
+      : DateUtils.dateOnly(firstDate);
   final initial = current != null && !current.isBefore(first) ? current : first;
   FocusManager.instance.primaryFocus?.unfocus();
   final date = await showDatePicker(
@@ -379,7 +435,9 @@ Future<DateTime?> pickCheckoutDateTime(
   FocusManager.instance.primaryFocus?.unfocus();
   final time = await showTimePicker(
     context: context,
-    initialTime: current != null ? TimeOfDay.fromDateTime(current) : const TimeOfDay(hour: 9, minute: 0),
+    initialTime: current != null
+        ? TimeOfDay.fromDateTime(current)
+        : const TimeOfDay(hour: 9, minute: 0),
     helpText: timeHelp,
     builder: checkoutPickerTheme,
   );
@@ -399,7 +457,12 @@ String checkoutLengthLabel(Duration d) {
 
 /// Grey strip at the bottom of a card (rental length, notes).
 class CheckoutInfoStrip extends StatelessWidget {
-  const CheckoutInfoStrip({super.key, required this.icon, required this.text, this.color});
+  const CheckoutInfoStrip({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.color,
+  });
   final IconData icon;
   final String text;
   final Color? color;
@@ -418,7 +481,13 @@ class CheckoutInfoStrip extends StatelessWidget {
           Icon(icon, size: 16, color: color ?? AppColors.textTertiary),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 12, color: color ?? AppColors.textSecondary)),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: color ?? AppColors.textSecondary,
+              ),
+            ),
           ),
         ],
       ),

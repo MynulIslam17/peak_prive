@@ -11,6 +11,7 @@ import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../core/widgets/custom_image_container.dart';
 import '../../../../data/models/user_model.dart';
 import 'package:harry_service_app/app/core/utils/app_toast.dart';
+import 'package:harry_service_app/app/core/widgets/location/location_picker.dart';
 
 class ProviderAccountInformationScreen extends StatefulWidget {
   const ProviderAccountInformationScreen({super.key});
@@ -118,7 +119,11 @@ class _ProviderAccountInformationScreenState
   /// Helper method to show snackbar safely
   void _showSnackBar(String message, Color bgColor) {
     final ok = bgColor == Colors.green;
-    showAppToast(type: ok ? ToastType.success : ToastType.error, title: ok ? "Saved" : "Couldn't save", message: message);
+    showAppToast(
+      type: ok ? ToastType.success : ToastType.error,
+      title: ok ? "Saved" : "Couldn't save",
+      message: message,
+    );
   }
 
   @override
@@ -136,6 +141,7 @@ class _ProviderAccountInformationScreenState
     required IconData icon,
     String? hint,
     bool readOnly = false,
+    bool location = false,
     TextInputType? keyboardType,
   }) {
     return Padding(
@@ -143,29 +149,50 @@ class _ProviderAccountInformationScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: AppTextStyle.p_medium_12(color: AppColors.textSecondary)),
+          Text(
+            label,
+            style: AppTextStyle.p_medium_12(color: AppColors.textSecondary),
+          ),
           const SizedBox(height: 6),
           TextField(
             controller: controller,
-            readOnly: readOnly,
-            keyboardType: keyboardType,
+            readOnly: readOnly || location,
+            showCursor: !location,
+            maxLines: location ? 3 : 1,
+            keyboardType: location ? null : keyboardType,
+            onTap: !location
+                ? null
+                : () => pickInto(context, controller: controller, title: label),
             style: AppTextStyle.sub_h3_regular_14(
               color: readOnly ? AppColors.textTertiary : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-                  AppTextStyle.sub_h3_regular_14(color: AppColors.textDisabled),
+              hintStyle: AppTextStyle.sub_h3_regular_14(
+                color: AppColors.textDisabled,
+              ),
               prefixIcon: Icon(icon, size: 20, color: AppColors.textTertiary),
-              suffixIcon: readOnly
-                  ? const Icon(Icons.lock_outline_rounded,
-                      size: 18, color: AppColors.textDisabled)
+              suffixIcon: location
+                  ? const Icon(
+                      Icons.map_outlined,
+                      size: 20,
+                      color: AppColors.primary_1,
+                    )
+                  : readOnly
+                  ? const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 18,
+                      color: AppColors.textDisabled,
+                    )
                   : null,
               filled: true,
-              fillColor: readOnly ? AppColors.surfaceAlt : Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              fillColor: readOnly && !location
+                  ? AppColors.surfaceAlt
+                  : Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppColors.border),
@@ -176,8 +203,10 @@ class _ProviderAccountInformationScreenState
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: AppColors.primary_1, width: 1.4),
+                borderSide: const BorderSide(
+                  color: AppColors.primary_1,
+                  width: 1.4,
+                ),
               ),
             ),
           ),
@@ -231,7 +260,8 @@ class _ProviderAccountInformationScreenState
                                   Text(
                                     'Change your photo from the Profile tab.',
                                     style: AppTextStyle.p_regular_12(
-                                        color: AppColors.textTertiary),
+                                      color: AppColors.textTertiary,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -265,8 +295,8 @@ class _ProviderAccountInformationScreenState
                     label: 'Address',
                     controller: addressTEController,
                     icon: Icons.home_outlined,
-                    hint: 'Street, city',
-                    keyboardType: TextInputType.streetAddress,
+                    hint: 'Search a street, hotel or town',
+                    location: true,
                   ),
                 ],
               ),
@@ -281,8 +311,9 @@ class _ProviderAccountInformationScreenState
                     onPressed: controller.isLoading ? null : _updateButton,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary_1,
-                      disabledBackgroundColor:
-                          AppColors.primary_1.withValues(alpha: 0.6),
+                      disabledBackgroundColor: AppColors.primary_1.withValues(
+                        alpha: 0.6,
+                      ),
                       foregroundColor: AppColors.textOnPrimary,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -294,11 +325,16 @@ class _ProviderAccountInformationScreenState
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
-                        : Text('Save changes',
+                        : Text(
+                            'Save changes',
                             style: AppTextStyle.sub_h2_medium_16(
-                                color: AppColors.textOnPrimary)),
+                              color: AppColors.textOnPrimary,
+                            ),
+                          ),
                   ),
                 ),
               ),

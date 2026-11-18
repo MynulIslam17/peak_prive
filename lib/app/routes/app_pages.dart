@@ -27,7 +27,6 @@ import 'package:harry_service_app/app/modules/provider/shared/views/provider_pro
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_settings_screen.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/views/add_hire_screen.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
-import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
@@ -304,8 +303,6 @@ abstract class AppPages {
       page: () => ProviderPassScreen(),
       binding: ChangePassBinding(),
     ),
-
-    GetPage(name: Routes.role, page: () => RoleSelectionScreen()),
 
     GetPage(
       name: Routes.providerBookingDetails,
