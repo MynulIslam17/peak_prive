@@ -14,6 +14,7 @@ import '../../../../core/widgets/appbar_with_title.dart';
 import '../../../../core/widgets/cusom_text_fiield.dart';
 import '../../../../core/widgets/custome_button.dart';
 import '../../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class ProviderSignUp extends StatefulWidget {
   const ProviderSignUp({super.key});
@@ -524,15 +525,7 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
       bool success = await signUpController.signup(model);
 
       if (success) {
-        Get.snackbar(
-          "Success",
-          "Registration successful! An OTP has been sent to your phone/email for verification.",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          duration: Duration(seconds: 3),
-          margin: EdgeInsets.all(16.w),
-        );
+        showAppToast(type: ToastType.success, title: "Success", message: "Registration successful! An OTP has been sent to your phone/email for verification.");
 
         Get.offAllNamed(  Routes.otpVerify,
             arguments: {
@@ -543,29 +536,13 @@ class _ProviderSignUpState extends State<ProviderSignUp> {
 
 
       } else {
-        Get.snackbar(
-          "Error",
-          signUpController.errorMessage!,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          duration: Duration(seconds: 3),
-          margin: EdgeInsets.all(16.w),
-        );
+        showAppToast(type: ToastType.error, title: "Error", message: signUpController.errorMessage!);
 
 
       }
     } else {
       // Show error message
-      Get.snackbar(
-        "Validation Error",
-        "Please fill in all required fields correctly",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        duration: Duration(seconds: 3),
-        margin: EdgeInsets.all(16.w),
-      );
+      showAppToast(type: ToastType.warning, title: "Validation Error", message: "Please fill in all required fields correctly");
     }
   }
 }

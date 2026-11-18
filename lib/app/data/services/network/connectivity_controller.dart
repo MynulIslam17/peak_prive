@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class ConnectivityController extends GetxController {
   final Connectivity _connectivity = Connectivity();
@@ -46,13 +47,7 @@ class ConnectivityController extends GetxController {
         }
 
         // Brief confirmation snackbar when back online
-        Get.rawSnackbar(
-          title: "Internet connection restored",
-          message: "You are now online",
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-          snackPosition: SnackPosition.BOTTOM,
-        );
+showAppToast(type: ToastType.success, title: "Back online", message: "Your internet connection is restored.");
 
       }
     }

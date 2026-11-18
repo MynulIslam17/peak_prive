@@ -7,6 +7,7 @@ import 'package:harry_service_app/app/data/services/network/network_caller.dart'
 import 'package:harry_service_app/app/modules/chats/models/message_model.dart';
 import '../../../core/constants/api_urls.dart';
 import '../../../data/services/socket/socket_service.dart';
+import 'chat_list_controller.dart';
 
 /// ------------------------------------------------------------
 /// ChatController
@@ -207,15 +208,40 @@ class ChatController extends GetxController {
   bool _isOtherUserOnline = false;
   bool get isOtherUserOnline => _isOtherUserOnline;
 
-  /// Initialize and listen for online/offline status updates
-  void initOnlineStatus(bool isOnline, String otherUserId) {
-    _isOtherUserOnline = isOnline;
+  String? _statusUserId;
 
-    Get.find<SocketService>().helper.onUserStatusChanged = (data) {
-      if (data['userId'] == otherUserId) {
-        _isOtherUserOnline = data['isOnline'] ?? false;
-        update();
+  /// Initialize and listen for online/offline status updates.
+  /// [isOnline] is what the chat list knew; a newer socket status wins.
+  void initOnlineStatus(bool isOnline, String otherUserId) {
+    final helper = Get.find<SocketService>().helper;
+    _statusUserId = otherUserId;
+    _isOtherUserOnline = helper.knownOnlineStatus(otherUserId) ?? isOnline;
+    helper.removeUserStatusListener(_onUserStatus);
+    helper.addUserStatusListener(_onUserStatus);
+    update();
+  }
+
+  void _onUserStatus(String userId, bool isOnline) {
+    if (userId != _statusUserId) return;
+    _isOtherUserOnline = isOnline;
+    update();
+  }
+
+  /// Stop listening when the chat screen closes.
+  void disposeOnlineStatus() {
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        Get.find<SocketService>().helper.removeUserStatusListener(_onUserStatus);
       }
-    };
+    } catch (_) {}
+    _statusUserId = null;
+  }
+
+  @override
+  void onClose() {
+    disposeOnlineStatus();
+    // Messages read here: refresh the list's unread counts and badge.
+    if (Get.isRegistered<ChatListController>()) Get.find<ChatListController>().refreshSoon();
+    super.onClose();
   }
 }

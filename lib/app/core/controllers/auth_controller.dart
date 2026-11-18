@@ -100,7 +100,17 @@ class AuthController extends GetxController {
 
     final userJson = prefs.getString(_userDataKey);
     if (userJson != null) {
-      userModel = UserModel.fromJson(jsonDecode(userJson));
+      // A partially written or schema-changed cache would otherwise throw here,
+      // on the splash screen, before any error UI exists to report it.
+      try {
+        final decoded = jsonDecode(userJson);
+        if (decoded is Map<String, dynamic>) {
+          userModel = UserModel.fromJson(decoded);
+        }
+      } catch (_) {
+        await prefs.remove(_userDataKey);
+        userModel = null;
+      }
     }
 
     // Re-initialize socket after app restart
@@ -156,13 +166,22 @@ class AuthController extends GetxController {
     userModel = null;
     role = null;
 
-    // Disconnect socket
+    // Disconnect socket. The instance must also be unregistered, otherwise
+    // `Get.isRegistered<SocketService>()` keeps reporting true and the next
+    // user is handed a disposed socket that silently never delivers messages.
     if (Get.isRegistered<SocketService>()) {
-      Get.find<SocketService>().helper.dispose();
+      try {
+        Get.find<SocketService>().helper.dispose();
+      } catch (_) {
+        // Already disposed; nothing to clean up.
+      }
+      await Get.delete<SocketService>(force: true);
     }
 
     // Navigate to login screen
-    Get.offAllNamed(Routes.login);
+    if (Get.currentRoute != Routes.login) {
+      Get.offAllNamed(Routes.login);
+    }
   }
 
   // -------------------------

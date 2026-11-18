@@ -1,20 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/core/constants/app_colors.dart';
-import 'package:harry_service_app/app/core/constants/text-style.dart';
-import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
-import 'package:harry_service_app/app/core/widgets/my_service_card.dart';
-import 'package:harry_service_app/app/modules/provider/pass/controller/delete_controller.dart';
-import 'package:shimmer/shimmer.dart';
-import '../../../../core/widgets/delete_dialog.dart';
-import '../../../../routes/app_routes.dart';
-import '../../pass/views/add_pass_screen.dart';
-import '../controllers/provider_all_service_controller.dart';
-import '../../../user/shared/models/ski_pass_model.dart' hide SkiPass;
+import '../../../../core/widgets/collapsing_header.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../core/controllers/nav_controller.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/delete_dialog.dart';
+import '../../../../core/widgets/my_service_card.dart';
+import '../../../../core/widgets/provider_profile.dart';
+import '../../../../data/api/peak_api.dart';
+import '../../../../routes/app_routes.dart';
+import '../controllers/my_listings_controller.dart';
+import '../widgets/provider_ui.dart';
+
+/// Add / edit route for each service. Edit args: `{'isEdit': true, 'id': id}`.
+String listingEditorRoute(ServiceKind kind) => switch (kind) {
+  ServiceKind.skiPass => Routes.addPassService,
+  ServiceKind.skiHire => Routes.addHireService,
+  ServiceKind.transport => Routes.addTransportService,
+  ServiceKind.restaurant => Routes.addRestaurantService,
+  ServiceKind.massage => Routes.addMessageService,
+};
+
+/// Provider → "My services": every listing the provider owns (active and
+/// inactive), for all five provider types.
 class ProviderServiceScreen extends StatefulWidget {
   const ProviderServiceScreen({super.key});
 
@@ -23,345 +34,177 @@ class ProviderServiceScreen extends StatefulWidget {
 }
 
 class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
-  final authController = Get.find<AuthController>();
-  final serviceController = Get.put(AllServiceController());
-
-  void _createNewService() async {
-    final providerType = authController.userModel?.providerType ?? '';
-
-    if (providerType == "Ski_Pass") {
-      await Get.to(() => const AddPassScreen(), arguments: {"isEdit": false});
-    } else if (providerType == "Restaurant") {
-      await Get.toNamed(
-        Routes.addRestaurantService,
-        arguments: {"isEdit": false},
-      );
-    } else if (providerType == "Massage") {
-      await Get.toNamed(Routes.addMessageService, arguments: {"isEdit": false});
-    } else if (providerType == "Transport") {
-      await Get.toNamed(
-        Routes.addTransportService,
-        arguments: {"isEdit": false},
-      );
-    } else {
-      await Get.toNamed(Routes.addHireService, arguments: {"isEdit": false});
-    }
-  }
+  final controller = Get.put(MyListingsController());
 
   @override
   void initState() {
     super.initState();
-    final providerType = authController.userModel?.providerType ?? "";
-    String url;
-    if (providerType == "Ski_Pass") {
-      url = AppUrls.providerPassService;
-    } else if (providerType == "Restaurant") {
-      url = AppUrls.providerRestaurantService;
-    } else if (providerType == "Massage") {
-      url = AppUrls.providerMassageService;
-    } else if (providerType == "Transport") {
-      url = AppUrls.transportServiceUrl();
+    // After the first frame: update() must not run mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.load();
+    });
+  }
+
+  Future<void> _create() async {
+    final kind = controller.kind;
+    if (kind == null) return;
+    final created = await Get.toNamed(listingEditorRoute(kind), arguments: {'isEdit': false});
+    _applySaved(created);
+  }
+
+  Future<void> _edit(ListingCard card) async {
+    final saved = await Get.toNamed(listingEditorRoute(card.kind), arguments: {'isEdit': true, 'id': card.id});
+    _applySaved(saved);
+  }
+
+  /// The editor returns the saved listing: show it at once, then sync quietly.
+  void _applySaved(Object? result) {
+    if (result is ListingCard) controller.upsert(result);
+    if (result != null && result != false) controller.load(showLoader: false);
+  }
+
+  Future<void> _toggle(ListingCard card, bool active) async {
+    final error = await controller.setActive(card, active);
+    if (error != null) {
+      AppToast.error(error, title: "Couldn't update the listing");
     } else {
-      url = AppUrls.providerHireUrl;
+      AppToast.success(
+        active ? 'Guests can find and book it again.' : 'Hidden from guests. Existing bookings continue.',
+        title: active ? 'Listing visible' : 'Listing hidden',
+      );
     }
-    serviceController.fetchServices(url);
+  }
+
+  Future<void> _delete(ListingCard card) async {
+    var outcome = DeleteOutcome.failed;
+    await DeleteDialogService.show(
+      context: context,
+      title: 'Delete listing?',
+      message: 'Guests will no longer see "${card.title}". This can\'t be undone.',
+      failureMessage: () => controller.actionError,
+      onDelete: () async {
+        outcome = await controller.delete(card);
+        // Close on 409 too: we offer "hide instead" next.
+        return outcome != DeleteOutcome.failed;
+      },
+    );
+    if (!mounted) return;
+    if (outcome == DeleteOutcome.deleted) {
+      AppToast.success('The listing was removed.', title: 'Deleted');
+    } else if (outcome == DeleteOutcome.hasOpenBookings) {
+      _offerHide(card);
+    }
+  }
+
+  void _offerHide(ListingCard card) {
+    DeleteDialogService.show(
+      context: context,
+      title: 'It has open bookings',
+      message:
+          '${controller.actionError ?? 'This listing still has bookings that are not finished.'}\n\n'
+          'Hide it instead? Guests won\'t find it, and existing bookings continue.',
+      deleteLabel: 'Hide listing',
+      cancelLabel: 'Keep it',
+      themeColor: AppColors.primary_1,
+      icon: Icons.visibility_off_outlined,
+      failureMessage: () => controller.actionError,
+      onDelete: () async => await controller.setActive(card, false) == null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final providerType = authController.userModel?.providerType ?? '';
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: GetBuilder<AllServiceController>(
-          builder: (controller) {
+      backgroundColor: AppColors.scaffold,
+      body: CollapsingHeaderLayout(
+        expandedHeight: ProviderProfile.expandedHeight,
+        collapsedHeight: ProviderProfile.collapsedHeight,
+        header: (_, t) => ProviderProfile(
+          t: t,
+          onProfileTap: () => Get.find<NavController>().changeIndex(4),
+          onNotificationTap: () => Get.toNamed(Routes.notification),
+        ),
+        body: (_, insets) => GetBuilder<MyListingsController>(
+          builder: (c) {
             return RefreshIndicator(
               color: AppColors.primary_1,
-              onRefresh: () async {
-                await serviceController.refreshServices(showLoader: false);
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(), // Fixes Pull-to-Refresh
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 20,
-                  ),
-                  child: Column(
+              edgeOffset: CollapsingHeaderLayout.refreshEdge(context),
+              onRefresh: () => c.load(showLoader: false),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24) + insets,
+                children: [
+                  Row(
                     children: [
-
-
-                      ProviderProfile(
-                        onProfileTap: () {
-                          // Navigate to profile screen
-                          Get.toNamed(Routes.providerInfoScreen);
-                        },
-                        onNotificationTap: () {
-                          // Navigate to notifications screen
-                          Get.toNamed(Routes.notification);
-                        },
+                      Expanded(
+                        child: ProviderSectionHeader(
+                          title: 'My services',
+                          count: c.isLoading ? null : c.listings.length,
+                        ),
                       ),
-                      SizedBox(height: 24.h),
-                      GetBuilder<AllServiceController>(builder: (controller) {
-                        // Calculate list inside builder for reactivity
-                        List<dynamic> activeList = [];
-                        if (providerType == "Ski_Pass") activeList = controller.skiPassList;
-                        else if (providerType == "Restaurant") activeList = controller.restaurantServiceList;
-                        else if (providerType == "Massage") activeList = controller.massageServiceList;
-                        else if (providerType == "Transport") activeList = controller.transportServiceList;
-                        else if (providerType == "Ski_Hire") activeList = controller.hireServiceList;
-
-                        return Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "My service (${activeList.length})",
-                                  style: AppTextStyle.sub_h2_medium_16(),
-                                ),
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(8),
-                                  onTap: _createNewService,
-                                  child: Ink(
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary_1,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.all(8),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.add, color: Colors.white, size: 15),
-                                        SizedBox(width: 4.w),
-                                        Text(
-                                          "Add",
-                                          style: AppTextStyle.p_medium_12(color: Colors.white),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 17.h),
-
-                            // --- Conditional Rendering for List ---
-                            if (controller.isLoading)
-                              _shimmerBox()
-                            else if (controller.errorMessage != null)
-                              SizedBox(
-                                height: 300.h,
-                                child: Center(child: Text(controller.errorMessage!)),
-                              )
-                            else if (activeList.isEmpty)
-
-                                Container(
-                                  height: MediaQuery.of(context).size.height * 0.5,
-                                  alignment: Alignment.center,
-                                  child: const Text("No services found"),
-                                )
-                              else
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: activeList.length,
-                                  itemBuilder: (context, index) {
-                                    // Ski Pass
-                                    if (providerType == "Ski_Pass") {
-                                      final pass = controller.skiPassList[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: MyServiceCard(
-                                          image: pass.thumbnail,
-                                          title: pass.title,
-                                          status: "€${pass.amount}/Day",
-                                          rating: pass.averageRating.toDouble(),
-                                          reviews: pass.reviews.length,
-                                          location: pass.serviceArea,
-                                          packageType: pass.skiPassType,
-                                          onDelete: () async {
-                                            DeleteDialogService.show(
-                                              context: context,
-                                              title: "Delete Pass",
-                                              message: "Are you sure?",
-                                              onDelete: () async {
-                                                final deleteController = Get.put(DeleteController());
-                                                final result = await deleteController.deleteItem(
-                                                  url: AppUrls.providerPassServiceDelete(pass.id),
-                                                );
-                                                if (result) serviceController.removeItemFromList(pass.id, providerType);
-                                                return result;
-                                              },
-                                            );
-                                          },
-                                          onEdit: () async {
-                                            bool result = await Get.to(() => const AddPassScreen(), arguments: {"pass": pass, "isEdit": true});
-                                            if (result == true) controller.refreshServices();
-                                          },
-                                        ),
-                                      );
-                                    }
-
-                                    // Restaurant
-                                    if (providerType == "Restaurant") {
-                                      final restaurant = controller.restaurantServiceList[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: MyServiceCard(
-                                          image: restaurant.thumbnail,
-                                          title: restaurant.title,
-                                          status: restaurant.status,
-                                          rating: restaurant.averageRating ?? 0.0,
-                                          reviews: restaurant.reviews.length,
-                                          location: restaurant.serviceArea,
-                                          onDelete: () async {
-                                            DeleteDialogService.show(
-                                              context: context,
-                                              title: "Delete Restaurant Seat",
-                                              message: "Are you sure?",
-                                              onDelete: () async {
-                                                final deleteController = Get.put(DeleteController());
-                                                final result = await deleteController.deleteItem(
-                                                  url: AppUrls.deleteRestaurantUrl(restaurant.sId),
-                                                );
-                                                if (result) serviceController.removeItemFromList(restaurant.sId!, providerType);
-                                                return result;
-                                              },
-                                            );
-                                          },
-                                          onEdit: () async {
-                                            await Get.toNamed(Routes.addRestaurantService, arguments: {"restaurant": restaurant, "isEdit": true});
-                                          },
-                                        ),
-                                      );
-                                    }
-
-                                    // Massage
-                                    if (providerType == "Massage") {
-                                      final massage = controller.massageServiceList[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: MyServiceCard(
-                                          image: massage.thumbnail ?? "",
-                                          title: massage.title ?? "",
-                                          status: "€${massage.amount.toString()}",
-                                          rating: massage.averageRating ?? 0.0,
-                                          reviews: massage.reviews?.length ?? 0,
-                                          location: massage.serviceArea ?? "N/A",
-                                          onDelete: () async {
-                                            DeleteDialogService.show(
-                                              context: context,
-                                              title: "Delete Massage Service",
-                                              message: "Are you sure?",
-                                              onDelete: () async {
-                                                final deleteController = Get.put(DeleteController());
-                                                final result = await deleteController.deleteItem(
-                                                  url: AppUrls.deleteMassageServiceUrl(massage.sId!),
-                                                );
-                                                if (result) serviceController.removeItemFromList(massage.sId!, providerType);
-                                                return result;
-                                              },
-                                            );
-                                          },
-                                          onEdit: () async {
-                                            final result = await Get.toNamed(
-                                              Routes.addMessageService,
-                                              arguments: {"massage": massage, "isEdit": true},
-                                            );
-
-                                            if (result == true) {
-                                              controller.refreshServices();
-                                            }
-                                          },
-                                        ),
-                                      );
-                                    }
-
-                                    // Transport
-                                    if (providerType == "Transport") {
-                                      final transport = controller.transportServiceList[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: MyServiceCard(
-                                          image: transport.thumbnail ?? "",
-                                          title: transport.title ?? "",
-                                          status: "€${transport.amount.toString()}",
-                                          rating: transport.averageRating!.toDouble(),
-                                          reviews: transport.reviews?.length ?? 0,
-                                          location: transport.serviceArea ?? "N/A",
-                                          onDelete: () async {
-                                            DeleteDialogService.show(
-                                              context: context,
-                                              title: "Delete Transport Service",
-                                              message: "Are you sure?",
-                                              onDelete: () async {
-                                                final deleteController = Get.put(DeleteController());
-                                                final result = await deleteController.deleteItem(
-                                                  url: AppUrls.deleteTransportUrl(transport.sId!),
-                                                );
-                                                if (result) serviceController.removeItemFromList(transport.sId!, providerType);
-                                                return result;
-                                              },
-                                            );
-                                          },
-                                          onEdit: () async {
-                                            final result = await Get.toNamed(
-                                              Routes.addTransportService,
-                                              arguments: {"transport": transport, "isEdit": true},
-                                            );
-
-                                            if (result == true) {
-                                              controller.refreshServices();
-                                            }
-                                          },
-                                        ),
-                                      );
-                                    }
-
-                                    // Ski Hire
-                                    if (providerType == "Ski_Hire") {
-                                      final hire = controller.hireServiceList[index];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(bottom: 10),
-                                        child: MyServiceCard(
-                                          image: hire.thumbnail ?? "",
-                                          title: hire.title ?? "",
-                                          status: "€${hire.totalPrice.toString()}",
-                                          rating: hire.averageRating?.toDouble() ?? 0,
-                                          reviews: hire.reviews?.length ?? 0,
-                                          location: hire.serviceArea ?? "N/A",
-                                          onDelete: () async {
-                                            DeleteDialogService.show(
-                                              context: context,
-                                              title: "Delete Hire Service",
-                                              message: "Are you sure?",
-                                              onDelete: () async {
-                                                final deleteController = Get.put(DeleteController());
-                                                final result = await deleteController.deleteItem(
-                                                  url: AppUrls.deleteHireServiceUrl(hire.id!),
-                                                );
-                                                if (result) serviceController.removeItemFromList(hire.id!, providerType);
-                                                return result;
-                                              },
-                                            );
-                                          },
-                                          onEdit: () async {
-                                            final result = await Get.toNamed(Routes.addHireService, arguments: {"hire": hire, "isEdit": true});
-                                            if (result == true) controller.refreshServices();
-                                          },
-                                        ),
-                                      );
-                                    }
-                                    return const SizedBox();
-                                  },
-                                ),
-                          ],
-                        );
-                      }),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: c.kind == null ? null : _create,
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: const Text('Add service'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary_1,
+                          foregroundColor: AppColors.textOnPrimary,
+                          textStyle: AppTextStyle.p_medium_12().copyWith(fontWeight: FontWeight.w600),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          minimumSize: const Size(0, 38),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
                     ],
                   ),
-                ),
+                  if (!c.isLoading && c.listings.isNotEmpty && c.activeCount < c.listings.length)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '${c.activeCount} visible · ${c.listings.length - c.activeCount} hidden from guests',
+                        style: AppTextStyle.p_regular_12(color: AppColors.textTertiary),
+                      ),
+                    ),
+                  const SizedBox(height: 14),
+                  if (c.isLoading)
+                    _shimmer()
+                  else if (c.errorMessage != null && c.listings.isEmpty)
+                    ProviderEmptyState(
+                      icon: Icons.cloud_off_rounded,
+                      title: "Couldn't load your services",
+                      message: c.errorMessage,
+                      actionLabel: 'Try again',
+                      onAction: () => c.load(),
+                    )
+                  else if (c.listings.isEmpty)
+                    ProviderEmptyState(
+                      icon: Icons.storefront_outlined,
+                      title: 'No services yet',
+                      message: 'Add your first listing so guests can find and book it.',
+                      actionLabel: 'Add service',
+                      onAction: _create,
+                    )
+                  else
+                    for (final l in c.listings)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: MyServiceCard(
+                          image: l.thumbnail ?? '',
+                          title: l.title,
+                          status: listingPriceLabel(l),
+                          rating: l.rating.average,
+                          reviews: l.rating.count,
+                          location: l.serviceArea ?? '',
+                          packageType: l.passType?.label ?? l.subCategory?.name,
+                          isActive: l.isActive,
+                          busy: c.busyIds.contains(l.id),
+                          onActiveChanged: (v) => _toggle(l, v),
+                          onEdit: () => _edit(l),
+                          onDelete: () => _delete(l),
+                        ),
+                      ),
+                ],
               ),
             );
           },
@@ -370,24 +213,57 @@ class _ProviderServiceScreenState extends State<ProviderServiceScreen> {
     );
   }
 
-  Widget _shimmerBox() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Column(
-        children: List.generate(3, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Container(
-              width: double.infinity,
-              height: 180.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+  /// Shaped like [MyServiceCard] with its visibility switch (290 high).
+  Widget _shimmer() => Column(
+        children: [for (var i = 0; i < 3; i++) const Padding(padding: EdgeInsets.only(bottom: 14), child: _ServiceCardSkeleton())],
+      );
+}
+
+class _ServiceCardSkeleton extends StatelessWidget {
+  const _ServiceCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 290,
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const SkeletonShimmer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: SkeletonBox(width: double.infinity, height: double.infinity, radius: 15)),
+            Padding(
+              padding: EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(child: SkeletonBox(height: 15)),
+                    SizedBox(width: 40),
+                    SkeletonBox(width: 64, height: 15),
+                  ]),
+                  SizedBox(height: 10),
+                  Row(children: [
+                    SkeletonBox(width: 70, height: 11),
+                    SizedBox(width: 12),
+                    SkeletonBox(width: 110, height: 11),
+                  ]),
+                  SizedBox(height: 10),
+                  Row(children: [
+                    SkeletonBox(width: 130, height: 11),
+                    Spacer(),
+                    SkeletonBox(width: 40, height: 24, radius: 12),
+                  ]),
+                ],
               ),
             ),
-          );
-        }),
+          ],
+        ),
       ),
     );
   }

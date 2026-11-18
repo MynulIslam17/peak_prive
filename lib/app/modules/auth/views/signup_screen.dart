@@ -12,6 +12,7 @@ import '../../../core/widgets/cusom_text_fiield.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../core/widgets/custome_button.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -274,6 +275,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   /// Submit logic
   void _submit() async {
+    if (signUpController.signupProgress) return; // a request is already running
 
     /// Validate all form fields
     if (!_formKey.currentState!.validate()) {
@@ -282,25 +284,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
     /// Check phone number
     if (phoneNumber.isEmpty) {
-      Get.snackbar(
-        "Phone Required",
-        "Please enter a valid phone number",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      showAppToast(type: ToastType.warning, title: "Phone Required", message: "Please enter a valid phone number");
       return;
     }
 
     /// Check terms agreement
     if (!_isAgree) {
-      Get.snackbar(
-        "Terms Required",
-        "Please agree to terms and conditions",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      showAppToast(type: ToastType.warning, title: "Terms Required", message: "Please agree to terms and conditions");
       return;
     }
 
@@ -325,12 +315,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     /// check result
     if (isSuccess) {
-      Get.snackbar(
-        "Otp",
-        "An OTP was sent to your email",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppColors.primary_1,
-      );
+      showAppToast(type: ToastType.success, title: "Code sent", message: "We sent a code to your email.");
 
       /// navigate to OTP screen
       Get.toNamed(
@@ -339,12 +324,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
     } else {
-      Get.snackbar(
-        "Error",
-        signUpController.errorMessage!,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: signUpController.errorMessage!);
     }
   }
 }

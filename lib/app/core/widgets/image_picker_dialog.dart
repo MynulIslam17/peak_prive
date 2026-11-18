@@ -20,6 +20,7 @@ class ImagePickerDialogService {
     Color galleryIconColor = Colors.blue,
     Color cameraIconColor = Colors.orange,
   }) {
+    FocusManager.instance.primaryFocus?.unfocus();
     return showDialog(
       context: context,
       builder: (_) {

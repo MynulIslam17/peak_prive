@@ -5,6 +5,10 @@ abstract class Routes {
 
 
   /// SkiPass
+  /// One booking screen for every service and both roles.
+  /// Arguments: `{'bookingId': String}` (optionally `'booking': Booking` to show at once).
+  static const bookingDetails = "/bookingDetails";
+
   static const service = "/service";
   // ticket  screen
   static const ticket="/ticket";
@@ -23,6 +27,7 @@ abstract class Routes {
 
   /// Transport
   static const transportDetails = "/transportDetails";
+  static const transportCheckout = "/transportCheckout";
   static const userTransportBookingDetails = "/userTransportBookingDetails";
 
   /// Message
@@ -32,6 +37,7 @@ abstract class Routes {
 
   /// Hire
   static const hireDetails = "/hireDetails";
+  static const hireCheckout = "/hireCheckout";
   static const userHireBookingDetails = "/userHireBookingDetails";
 
 
@@ -41,8 +47,7 @@ abstract class Routes {
 
   /// Restaurant
   static const restaurantDetails = "/restaurantDetails";
-  static const restaurantInfo = "/restaurantInfo";
-  static const restaurantBookingInfo = "/restaurantBookingInfo";
+  static const restaurantCheckout = "/restaurantCheckout";
   static const  userRestaurantBookingDetails = "/userRestaurantBookingDetails";
 
 

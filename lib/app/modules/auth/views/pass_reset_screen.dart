@@ -12,6 +12,7 @@ import '../../../core/widgets/appbar_with_title.dart';
 import '../../../core/widgets/cusom_text_fiield.dart';
 import '../../../core/widgets/custome_button.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class PassResetScreen extends StatefulWidget {
   const PassResetScreen({super.key});
@@ -63,6 +64,7 @@ class _PassResetScreenState extends State<PassResetScreen> {
 
   /// Reset password button
   void _resetPasswordHandler() async {
+    if (resetController.resetProgress) return; // a request is already running
     if (_formKey.currentState!.validate()) {
 
       String password = confirmPassTEController.text;
@@ -75,13 +77,7 @@ class _PassResetScreenState extends State<PassResetScreen> {
 
       if (response) {
         /// If the password reset is successful
-        Get.snackbar(
-          "Success",
-          "Password reset successfully", // You can customize the success message here
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: AppColors.primary_1,
-          colorText: Colors.black,
-        );
+        showAppToast(type: ToastType.success, title: "Success", message: "Password reset successfully");
 
         if(authController.isLoggedIn){
           Get.find<NavController>().changeIndex(3);
@@ -94,13 +90,7 @@ class _PassResetScreenState extends State<PassResetScreen> {
 
       } else {
         ///  If the API call fails
-        Get.snackbar(
-          "Error",
-           resetController.errorMessage!, // Error message
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        showAppToast(type: ToastType.error, title: "Error", message: resetController.errorMessage!);
       }
     }
   }

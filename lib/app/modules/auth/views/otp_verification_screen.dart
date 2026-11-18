@@ -13,6 +13,7 @@ import '../../../../gen/assets.gen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/custome_button.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class OtpVerification extends StatefulWidget {
   const OtpVerification({super.key});
@@ -94,22 +95,10 @@ class _OtpVerificationState extends State<OtpVerification> {
 
       if (response) {
         // Successfully sent OTP
-        Get.snackbar(
-          "Success",
-          "OTP sent successfully to $email",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: AppColors.primary_1,
-          colorText: Colors.black,
-        );
+        showAppToast(type: ToastType.success, title: "Success", message: "OTP sent successfully to $email");
       } else {
         // If API returns false (unsuccessful)
-        Get.snackbar(
-          "Failed",
-          "Failed to resend OTP. Please try again.",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-          colorText: Colors.black,
-        );
+        showAppToast(type: ToastType.error, title: "Failed", message: "Failed to resend OTP. Please try again.");
       }
     }
   }
@@ -233,18 +222,14 @@ class _OtpVerificationState extends State<OtpVerification> {
 
   /// Verify OTP event
   void _verifyOtpButton() async {
+    if (otpController.otpProgress) return; // a request is already running
     /// hide the keyboard
     FocusScope.of(context).unfocus();
 
     String otp = otpTEController.text;
 
     if (otp.length < 6) {
-      Get.snackbar(
-        "Error",
-        "Otp must be 6 character",
-        backgroundColor: Colors.red,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: "The code must be 6 digits.");
       return;
     }
 
@@ -270,12 +255,7 @@ class _OtpVerificationState extends State<OtpVerification> {
       }
     } else {
       /// is unsuccessful
-      Get.snackbar(
-        "Error",
-        otpController.errorMessage!,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: otpController.errorMessage!);
     }
   }
 }

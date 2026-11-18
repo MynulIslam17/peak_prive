@@ -1,65 +1,67 @@
 // lib/core/utils/phone_utils.dart
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'app_toast.dart';
+
+/// Opens the device dialer with [phoneNumber] pre-filled.
+///
+/// Shows a friendly toast when the number is missing/invalid or when the
+/// device can't place calls (iOS Simulator, iPad, iPod).
 Future<void> makePhoneCall(String? phoneNumber) async {
-  // Normalize input
-  final number = phoneNumber?.trim().toLowerCase();
+  final raw = phoneNumber?.trim() ?? '';
+  final lower = raw.toLowerCase();
 
-  // ❌ Invalid cases
-  if (number == null ||
-      number.isEmpty ||
-      number == 'n/a' ||
-      number == 'na' ||
-      number == 'null') {
-    Get.snackbar(
-      'Error',
-      'Invalid phone number',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade300,
-      colorText: Colors.white,
+  if (raw.isEmpty || lower == 'n/a' || lower == 'na' || lower == 'null') {
+    showAppToast(
+      type: ToastType.warning,
+      icon: Icons.phone_disabled_rounded,
+      title: 'No phone number',
+      message: "This provider hasn't added a phone number yet. "
+          'Try sending them a message instead.',
     );
     return;
   }
 
-  // ✅ Validate using regex (only digits + optional +)
-  final isValid = RegExp(r'^\+?[0-9]{7,15}$').hasMatch(number);
-
-  if (!isValid) {
-    Get.snackbar(
-      'Error',
-      'Phone number is not valid',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade300,
-      colorText: Colors.white,
+  // Strip formatting characters (spaces, dashes, dots, parentheses) so
+  // numbers like "+44 7700 900-123" are accepted.
+  final cleaned = raw.replaceAll(RegExp(r'[^0-9+]'), '');
+  if (!RegExp(r'^\+?[0-9]{7,15}$').hasMatch(cleaned)) {
+    showAppToast(
+      type: ToastType.error,
+      title: "Can't call this number",
+      message: '"$raw" doesn\'t look like a valid phone number.',
     );
     return;
   }
 
-  final Uri url = Uri(scheme: 'tel', path: number);
+  final url = Uri(scheme: 'tel', path: cleaned);
 
   try {
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      Get.snackbar(
-        'Error',
-        'Could not launch $number',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade300,
-        colorText: Colors.white,
-      );
-    }
-  } catch (e) {
-    Get.snackbar(
-      'Error',
-      'Something went wrong: $e',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red.shade300,
-      colorText: Colors.white,
+    // Launch directly: canLaunchUrl() returns false on Android 11+ unless the
+    // exact intent is declared in <queries>, which wrongly blocked the dialer.
+    final launched =
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (launched) return;
+
+    // No dialer available. Copy the number so the user can still call it.
+    await Clipboard.setData(ClipboardData(text: cleaned));
+    showAppToast(
+      type: ToastType.info,
+      icon: Icons.content_copy_rounded,
+      title: 'Number copied',
+      message: "Calling isn't available on this device. "
+          '$cleaned has been copied to your clipboard.',
+    );
+  } catch (_) {
+    showAppToast(
+      type: ToastType.error,
+      icon: Icons.phone_callback_rounded,
+      title: "Couldn't open the dialer",
+      message: 'Something went wrong. Please try again in a moment.',
+      actionLabel: 'Copy',
+      onAction: () => Clipboard.setData(ClipboardData(text: cleaned)),
     );
   }
 }

@@ -46,3 +46,6 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+# Build-time keys (loaded with --dart-define-from-file). Never commit real keys.
+/env/*.json
+!/env/keys.example.json

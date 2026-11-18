@@ -1,15 +1,13 @@
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/custom_appbar.dart';
 import '../../../../core/widgets/transaction_card.dart';
-import '../controllers/get_balance_controller.dart';
-import '../models/get_balance_model.dart';
+import '../controllers/wallet_controller.dart';
+import '../../../../core/widgets/shimmer/skeleton.dart';
 
+/// Full withdrawal history (provider) or payment history (customer), paged.
 class AllTransaction extends StatefulWidget {
   const AllTransaction({super.key});
 
@@ -18,56 +16,75 @@ class AllTransaction extends StatefulWidget {
 }
 
 class _AllTransactionState extends State<AllTransaction> {
-  final  balanceController =Get.put(BalanceController()) ;
+  late final WalletController wallet = Get.isRegistered<WalletController>()
+      ? Get.find<WalletController>()
+      : Get.put(WalletController());
+  final _scroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    balanceController.fetchBalance();
+    if (!wallet.hasActivity) wallet.loadActivity();
+    _scroll.addListener(() {
+      if (_scroll.position.extentAfter < 400) wallet.loadMoreActivity();
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("All Transactions"),
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () => Get.back(),
-          icon: const Icon(Icons.arrow_back_ios),
-        ),
-      ),
-      body: GetBuilder<BalanceController>(
-        builder: (controller) {
-          if (controller.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+      backgroundColor: AppColors.scaffold,
+      appBar: CustomAppBar(title: wallet.isProvider ? "Withdrawals" : "Payments"),
+      body: GetBuilder<WalletController>(
+        builder: (c) {
+          if (c.isActivityLoading && !c.hasActivity) {
+            return const SkeletonList(tiles: true, count: 8);
           }
-
-          if (controller.getBalance == null ||
-              controller.getBalance!.data == null) {
-            return const Center(child: Text("No Data Found"));
+          if (!c.hasActivity) {
+            return RefreshIndicator(
+              color: AppColors.primary_1,
+              onRefresh: c.loadActivity,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 160),
+                  Center(
+                    child: Text(c.activityError != null
+                        ? "Couldn't load the history. Pull to try again."
+                        : "Nothing here yet"),
+                  ),
+                ],
+              ),
+            );
           }
-
-          final transactions =
-              controller.getBalance!.data!.transactions ?? [];
-
-          if (transactions.isEmpty) {
-            return const Center(child: Text("No transactions available"));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: TransactionCard(transaction: transactions[index]),
-              );
-            },
+          final count = c.isProvider ? c.withdrawals.length : c.payments.length;
+          return RefreshIndicator(
+            color: AppColors.primary_1,
+            onRefresh: c.loadActivity,
+            child: ListView.separated(
+              controller: _scroll,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              itemCount: count + (c.hasMore ? 1 : 0),
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, i) {
+                if (i >= count) {
+                  return const SkeletonLoadMore(tiles: true);
+                }
+                return c.isProvider
+                    ? TransactionCard.withdrawal(c.withdrawals[i])
+                    : TransactionCard.payment(c.payments[i]);
+              },
+            ),
           );
         },
       ),
     );
   }
 }
-

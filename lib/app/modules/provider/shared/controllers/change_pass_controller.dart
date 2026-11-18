@@ -22,7 +22,12 @@ class ChangePasswordController extends GetxController {
 
       /// Call API
       NetworkResponse response = await Get.find<NetworkCaller>()
-          .postRequest(url: AppUrls.changePasswordUrl, body: model.toJson());
+          .postRequest(
+            url: AppUrls.changePasswordUrl,
+            body: model.toJson(),
+            // A wrong current password comes back as 401; it must not log out.
+            isFromLogin: true,
+          );
 
       _isLoading = false;
        update();

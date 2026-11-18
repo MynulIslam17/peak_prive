@@ -1,21 +1,17 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/message_details_shimmer.dart';
-import 'package:harry_service_app/app/modules/user/massage/controllers/message_details_controller.dart';
-import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
 
-import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
-import '../../../../core/utils/phone_utils.dart';
-import '../../../../core/widgets/custome_back_button.dart';
-import '../../../../core/widgets/custome_button.dart';
-import '../../../../core/widgets/provider_info.dart';
+import '../../../../core/utils/price_label.dart';
+import '../../../../core/widgets/collapsible_details_layout.dart';
+import '../../../../core/widgets/listing_details_parts.dart';
+import '../../../../data/api/peak_api.dart';
 import '../../../../routes/app_routes.dart';
+import '../controllers/message_details_controller.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
+/// User → Massage listing: durations, hours, benefits, then book.
 class MassageDetailsScreen extends StatefulWidget {
   const MassageDetailsScreen({super.key});
 
@@ -23,295 +19,170 @@ class MassageDetailsScreen extends StatefulWidget {
   State<MassageDetailsScreen> createState() => _MassageDetailsScreenState();
 }
 
-class _MassageDetailsScreenState extends State<MassageDetailsScreen>
-    with SingleTickerProviderStateMixin {
+class _MassageDetailsScreenState extends State<MassageDetailsScreen> {
+  final controller = Get.find<MassageDetailsController>();
   late final String productId;
-  final image = Assets.images;
-  final icons = Assets.icons;
-
-  late TabController tabController;
-  final massageController = Get.find<MassageDetailsController>();
 
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 2, vsync: this);
-    var argument = Get.arguments;
-    productId = argument["id"];
-
-    if (productId.isNotEmpty) {
-      _fetchDetails();
-    }
+    final args = Get.arguments;
+    productId = args is Map ? (args['id']?.toString() ?? '') : '';
+    if (productId.isNotEmpty) controller.fetch(productId);
   }
 
-  @override
-  void dispose() {
-    tabController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchDetails() async {
-    await massageController.fetchMassageDetails(productId);
-  }
+  void _book(MassageDetail m) => Get.toNamed(
+        Routes.bookingRequest,
+        arguments: {'id': m.id, 'listing': m},
+      );
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: GetBuilder<MassageDetailsController>(
-        builder: (controller) {
-          if (controller.isLoading) {
-            return const MassageDetailsShimmer();
-          }
+    if (productId.isEmpty) {
+      return ListingErrorView(
+        message: 'This listing link is invalid.',
+        onRetry: Get.back,
+      );
+    }
 
-          if (controller.massage == null) {
-            return Center(
-              child: Text(
-                "Massage details not available",
-                style: AppTextStyle.sub_h3_regular_14(),
-              ),
-            );
-          }
-
-          final massage = controller.massage!;
-          final owner = massage.owner;
-
-          return SlidingUpPanel(
-            minHeight: size.height * 0.55,
-            maxHeight: size.height * 0.95,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-            parallaxEnabled: true,
-            parallaxOffset: 0.5,
-            // Persistent Footer
-            footer: _buildPersistentFooter(massage, controller),
-            body: Stack(
-              children: [
-                Image.network(
-                  massage.thumbnail,
-                  height: size.height * 0.5,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      Container(color: Colors.grey[300]),
-                ),
-                Positioned(
-                  top: 40.h,
-                  left: 10.w,
-                  child: CustomBackButton(onTap: () => Get.back()),
-                ),
-              ],
-            ),
-            panelBuilder: (sc) => _buildPanelContent(sc, massage, owner),
+    return GetBuilder<MassageDetailsController>(
+      builder: (_) {
+        final m = controller.listing;
+        if (m == null && controller.isLoading) {
+          return const DetailsPageSkeleton(sections: [SkeletonSection.list, SkeletonSection.lines]);
+        }
+        if (m == null) {
+          return ListingErrorView(
+            message: controller.errorMessage ?? 'No details available',
+            onRetry: () => controller.fetch(productId),
           );
-        },
-      ),
-    );
-  }
+        }
 
-  Widget _buildPanelContent(
-    ScrollController sc,
-    dynamic massage,
-    dynamic owner,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          // Drag Indicator
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Container(
-              width: 60.w,
-              height: 5.h,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+        final rating = controller.rating;
+        final bookable = controller.isBookable;
+        final prices = m.durations.map((d) => d.price);
+        final from = lowestPrice(prices) ?? m.price.amount;
+
+        return CollapsibleDetailsLayout(
+          imageUrl: m.thumbnail ?? '',
+          title: m.title,
+          onBack: Get.back,
+          bottomBar: DetailsBottomBar(
+            priceLabel: !m.isActive
+                ? 'Not available'
+                : m.durations.length > 1
+                    ? 'From'
+                    : 'Price',
+            price: from > 0 ? euroLabel(from) : '—',
+            buttonText: bookable ? 'Book now' : 'Unavailable',
+            onPressed: bookable ? () => _book(m) : null,
           ),
-
-          // Header Info (Stays pinned at top of panel while scrolling content)
-          ProviderInfo(
-            providerName: owner.fullName,
-            rating: massage.averageRating.toString(),
-            reviewCount: massage.reviews.length,
-            image: owner.profileUrl,
-            onTapCall: () {
-              //TODO : call provider
-              makePhoneCall(owner.phoneNumber);
-            },
-            onTapMessage: () {
-              //TODO : message provider
-
-              Get.toNamed(
-                Routes.messagingScreen,
-                arguments: {
-                  'otherUserId': owner.id,
-                  'chatId': '',
-                  'otherUserName': owner.fullName,
-                  'otherUserProfileUrl': owner.profileUrl,
-                  'isOnline': false,
-                },
-              );
-            },
-          ),
-          SizedBox(height: 15.h),
-
-          TabBar(
-            controller: tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.black,
-            labelStyle: AppTextStyle.sub_h3_medium_14(),
-            indicatorSize: TabBarIndicatorSize.tab,
-            indicator: BoxDecoration(
-              color: const Color(0xffD4AF38),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            tabs: const [
-              Tab(text: "About"),
-              Tab(text: "Review"),
-            ],
-          ),
-          SizedBox(height: 10.h),
-
-          // Scrollable Content
-          Expanded(
-            child: TabBarView(
-              controller: tabController,
-              children: [
-                // About Tab
-                ListView(
-                  controller: sc, // Attach Panel ScrollController
-                  padding: EdgeInsets.only(bottom: 120.h),
-                  children: [_buildAboutContent()],
-                ),
-                // Review Tab
-                ListView(
-                  controller: sc, // Attach Panel ScrollController
-                  padding: EdgeInsets.only(bottom: 120.h),
-                  children: [ReviewScreen(reviewList: massage.reviews)],
-                ),
+          children: [
+            if (!m.isActive) const ListingUnavailableNotice(),
+            ListingHeader(
+              title: m.title,
+              rating: rating.average,
+              reviewCount: rating.count,
+              chips: [
+                if ((m.subCategory?.name ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.spa_outlined,
+                    label: m.subCategory!.name,
+                  ),
+                if ((m.serviceArea ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.location_on_outlined,
+                    label: m.serviceArea!,
+                  ),
+                if (m.openTime != null && m.closeTime != null)
+                  ListingInfoChip(
+                    icon: Icons.schedule_rounded,
+                    label: '${m.openTime} – ${m.closeTime}',
+                  ),
               ],
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 20),
+            if (m.provider != null)
+              ListingProviderCard(
+                id: m.provider!.id,
+                name: m.provider!.name ?? '',
+                photoUrl: m.provider!.photo ?? '',
+              ),
+            ListingSectionTitle(
+              'Durations',
+              trailing: m.durations.isEmpty ? null : '${m.durations.length}',
+            ),
+            if (m.durations.isEmpty)
+              const ListingNote(
+                icon: Icons.timer_off_outlined,
+                text: 'No durations listed yet.',
+              )
+            else
+              for (final d in m.durations) ...[
+                _DurationTile(duration: d),
+                const SizedBox(height: 8),
+              ],
+            if ((m.description ?? '').isNotEmpty) ...[
+              const ListingSectionTitle('About'),
+              ListingExpandableText(m.description!),
+            ],
+            if ((m.benefits ?? '').isNotEmpty) ...[
+              const ListingSectionTitle('Benefits'),
+              ListingExpandableText(m.benefits!),
+            ],
+            if ((m.recommendations ?? '').isNotEmpty) ...[
+              const ListingSectionTitle('Our recommendation'),
+              ListingExpandableText(m.recommendations!),
+            ],
+            ListingReviewsSection(
+              reviews: controller.reviews,
+              count: rating.count,
+              isLoading: controller.reviewsLoading,
+              error: controller.reviewsError,
+            ),
+          ],
+        );
+      },
     );
   }
+}
 
-  Widget _buildPersistentFooter(
-    dynamic massage,
-    MassageDetailsController controller,
-  ) {
+class _DurationTile extends StatelessWidget {
+  const _DurationTile({required this.duration});
+
+  final MassageDuration duration;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      width: MediaQuery.of(context).size.width,
-      padding: EdgeInsets.fromLTRB(
-        20,
-        10,
-        20,
-        MediaQuery.of(context).padding.bottom + 10,
-      ),
-      decoration: const BoxDecoration(
-        color: Color(0xffFDFAF6),
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              "€ ${massage.amount}",
-              style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.primary_1.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: const Icon(Icons.timer_outlined,
+                size: 18, color: AppColors.primary_1),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 2,
-            child: CustomButton(
-              onTap: () {
-                Get.toNamed(
-                  Routes.bookingRequest,
-                  arguments: {
-                    "priceByDuration": massage.priceByDuration,
-                    "id": productId,
-                  },
-                );
-              },
-              text: "Book Now",
-              backgroundColor: AppColors.primary_1,
-            ),
+            child: Text(duration.label, style: AppTextStyle.sub_h3_medium_14()),
+          ),
+          Text(
+            euroLabel(duration.price),
+            style: AppTextStyle.sub_h3_semibold_14(color: AppColors.primary_1),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAboutContent() {
-    final massage = massageController.massage!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                massage.title,
-                style: AppTextStyle.h2_semibold_22(),
-                softWrap: true,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Text(
-              "€ ${massage.amount}",
-              style: AppTextStyle.sub_h2_medium_16(color: AppColors.primary_1),
-            ),
-          ],
-        ),
-        SizedBox(height: 10.h),
-        Row(
-          children: [
-            Text(
-              "Open : ${massage.openTime}",
-              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
-            ),
-            SizedBox(width: 10.w),
-            const CircleAvatar(radius: 3, backgroundColor: Colors.grey),
-            SizedBox(width: 10.w),
-            Text(
-              "Closed : ${massage.closeTime}",
-              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
-            ),
-          ],
-        ),
-        SizedBox(height: 8.h),
-        Row(
-          children: [
-            icons.mapPinSimpleArea.svg(width: 18, height: 18),
-            SizedBox(width: 8.w),
-            Text(
-              "Location : ${massage.serviceArea}",
-              style: AppTextStyle.p_regular_12(color: AppColors.black_3),
-            ),
-          ],
-        ),
-        SizedBox(height: 20.h),
-        Text("Benefits", style: AppTextStyle.sub_h2_medium_16()),
-        SizedBox(height: 8.h),
-        Text(
-          massage.benefits,
-          style: AppTextStyle.p_regular_12(color: AppColors.black_2),
-        ),
-        SizedBox(height: 20.h),
-        Text("Our recommendation", style: AppTextStyle.sub_h1_medium_18()),
-        SizedBox(height: 8.h),
-        Text(
-          massage.ourRecommendations,
-          style: AppTextStyle.p_regular_12(color: AppColors.black_2),
-        ),
-      ],
     );
   }
 }

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../constants/app_colors.dart';
+import '../constants/text-style.dart';
+
+/// Standard title bar: cream background, centred title, back arrow.
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final Color backgroundColor;
@@ -8,38 +12,39 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double elevation;
   final Color iconColor;
   final VoidCallback? onBackPressed;
-  final bool showBackButton; // NEW
+  final bool showBackButton;
 
   const CustomAppBar({
     super.key,
     required this.title,
-    this.backgroundColor = const Color(0xffF9F7F3),
+    this.backgroundColor = AppColors.scaffold,
     this.centerTitle = true,
     this.elevation = 0,
-    this.iconColor = Colors.black,
+    this.iconColor = AppColors.textPrimary,
     this.onBackPressed,
-    this.showBackButton = true, // default true
+    this.showBackButton = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: backgroundColor,
+      surfaceTintColor: Colors.transparent,
       elevation: elevation,
+      scrolledUnderElevation: 0,
       centerTitle: centerTitle,
+      automaticallyImplyLeading: false,
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-
-          color: Colors.black,
-        ),
+        style: AppTextStyle.sub_h1_medium_18(color: AppColors.textPrimary),
       ),
       leading: showBackButton
           ? IconButton(
-        onPressed: onBackPressed ?? () => Get.back(),
-        icon: Icon(Icons.arrow_back_ios, color: iconColor),
-      )
+              tooltip: 'Back',
+              onPressed: onBackPressed ?? () => Get.back(),
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  size: 20, color: iconColor),
+            )
           : null,
     );
   }

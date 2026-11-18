@@ -1,28 +1,19 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/utils/date_parser.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
-import 'package:harry_service_app/app/core/constants/app_colors.dart';
-import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/hire_shimmer.dart';
-import '../../../../core/constants/text-style.dart';
-import '../../../../core/utils/phone_utils.dart';
-import '../../../../core/widgets/custome_back_button.dart';
-import '../../../../core/widgets/hire_card_item.dart';
-import '../../../../core/widgets/provider_info.dart';
-import '../../../../core/widgets/selected_hire_tem.dart';
-import '../../../../modules/user/pass/controllers/pass_booking_controller.dart';
-import '../../../../modules/user/hire/contollers/hire_details_controller.dart';
-import '../../../../modules/user/massage/views/review_screen.dart';
-import '../../../../data/services/stripe/payment_result.dart';
-import '../../../../data/services/stripe/stripe_config.dart';
-import '../../../../data/services/stripe/stripe_helper.dart';
-import '../../../../core/constants/env_config.dart';
-import '../../../../routes/app_routes.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../core/widgets/checkout_parts.dart';
+import '../../../../core/widgets/collapsible_details_layout.dart';
+import '../../../../core/widgets/listing_details_parts.dart';
+import '../../../../routes/app_routes.dart';
+import '../contollers/hire_details_controller.dart';
+import '../../../../data/api/peak_api.dart';
+import '../models/hire_price_unit.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
+
+/// User → Ski hire listing: pick equipment, then continue to checkout.
 class HireDetailsScreen extends StatefulWidget {
   const HireDetailsScreen({super.key});
 
@@ -30,572 +21,324 @@ class HireDetailsScreen extends StatefulWidget {
   State<HireDetailsScreen> createState() => _HireDetailsScreenState();
 }
 
-class _HireDetailsScreenState extends State<HireDetailsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController tabController;
-  final hireController = Get.find<HireDetailsController>();
-  final bookingController = Get.put(CreateBookingController());
-  final authController = Get.put(AuthController());
-
-  bool _isCheckoutMode = false;
-  bool _isProcessingPayment = false;
-
-  final addressController = TextEditingController();
-  final phoneController = TextEditingController();
-
-  DateTime? startDate;
-  DateTime? endDate;
-
-  late StripePaymentHelper _stripeHelper;
-  late String hireId;
+class _HireDetailsScreenState extends State<HireDetailsScreen> {
+  final controller = Get.find<HireDetailsController>();
+  late final String hireId;
 
   @override
   void initState() {
     super.initState();
-    tabController = TabController(length: 2, vsync: this);
     final args = Get.arguments;
-    hireId = args['id'] ?? '';
-    _fetchHireDetails();
-    _initializeStripe();
+    hireId = args is Map ? (args['id']?.toString() ?? '') : '';
+    if (hireId.isNotEmpty) controller.fetchHireDetails(hireId);
   }
 
-  void _initializeStripe() {
-    final config = StripeConfig(
-      // secretKey: EnvConfig.stripeSk,
-       secretKey: 'sk_test_REDACTED_ROTATE_ME',
-      merchantDisplayName: 'Harry Service',
-      paymentSheetTheme: ThemeMode.light,
-      allowsDelayedPaymentMethods: true,
-    );
-
-    _stripeHelper = StripePaymentHelper(
-      config: config,
-      onPaymentSuccess: _onPaymentSuccess,
-      onPaymentFailure: _onPaymentFailure,
-      onLog: (msg) => debugPrint("StripeLog: $msg"),
-    );
-  }
-
-  void _showSnackBar(String title, String message, Color bgColor) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: bgColor,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _onPaymentSuccess(PaymentResult result) async {
-    final itemList = hireController.selectedItems.entries
-        .map((e) => {"itemId": e.key, "quantity": e.value})
-        .toList();
-
-    final reqBody = {
-      "userId": authController.userModel!.id,
-      "productId": hireId,
-      "bookingItems": itemList,
-      "address": addressController.text.trim(),
-      "phoneNumber": phoneController.text.trim(),
-      "startDateAndTime": startDate!.toUtc().toIso8601String(),
-      "endDateAndTime": endDate!.toUtc().toIso8601String(),
-      "transactionId": result.paymentData?['transactionId'],
-    };
-
-    final success = await bookingController.proceedBooking(reqBody);
-
-    if (!mounted) return;
-    setState(() => _isProcessingPayment = false);
-
-    if (success) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
-              SizedBox(height: 16.h),
-              Text(
-                "Booking Successful!",
-                style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      // Navigate back after showing success
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          Navigator.of(context).pop(); // Close dialog
-          Get.back(); // Go back to previous screen
-        }
-      });
-    } else {
-      _showSnackBar("Booking Failed", "Please try again", Colors.red);
-    }
-  }
-
-  void _onPaymentFailure(PaymentResult result) {
-    setState(() => _isProcessingPayment = false);
-    _showSnackBar("Payment Failed", "Please try again", Colors.red);
-  }
-
-  Future<void> _fetchHireDetails() async {
-    await hireController.fetchHireDetails(hireId);
-  }
-
-  bool _isValidPhone(String phone) {
-    if (phone.isEmpty) return false;
-    final digits = phone.replaceAll(RegExp(r'\D'), '');
-    return digits.length >= 7 && digits.length <= 15;
-  }
-
-  Future<void> _pickDate({required bool isStart}) async {
-    // Date Picker
-    final pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (pickedDate == null) return;
-
-    // Time Picker (12-hour format / AM-PM)
-    final pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-          child: child!,
-        );
-      },
-    );
-    if (pickedTime == null) return;
-
-    // Combine Date & Time
-    final combinedDateTime = DateTime(
-      pickedDate.year,
-      pickedDate.month,
-      pickedDate.day,
-      pickedTime.hour,
-      pickedTime.minute,
-    );
-
-    // Validation: End time should not be before start time
-    if (!isStart && startDate != null && combinedDateTime.isBefore(startDate!)) {
-      _showSnackBar(
-        "Invalid",
-        "End time cannot be before start time",
-        Colors.red,
-      );
-      return;
-    }
-
-    // Update state
-    setState(() {
-      if (isStart) {
-        startDate = combinedDateTime;
-      } else {
-        endDate = combinedDateTime;
-      }
+  void _continue() {
+    final listing = controller.listing;
+    if (controller.selectedItems.isEmpty || listing == null || !listing.isActive) return;
+    Get.toNamed(Routes.hireCheckout, arguments: {
+      'id': listing.id,
+      'listing': listing,
+      // itemId → quantity chosen here.
+      'quantities': Map<String, int>.of(controller.selectedItems),
     });
   }
 
   @override
-  void dispose() {
-    tabController.dispose();
-    addressController.dispose();
-    phoneController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    if (hireId.isEmpty) {
+      return ListingErrorView(
+        message: 'This listing link is invalid.',
+        onRetry: Get.back,
+      );
+    }
+
+    return GetBuilder<HireDetailsController>(
+      builder: (_) {
+        final hire = controller.listing;
+        if (hire == null && controller.isLoading) {
+          return const DetailsPageSkeleton(sections: [SkeletonSection.lines, SkeletonSection.list]);
+        }
+        if (hire == null) {
+          return ListingErrorView(
+            message: controller.errorMessage ?? 'No details available',
+            onRetry: () => controller.fetch(hireId),
+          );
+        }
+
+        final count = controller.selectedCount;
+        final hasSelection = count > 0;
+        final unit = controller.priceUnit;
+        final rating = controller.rating;
+
+        return CollapsibleDetailsLayout(
+          imageUrl: hire.thumbnail ?? '',
+          title: hire.title,
+          onBack: Get.back,
+          bottomBar: DetailsBottomBar(
+            priceLabel: !hire.isActive
+                ? 'Not available'
+                : hasSelection
+                    ? '$count ${count == 1 ? 'item' : 'items'} selected'
+                    : 'Select equipment',
+            price: hasSelection
+                ? '${checkoutEuro(controller.totalSelectedPrice)} ${unit.suffix}'
+                : checkoutEuro(0),
+            buttonText: hire.isActive ? 'Continue' : 'Unavailable',
+            onPressed: hasSelection && hire.isActive ? _continue : null,
+          ),
+          children: [
+            if (!hire.isActive) const ListingUnavailableNotice(),
+            ListingHeader(
+              title: hire.title,
+              rating: rating.average,
+              reviewCount: rating.count,
+              chips: [
+                if ((hire.subCategory?.name ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.downhill_skiing_rounded,
+                    label: hire.subCategory!.name,
+                  ),
+                if ((hire.serviceArea ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.location_on_outlined,
+                    label: hire.serviceArea!,
+                  ),
+                ListingInfoChip(
+                  icon: Icons.sell_outlined,
+                  label: unit == HirePriceUnit.perRental
+                      ? 'Priced per rental'
+                      : 'Priced per ${unit.singular}',
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (hire.provider != null)
+              ListingProviderCard(
+                id: hire.provider!.id,
+                name: hire.provider!.name ?? '',
+                photoUrl: hire.provider!.photo ?? '',
+              ),
+            if ((hire.description ?? '').isNotEmpty) ...[
+              const ListingSectionTitle('About'),
+              ListingExpandableText(hire.description!),
+            ],
+            ListingSectionTitle(
+              'Choose equipment',
+              trailing: hire.items.isEmpty ? null : '${hire.items.length}',
+              action: hasSelection
+                  ? TextButton(
+                      onPressed: controller.clearSelection,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary_1,
+                        minimumSize: const Size(0, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text('Clear'),
+                    )
+                  : null,
+            ),
+            if (hire.items.isEmpty)
+              const _EmptyEquipment()
+            else
+              for (final item in hire.items) ...[
+                _EquipmentTile(
+                  item: item,
+                  unit: unit,
+                  stock: controller.maxQuantity(item),
+                  quantity: controller.getQuantity(item.id),
+                  canAdd: controller.canAdd(item),
+                  onAdd: () => controller.addItem(item.id),
+                  onRemove: () => controller.removeItem(item.id),
+                ),
+                const SizedBox(height: 10),
+              ],
+            if (hire.extraChargePerHour > 0)
+              ListingNote(
+                icon: Icons.more_time_rounded,
+                text: lateFeeRuleText(checkoutEuro(hire.extraChargePerHour)),
+              ),
+            ListingReviewsSection(
+              reviews: controller.reviews,
+              count: rating.count,
+              isLoading: controller.reviewsLoading,
+              error: controller.reviewsError,
+            ),
+          ],
+        );
+      },
+    );
   }
+}
+
+// ─────────────────────────────── Equipment ───────────────────────────────
+
+class _EquipmentTile extends StatelessWidget {
+  const _EquipmentTile({
+    required this.item,
+    required this.unit,
+    required this.stock,
+    required this.quantity,
+    required this.canAdd,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final HireItem item;
+  final HirePriceUnit unit;
+
+  /// Units in stock (date availability is checked at checkout).
+  final int stock;
+  final int quantity;
+  final bool canAdd;
+  final VoidCallback onAdd;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final selected = quantity > 0;
+    final outOfStock = stock <= 0;
+    final lowStock = !outOfStock && stock <= 3;
 
-    return Scaffold(
-      body: GetBuilder<HireDetailsController>(
-        builder: (controller) {
-          if (controller.isLoading)
-            return const Center(child: HireDetailsSkeleton());
-          if (controller.hireDetails == null)
-            return const Center(child: Text("Hire details not available"));
+    final (stockText, stockColor) = outOfStock
+        ? ('Out of stock', AppColors.error)
+        : lowStock
+            ? ('Only $stock in stock', const Color(0xFFB45309))
+            : ('$stock in stock', AppColors.textTertiary);
 
-          final hireDetails = controller.hireDetails!;
-
-          return SafeArea(
-            child: SlidingUpPanel(
-              minHeight: size.height * 0.55,
-              maxHeight: size.height * 0.97,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(30),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppColors.primary_1.withValues(alpha: 0.06)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected ? AppColors.primary_1 : AppColors.border,
+          width: selected ? 1.4 : 1,
+        ),
+      ),
+      child: Opacity(
+        opacity: outOfStock ? 0.55 : 1,
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                width: 64,
+                height: 64,
+                child: (item.photo ?? '').isEmpty
+                    ? const _ItemPlaceholder()
+                    : CachedNetworkImage(
+                        imageUrl: item.photo!,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) =>
+                            Container(color: AppColors.shimmerBase),
+                        errorWidget: (_, __, ___) => const _ItemPlaceholder(),
+                      ),
               ),
-              parallaxEnabled: true,
-              parallaxOffset: 0.2,
-              footer: _buildPersistentFooter(controller),
-              body: Stack(
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: size.width,
-                    height: size.height,
-                    child: Image.network(
-                      hireDetails.thumbnail,
-                      fit: BoxFit.cover,
+                  Text(
+                    item.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyle.sub_h3_medium_14(),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${checkoutEuro(item.price)} ${unit.suffix}',
+                    style: AppTextStyle.sub_h3_semibold_14(
+                      color: AppColors.primary_1,
                     ),
                   ),
-                  SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: CustomBackButton(
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    stockText,
+                    style: AppTextStyle.p_regular_12(color: stockColor),
                   ),
                 ],
               ),
-              panelBuilder: (ScrollController sc) =>
-                  _buildPanelContent(sc, hireDetails, controller),
             ),
-          );
-        },
+            const SizedBox(width: 8),
+            if (selected)
+              CheckoutQuantityStepper(
+                value: quantity,
+                max: canAdd ? quantity + 1 : quantity,
+                buttonSize: 34,
+                onChanged: (v) => v > quantity ? onAdd() : onRemove(),
+              )
+            else
+              OutlinedButton.icon(
+                onPressed: outOfStock || !canAdd ? null : onAdd,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary_1,
+                  side: BorderSide(
+                    color: outOfStock ? AppColors.border : AppColors.primary_1,
+                  ),
+                  minimumSize: const Size(0, 38),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildPanelContent(
-    ScrollController sc,
-    dynamic hireDetails,
-    HireDetailsController controller,
-  ) {
-    return Column(
-      children: [
-        SizedBox(height: 12.h),
-        Center(
-          child: Container(
-            width: 50.w,
-            height: 5.h,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            controller: sc,
-            padding: EdgeInsets.fromLTRB(
-              12,
-              10,
-              12,
-              120.h,
-            ), // Extra padding for persistent footer
-            children: [
-              _isCheckoutMode
-                  ? _buildCheckoutForm(hireDetails, controller)
-                  : _buildHireInfo(hireDetails),
-            ],
-          ),
-        ),
-      ],
+class _ItemPlaceholder extends StatelessWidget {
+  const _ItemPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.surfaceAlt,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.downhill_skiing_rounded,
+        color: AppColors.textTertiary,
+      ),
     );
   }
+}
 
-  Widget _buildCheckoutForm(
-    dynamic hireDetails,
-    HireDetailsController controller,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Selected Items", style: AppTextStyle.sub_h1_medium_18()),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: hireDetails.items
-              .where((item) => controller.getQuantity(item.id) > 0)
-              .length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.6,
-          ),
-          itemBuilder: (context, index) {
-            final filteredItems = hireDetails.items
-                .where((item) => controller.getQuantity(item.id) > 0)
-                .toList();
-            final item = filteredItems[index];
-            return SelectedItem(
-              productName: item.productName,
-              productImg: item.productPhoto,
-              quantity: controller.getQuantity(item.id),
-              price: item.price,
-            );
-          },
-        ),
-        SizedBox(height: 20.h),
-        Row(
-          children: [
-            _buildDateField("Select Start Date", startDate, true),
-            SizedBox(width: 10.w),
-            _buildDateField("Select End Date", endDate, false),
-          ],
-        ),
-        SizedBox(height: 20.h),
-        IntlPhoneField(
-          controller: phoneController,
-          initialCountryCode: 'BD',
-          decoration: InputDecoration(
-            labelText: 'Phone Number',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        Text("Address", style: AppTextStyle.sub_h3_medium_14()),
-        SizedBox(height: 10.h),
-        TextFormField(
-          controller: addressController,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            hintText: "Address",
-          ),
-        ),
-      ],
-    );
-  }
+class _EmptyEquipment extends StatelessWidget {
+  const _EmptyEquipment();
 
-  Widget _buildDateField(String label, DateTime? date, bool isStart) {
-    return Expanded(
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12)),
-          SizedBox(height: 10.h),
-          InkWell(
-            onTap: () => _pickDate(isStart: isStart),
-            child: Container(
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                DateParserHelper.formatDateTime(date),
-                style: const TextStyle(fontSize: 10),
-              ),
+          Icon(Icons.inventory_2_outlined,
+              size: 28, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text(
+            'No equipment listed yet',
+            style: AppTextStyle.sub_h3_regular_14(
+              color: AppColors.textTertiary,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildHireInfo(dynamic hireDetails) {
-    return Column(
-      children: [
-        ProviderInfo(
-          image: hireDetails.owner.profileUrl,
-          providerName: hireDetails.owner.fullName,
-          reviewCount: hireDetails.reviews.length,
-          onTapCall: () {
-            //TODO : call provider
-            makePhoneCall(hireDetails.owner.phoneNumber);
-          },
-          onTapMessage: () {
-            //TODO : message provider
-            Get.toNamed(
-              Routes.messagingScreen,
-              arguments: {
-                'otherUserId': hireDetails.owner.id,
-                'chatId': '',
-                'otherUserName': hireDetails.owner.fullName,
-                'otherUserProfileUrl': hireDetails.owner.profileUrl,
-                'isOnline': false,
-              },
-            );
-
-          },
-        ),
-        SizedBox(height: 10.h),
-        TabBar(
-          controller: tabController,
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.black,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          indicator: const BoxDecoration(
-            color: Color(0xffd6c24d),
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
-          tabs: const [
-            Tab(text: "About"),
-            Tab(text: "Review"),
-          ],
-        ),
-        SizedBox(
-          height: 400.h,
-          child: TabBarView(
-            controller: tabController,
-            children: [
-              _aboutSection(hireDetails),
-              ReviewScreen(reviewList: hireDetails.reviews),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPersistentFooter(HireDetailsController controller) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      padding: EdgeInsets.fromLTRB(
-        20,
-        10,
-        20,
-        MediaQuery.of(context).padding.bottom + 10,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
-      ),
-      child: _isCheckoutMode
-          ? _buildFooterCheckout()
-          : _buildFooterBookNow(controller),
-    );
-  }
-
-  Widget _buildFooterBookNow(HireDetailsController controller) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            "€${controller.totalSelectedPrice}",
-            style: TextStyle(
-              fontSize: 20.sp,
-              color: Colors.amber,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const Spacer(),
-        Expanded(
-          flex: 3,
-          child: SizedBox(
-            height: 50,
-            child: ElevatedButton(
-              onPressed: controller.totalSelectedPrice > 0
-                  ? () => setState(() => _isCheckoutMode = true)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary_1,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text("Book Now"),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFooterCheckout() {
-    return SizedBox(
-      width: double.infinity,
-      height: 60,
-      child: ElevatedButton(
-        onPressed: (bookingController.isLoading || _isProcessingPayment)
-            ? null
-            : () async {
-                final phone = phoneController.text.trim();
-                final address = addressController.text.trim();
-
-                if (!_isValidPhone(phone) ||
-                    startDate == null ||
-                    endDate == null ||
-                    address.isEmpty) {
-                  _showSnackBar(
-                    "Validation Error",
-                    "Fill all required fields",
-                    Colors.red,
-                  );
-                  return;
-                }
-
-                setState(() => _isProcessingPayment = true);
-                await _stripeHelper.processPayment(
-                  context: context,
-                  amount: hireController.totalSelectedPrice
-                      .toDouble(), // Ensure double
-                  currency: "USD",
-                  description: "Hire Booking Payment",
-                  metadata: {
-                    "userId": authController.userModel!.id,
-                    "productId": hireId,
-                  },
-                );
-              },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary_1,
-          disabledBackgroundColor: AppColors.primary_1.withOpacity(0.7),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: (bookingController.isLoading || _isProcessingPayment)
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Text("Checkout"),
-      ),
-    );
-  }
-
-  Widget _aboutSection(dynamic hireDetails) {
-    return GetBuilder<HireDetailsController>(
-      builder: (controller) {
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: hireDetails.items.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 0.77,
-          ),
-          itemBuilder: (context, index) {
-            final item = hireDetails.items[index];
-            return HireCardItem(
-              productImg: item.productPhoto,
-                itemName: item.productName,
-              productPrice: item.price,
-              quantity: controller.getQuantity(item.id),
-              addOnTap: () => controller.addItem(item.id),
-              removeOnTap: () => controller.removeItem(item.id),
-            );
-          },
-        );
-      },
     );
   }
 }

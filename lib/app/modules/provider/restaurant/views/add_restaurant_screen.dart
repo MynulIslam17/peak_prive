@@ -1,45 +1,17 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/modules/provider/shared/models/provider_resturant_service.dart';
-import 'package:harry_service_app/app/modules/user/shared/models/category_model.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../../../../gen/assets.gen.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
-import '../../../../core/widgets/image_picker_dialog.dart';
-import '../../shared/controllers/category_controller.dart';
-import '../controller/create_restaurant_controller.dart';
+import '../../../../core/widgets/app_form_field.dart';
+import '../../../../data/api/peak_api.dart';
+import '../../shared/models/listing_drafts.dart';
+import '../../shared/views/listing_editor/editor_base.dart';
+import '../../shared/views/listing_editor/editor_ui.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
-// ─────────────────────────────────────────────
-// MODELS
-// ─────────────────────────────────────────────
-
-class SeatItem {
-  String? sId;
-  String? selectedSeatType;
-  TextEditingController totalSeatController = TextEditingController();
-  TextEditingController pricePerSeatController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-  File? selectedSeatImage;
-  String? seatImageUrl;
-
-  SeatItem({this.selectedSeatType, this.seatImageUrl, this.sId});
-}
-
-class TimeSlotItem {
-  String? sId;
-  String timeString;
-
-  TimeSlotItem({required this.timeString, this.sId});
-}
-
-// ─────────────────────────────────────────────
-// SCREEN
-// ─────────────────────────────────────────────
-
+/// Add / edit a restaurant. Route args: `{'isEdit': true, 'id': id}`.
 class AddRestaurantScreen extends StatefulWidget {
   const AddRestaurantScreen({super.key});
 
@@ -47,822 +19,288 @@ class AddRestaurantScreen extends StatefulWidget {
   State<AddRestaurantScreen> createState() => _AddRestaurantScreenState();
 }
 
-class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
+class _SeatRow {
+  _SeatRow(this.draft)
+      : price = TextEditingController(text: draft.price),
+        quantity = TextEditingController(text: draft.quantity),
+        description = TextEditingController(text: draft.description);
+  final SeatDraft draft;
+  final TextEditingController price, quantity, description;
 
-  // ── Controllers ──
-  final _restaurantController = Get.put(AddNewRestaurantController());
-  final _categoryController   = Get.put(CategoryController());
-  final _nameTEC      = TextEditingController();
-  final _locationTEC  = TextEditingController();
+  SeatDraft collect() => draft
+    ..price = price.text
+    ..quantity = quantity.text
+    ..description = description.text;
 
-  // ── State ──
-  late final bool isFromEdit;
-  Result? restaurantModel;
+  void dispose() {
+    price.dispose();
+    quantity.dispose();
+    description.dispose();
+  }
+}
 
-  final List<String>       foodCategory = [];
-  final List<TimeSlotItem> timeSlots    = [];
+class _AddRestaurantScreenState extends ListingEditorState<AddRestaurantScreen> {
+  @override
+  ServiceKind get kind => ServiceKind.restaurant;
 
-  String?    selectedCategory;
-  String?    selectedCategoryId;
-  TimeOfDay? openTime;
-  TimeOfDay? closeTime;
-  TimeOfDay? startSlotTime;
-  TimeOfDay? endSlotTime;
+  final _title = TextEditingController();
+  final _area = TextEditingController();
+  final _foodType = TextEditingController();
+  final _description = TextEditingController();
+  String? _categoryId;
+  String? _categoryName;
+  String? _openTime;
+  String? _closeTime;
+  File? _thumbnail;
+  String? _thumbnailUrl;
+  final List<_SeatRow> _seats = [_SeatRow(SeatDraft(type: 'Normal'))];
+  final List<SlotDraft> _slots = [];
 
-  File?   selectedImage;
-  String? selectedImageUrl;
-
-  late SeatItem vipSeatItem;
-  late SeatItem normalSeatItem;
-
-  bool isValid = false;
-
-  // originalData is only meaningful in edit mode
-  Map<String, dynamic> originalData = {};
-
-  // ─────────────────────────────────────────────
-  // LIFECYCLE
-  // ─────────────────────────────────────────────
+  // New slot being composed.
+  String? _newStart;
+  String? _newEnd;
 
   @override
-  void initState() {
-    super.initState();
-
-    final args = Get.arguments ?? {};
-    isFromEdit      = args["isEdit"] ?? false;
-    restaurantModel = args["restaurant"] as Result?;
-
-    vipSeatItem    = SeatItem(selectedSeatType: "VIP");
-    normalSeatItem = SeatItem(selectedSeatType: "Normal");
-
-    _addSeatListeners();
-    _nameTEC.addListener(_validateForm);
-    _locationTEC.addListener(_validateForm);
-
-    // Populate fields first so originalData captures correct values
-    if (isFromEdit && restaurantModel != null) {
-      _populateEditFields();
+  void fill(ListingDetail detail) {
+    final d = RestaurantDraft.from(detail as RestaurantDetail);
+    _title.text = d.title;
+    _area.text = d.serviceArea;
+    _foodType.text = d.foodType;
+    _description.text = d.description;
+    _categoryId = d.categoryId;
+    _categoryName = detail.subCategory?.name;
+    _openTime = d.openTime;
+    _closeTime = d.closeTime;
+    _thumbnailUrl = detail.thumbnail;
+    for (final r in _seats) {
+      r.dispose();
     }
+    _seats
+      ..clear()
+      ..addAll(d.seats.map(_SeatRow.new));
+    _slots
+      ..clear()
+      ..addAll(d.slots);
+  }
 
-    // Fetch categories, then set selectedCategory + store original data
-    _categoryController.fetchCategories(AppUrls.restaurantCategoryUrl).then((_) {
-      setState(() {
-        foodCategory
-          ..clear()
-          ..addAll(_categoryController.categories.map((e) => e.name));
+  RestaurantDraft get _draft => RestaurantDraft(
+        categoryId: _categoryId,
+        title: _title.text,
+        serviceArea: _area.text,
+        openTime: _openTime,
+        closeTime: _closeTime,
+        foodType: _foodType.text,
+        description: _description.text,
+        seats: _seats.map((r) => r.collect()).toList(),
+        slots: _slots,
+        thumbnail: _thumbnail,
+      );
 
-        if (isFromEdit && restaurantModel != null) {
-          selectedCategory = restaurantModel!.category!.name;
-          selectedCategoryId = _resolveCategory(selectedCategory)?.id;
-        }
-      });
+  @override
+  ListingForm buildForm(ListingDetail? original) => _draft.toForm(original as RestaurantDetail?);
 
-      // Store baseline AFTER categories are loaded so categoryId comparison works
-      if (isFromEdit && restaurantModel != null) {
-        _storeOriginalData();
-      }
+  @override
+  String? extraProblem() {
+    for (final r in _seats) {
+      if (parseAmount(r.price.text) == null) return '${r.draft.type} seats: enter a price.';
+      if (parseCount(r.quantity.text) == null) return '${r.draft.type} seats: enter a whole number of seats.';
+    }
+    return _draft.slotProblem();
+  }
 
-      _validateForm();
+  void _addSlot() {
+    final s = _newStart, e = _newEnd;
+    if (s == null || e == null) return;
+    final problem = checkSlot(start: s, end: e, openTime: _openTime, closeTime: _closeTime);
+    if (problem != null) {
+      showAppToast(type: ToastType.warning, title: "Check the time slot", message: problem);
+      return;
+    }
+    if (_slots.any((x) => x.startTime == s && x.endTime == e)) return;
+    setState(() {
+      _slots.add(SlotDraft(startTime: s, endTime: e));
+      _newStart = null;
+      _newEnd = null;
     });
   }
 
   @override
   void dispose() {
-    _nameTEC.dispose();
-    _locationTEC.dispose();
-    vipSeatItem.totalSeatController.dispose();
-    vipSeatItem.pricePerSeatController.dispose();
-    vipSeatItem.descriptionController.dispose();
-    normalSeatItem.totalSeatController.dispose();
-    normalSeatItem.pricePerSeatController.dispose();
-    normalSeatItem.descriptionController.dispose();
+    for (final c in [_title, _area, _foodType, _description]) {
+      c.dispose();
+    }
+    for (final r in _seats) {
+      r.dispose();
+    }
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────
-  // SETUP HELPERS
-  // ─────────────────────────────────────────────
-
-  void _addSeatListeners() {
-    for (final ctrl in [
-      vipSeatItem.totalSeatController,
-      vipSeatItem.pricePerSeatController,
-      vipSeatItem.descriptionController,
-      normalSeatItem.totalSeatController,
-      normalSeatItem.pricePerSeatController,
-      normalSeatItem.descriptionController,
-    ]) {
-      ctrl.addListener(_validateForm);
-    }
-  }
-
-  void _populateEditFields() {
-    final r = restaurantModel!;
-    selectedCategory   = r.category!.name;
-    _nameTEC.text      = r.title;
-    _locationTEC.text  = r.serviceArea;
-    selectedImageUrl   = r.thumbnail;
-    openTime           = _parseTime(r.openTime);
-    closeTime          = _parseTime(r.closeTime);
-
-    timeSlots
-      ..clear()
-      ..addAll(r.slots.map((s) =>
-          TimeSlotItem(timeString: "${s.startTime} - ${s.endTime}", sId: s.sId)));
-
-    for (final item in r.items) {
-      final seat = item.seat == "VIP" ? vipSeatItem : normalSeatItem;
-      seat.sId = item.sId;
-      seat.descriptionController.text    = item.description;
-      seat.pricePerSeatController.text   = item.price.toString();
-      seat.totalSeatController.text      = item.totalQty.toString();
-      seat.seatImageUrl                  = item.photo;
-    }
-  }
-
-  void _storeOriginalData() {
-    final sortedSlots = timeSlots.map((e) => e.timeString).toList()..sort();
-    originalData = {
-      "restaurantName": restaurantModel!.title,
-      "categoryId"    : selectedCategoryId,
-      "openTime"      : restaurantModel!.openTime,
-      "closeTime"     : restaurantModel!.closeTime,
-      "serviceArea"   : restaurantModel!.serviceArea,
-      "thumbnail"     : restaurantModel!.thumbnail,
-      "timeSlots"     : sortedSlots,
-      "vipSeat": {
-        "totalSeat"  : vipSeatItem.totalSeatController.text,
-        "price"      : vipSeatItem.pricePerSeatController.text,
-        "description": vipSeatItem.descriptionController.text,
-        "photo"      : vipSeatItem.seatImageUrl,
-      },
-      "normalSeat": {
-        "totalSeat"  : normalSeatItem.totalSeatController.text,
-        "price"      : normalSeatItem.pricePerSeatController.text,
-        "description": normalSeatItem.descriptionController.text,
-        "photo"      : normalSeatItem.seatImageUrl,
-      },
-    };
-  }
-
-  // ─────────────────────────────────────────────
-  // VALIDATION
-  // ─────────────────────────────────────────────
-
-  void _validateForm() {
-    final bool hasMainImage =
-        selectedImage != null || (selectedImageUrl?.isNotEmpty ?? false);
-
-    final bool vipValid = _isSeatValid(vipSeatItem);
-    final bool normalValid = _isSeatValid(normalSeatItem);
-
-    final bool allFilled = hasMainImage &&
-        selectedCategory != null &&
-        openTime != null &&
-        closeTime != null &&
-        _nameTEC.text.trim().isNotEmpty &&
-        _locationTEC.text.trim().isNotEmpty &&
-        timeSlots.isNotEmpty &&
-        vipValid &&
-        normalValid;
-
-    // In edit mode, also require at least one field to have changed
-    final bool hasChanges = !isFromEdit || _detectChanges();
-
-    setState(() => isValid = allFilled && hasChanges);
-  }
-
-  bool _isSeatValid(SeatItem item) =>
-      item.selectedSeatType != null &&
-          item.totalSeatController.text.trim().isNotEmpty &&
-          item.pricePerSeatController.text.trim().isNotEmpty &&
-          item.descriptionController.text.trim().isNotEmpty &&
-          (item.selectedSeatImage != null ||
-              (item.seatImageUrl?.isNotEmpty ?? false));
-
-  // Returns true if anything changed compared to originalData
-  bool _detectChanges() {
-    if (originalData.isEmpty) return false;
-
-    if (_nameTEC.text.trim() != originalData["restaurantName"])  return true;
-    if (selectedCategoryId    != originalData["categoryId"])     return true;
-    if (_formatTime(openTime) != originalData["openTime"])       return true;
-    if (_formatTime(closeTime) != originalData["closeTime"])     return true;
-    if (_locationTEC.text.trim() != originalData["serviceArea"]) return true;
-    if (selectedImage != null)                                   return true;
-
-    final currentSlots = timeSlots.map((e) => e.timeString).toList()..sort();
-    final origSlots    = List<String>.from(originalData["timeSlots"] ?? [])..sort();
-    if (currentSlots.join(',') != origSlots.join(','))           return true;
-
-    if (_seatChanged(vipSeatItem,    originalData["vipSeat"]))    return true;
-    if (_seatChanged(normalSeatItem, originalData["normalSeat"])) return true;
-
-    return false;
-  }
-
-  bool _seatChanged(SeatItem item, Map<String, dynamic>? orig) {
-    if (orig == null) return true;
-    return item.totalSeatController.text    != orig["totalSeat"]   ||
-        item.pricePerSeatController.text != orig["price"]       ||
-        item.descriptionController.text  != orig["description"] ||
-        item.selectedSeatImage           != null;
-  }
-
-  // ─────────────────────────────────────────────
-  // TIME HELPERS
-  // ─────────────────────────────────────────────
-
-  /// Formats a TimeOfDay to 12-hour string e.g. "6:05 AM"
-  String _formatTime(TimeOfDay? time) {
-    if (time == null) return "";
-    final hour   = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
-    final min    = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? "AM" : "PM";
-    return "$hour:$min $period";
-  }
-
-  /// Parses "10:30 AM" → TimeOfDay
-  TimeOfDay _parseTime(String s) {
-    try {
-      final parts  = s.split(RegExp(r'[:\s]'));
-      if (parts.length < 2) return TimeOfDay.now();
-      int hour     = int.parse(parts[0]);
-      final minute = int.parse(parts[1].replaceAll(RegExp(r'\D'), ''));
-      if (s.toUpperCase().contains('PM') && hour < 12) hour += 12;
-      if (s.toUpperCase().contains('AM') && hour == 12) hour  = 0;
-      return TimeOfDay(hour: hour % 24, minute: minute);
-    } catch (_) {
-      return TimeOfDay.now();
-    }
-  }
-
-  /// Returns true if [end] is strictly after [begin]
-  bool _isTimeAfter(TimeOfDay begin, TimeOfDay end) =>
-      end.hour * 60 + end.minute > begin.hour * 60 + begin.minute;
-
-  // ─────────────────────────────────────────────
-  // ACTIONS
-  // ─────────────────────────────────────────────
-
-  ServiceCategory? _resolveCategory(String? name) {
-    if (name == null) return null;
-    try {
-      return _categoryController.categories.firstWhere((c) => c.name == name);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _pickImage({required bool isSeat, SeatItem? seatItem}) async {
-    ImagePickerDialogService.show(
-      context: context,
-      title: isSeat ? "Add Seat Photo/Layout" : "Add Restaurant Photo",
-      subtitle: "Choose from gallery or take a new photo",
-      galleryLabel: "Gallery",
-      gallerySubtitle: "Choose from your photos",
-      cameraLabel: "Camera",
-      cameraSubtitle: "Take a new photo",
-      primaryColor: AppColors.primary_1,
-      galleryIconColor: Colors.blue,
-      cameraIconColor: Colors.orange,
-      onImageSourceSelected: (source) async {
-        final picked = await ImagePicker().pickImage(source: source);
-        if (picked == null) return;
-        setState(() {
-          if (isSeat && seatItem != null) {
-            seatItem.selectedSeatImage = File(picked.path);
-            seatItem.seatImageUrl      = null;
-          } else {
-            selectedImage    = File(picked.path);
-            selectedImageUrl = null;
-          }
-        });
-        _validateForm();
-      },
-    );
-  }
-
-  Future<void> _selectOpenCloseTime(bool isOpen) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: (isOpen ? openTime : closeTime) ?? TimeOfDay.now(),
-    );
-    if (picked == null) return;
-
-    // Validate: closeTime must be after openTime
-    if (!isOpen && openTime != null && !_isTimeAfter(openTime!, picked)) {
-      _showError("Close time must be after open time.");
-      return;
-    }
-    if (isOpen && closeTime != null && !_isTimeAfter(picked, closeTime!)) {
-      _showError("Open time must be before close time.");
-      return;
-    }
-
-    setState(() => isOpen ? openTime = picked : closeTime = picked);
-    _validateForm();
-  }
-
-  Future<void> _selectSlotTime(bool isStart) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: (isStart ? startSlotTime : endSlotTime) ?? TimeOfDay.now(),
-    );
-    if (picked == null) return;
-    setState(() => isStart ? startSlotTime = picked : endSlotTime = picked);
-  }
-
-  void _addSlot() {
-    if (startSlotTime == null || endSlotTime == null) return;
-
-    if (!_isTimeAfter(startSlotTime!, endSlotTime!)) {
-      _showError("End time must be after start time.");
-      return;
-    }
-
-    setState(() {
-      timeSlots.add(TimeSlotItem(
-        timeString: "${_formatTime(startSlotTime)} - ${_formatTime(endSlotTime)}",
-      ));
-      startSlotTime = null;
-      endSlotTime   = null;
-    });
-    _validateForm();
-  }
-
-  void _removeSlot(int index) {
-    setState(() => timeSlots.removeAt(index));
-    _validateForm();
-  }
-
-  void _showError(String msg) {
-    Get.snackbar("Validation", msg,
-        backgroundColor: Colors.red, colorText: Colors.white);
-  }
-
-  // ─────────────────────────────────────────────
-  // SAVE / UPDATE
-  // ─────────────────────────────────────────────
-
-  void _save() async {
-    FocusManager.instance.primaryFocus?.unfocus();
-
-    if (!isValid) {
-      _showError("Please fill all required fields.");
-      return;
-    }
-
-    final slots = timeSlots.map((s) {
-      final parts = s.timeString.split(' - ');
-      final m = <String, dynamic>{"startTime": parts[0], "endTime": parts[1]};
-      if (isFromEdit && s.sId != null) m["_id"] = s.sId!;
-      return m;
-    }).toList();
-
-    final items = [
-      _buildSeatMap(vipSeatItem,    "VIP"),
-      _buildSeatMap(normalSeatItem, "Normal"),
-    ];
-
-    bool success;
-
-    if (isFromEdit) {
-      final payload = <String, dynamic>{};
-
-      if (_nameTEC.text.trim()     != originalData["restaurantName"]) payload["title"]       = _nameTEC.text.trim();
-      if (selectedCategoryId       != originalData["categoryId"])     payload["categoryId"]  = selectedCategoryId;
-      if (_formatTime(openTime)    != originalData["openTime"])       payload["openTime"]    = _formatTime(openTime);
-      if (_formatTime(closeTime)   != originalData["closeTime"])      payload["closeTime"]   = _formatTime(closeTime);
-      if (_locationTEC.text.trim() != originalData["serviceArea"])    payload["serviceArea"] = _locationTEC.text.trim();
-      if (selectedImage != null)                                      payload["thumbnail"]   = selectedImage;
-
-      payload["slots"] = slots;
-      payload["items"] = items;
-
-      success = await _restaurantController.updateRestaurant(
-        payload: payload,
-        restaurantId: restaurantModel!.sId,
-        apiUrl: AppUrls.updateRestaurantUrl(restaurantModel!.sId),
-      );
-    } else {
-      success = await _restaurantController.createRestaurant(
-        restaurantName: _nameTEC.text.trim(),
-        categoryId:     selectedCategoryId!,
-        foodType:       selectedCategory!,
-        openTime:       _formatTime(openTime),
-        closeTime:      _formatTime(closeTime),
-        serviceArea:    _locationTEC.text,
-        thumbnailImage: selectedImage ?? File(''),
-        timeSlots:      timeSlots.map((e) => e.timeString).toList(),
-        seatItems:      [vipSeatItem, normalSeatItem],
-        apiUrl:         AppUrls.createRestaurantUrl,
-      );
-    }
-
-    if (success) {
-      Navigator.pop(context, true);
-    } else {
-      _showError(_restaurantController.errorMessage ?? "Failed to save restaurant.");
-    }
-  }
-
-  Map<String, dynamic> _buildSeatMap(SeatItem item, String type) => {
-    "seat"    : type,
-    if (isFromEdit && item.sId != null) "_id": item.sId,
-    "totalQty": item.totalSeatController.text,
-    "price"   : item.pricePerSeatController.text,
-    "description": item.descriptionController.text,
-    "photo"   : item.selectedSeatImage ?? item.seatImageUrl,
-  };
-
-  // ─────────────────────────────────────────────
-  // BUILD
-  // ─────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          isFromEdit ? "Edit Restaurant" : "Add Restaurant",
-          style: const TextStyle(
-              color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        centerTitle: true,
-      ),
-      body: GetBuilder<CategoryController>(builder: (catCtrl) {
-        if (catCtrl.isLoading) {
-          return const Center(
-              child: CircularProgressIndicator(color: AppColors.primary_1));
-        }
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _label("Category"),
-              SizedBox(height: 8.h),
-              _buildDropdown(),
-
-              SizedBox(height: 24.h),
-              _label("Add a Photo"),
-              SizedBox(height: 10.h),
-              _buildImagePicker(
-                image: selectedImage,
-                imageUrl: selectedImageUrl,
-                onTap: () => _pickImage(isSeat: false),
-                label: "Restaurant Photo",
-              ),
-
-              SizedBox(height: 24.h),
-              _label("Restaurant Name"),
-              SizedBox(height: 8.h),
-              _buildTextField("Write Name", _nameTEC),
-
-              SizedBox(height: 24.h),
-              Row(children: [
-                Expanded(child: _buildTimePicker("Open Time",  openTime,  true)),
-                SizedBox(width: 16.w),
-                Expanded(child: _buildTimePicker("Close Time", closeTime, false)),
-              ]),
-
-              SizedBox(height: 24.h),
-              _label("Location"),
-              SizedBox(height: 8.h),
-              _buildTextField("Set Location", _locationTEC),
-
-              SizedBox(height: 24.h),
-              _buildSeatCard(vipSeatItem,    "VIP"),
-              SizedBox(height: 16.h),
-              _buildSeatCard(normalSeatItem, "Normal"),
-
-              SizedBox(height: 24.h),
-              _label("Add Slot Time"),
-              SizedBox(height: 8.h),
-              Row(children: [
-                Expanded(child: _buildSlotTimePicker("Start Time", startSlotTime, true)),
-                SizedBox(width: 16.w),
-                Expanded(child: _buildSlotTimePicker("End Time",   endSlotTime,   false)),
-              ]),
-              SizedBox(height: 12.h),
-              Align(
-                alignment: Alignment.centerRight,
-                child: _buildAddSlotButton(),
-              ),
-              SizedBox(height: 12.h),
-              Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: List.generate(timeSlots.length,
-                        (i) => _buildSlotChip(timeSlots[i], i)),
-              ),
-
-              SizedBox(height: 30.h),
-              GetBuilder<AddNewRestaurantController>(builder: (ctrl) {
-                return _buildSubmitButton(
-                  label:     isFromEdit ? "Update" : "Save",
-                  isEnabled: isValid && !ctrl.isLoading,
-                  isLoading: ctrl.isLoading,
-                  onPressed: _save,
-                );
-              }),
-              SizedBox(height: 40.h),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
-  // ─────────────────────────────────────────────
-  // WIDGET BUILDERS
-  // ─────────────────────────────────────────────
-
-  Widget _label(String text) =>
-      Text(text, style: AppTextStyle.c_regular_12());
-
-  Widget _buildTextField(
-      String hint,
-      TextEditingController controller, {
-        TextInputType keyboardType = TextInputType.text,
-        int maxLines = 1,
-      }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      onChanged: (_) => _validateForm(),
-      decoration: InputDecoration(
-        hintText: hint,
-        fillColor: Colors.white,
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        contentPadding:
-        EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-      ),
-    );
-  }
-
-  Widget _buildDropdown() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: DropdownButtonFormField<String>(
-        decoration: const InputDecoration(
-            border: InputBorder.none, contentPadding: EdgeInsets.zero),
-        hint: Text("Select Category",
-            style: AppTextStyle.c_regular_12()
-                .copyWith(color: Colors.grey.shade600)),
-        value: selectedCategory,
-        items: foodCategory
-            .map((v) => DropdownMenuItem(value: v, child: Text(v)))
-            .toList(),
-        onChanged: (val) {
-          setState(() {
-            selectedCategory   = val;
-            selectedCategoryId = _resolveCategory(val)?.id;
-          });
-          _validateForm();
-        },
-      ),
-    );
-  }
-
-  Widget _buildImagePicker({
-    required File? image,
-    required String? imageUrl,
-    required VoidCallback onTap,
-    required String label,
-  }) {
-    final hasImage = image != null || (imageUrl?.isNotEmpty ?? false);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 130.h,
-              width: double.infinity,
-              color: Colors.grey.withOpacity(0.3),
-              child: image != null
-                  ? Image.file(image, fit: BoxFit.cover, width: double.infinity)
-                  : (imageUrl?.isNotEmpty ?? false)
-                  ? Image.network(imageUrl!, fit: BoxFit.cover,
-                  width: double.infinity)
-                  : const Center(
-                  child: Icon(Icons.upload, size: 28,
-                      color: Colors.black54)),
-            ),
-          ),
-        ),
-        SizedBox(height: 6.h),
-        Text(
-          hasImage ? "$label Selected" : "Not Selected ($label)",
-          style: AppTextStyle.p_medium_12().copyWith(
-            fontWeight: FontWeight.w700,
-            color: hasImage ? Colors.green : Colors.red,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTimePicker(String label, TimeOfDay? time, bool isOpen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(label),
-        SizedBox(height: 8.h),
-        GestureDetector(
-          onTap: () => _selectOpenCloseTime(isOpen),
-          child: Container(
-            height: 45.h,
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              time != null ? _formatTime(time) : "Select Time",
-              style: AppTextStyle.c_regular_12().copyWith(
-                color: time == null ? Colors.grey.shade600 : Colors.black,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSlotTimePicker(String label, TimeOfDay? time, bool isStart) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label(label),
-        SizedBox(height: 8.h),
-        GestureDetector(
-          onTap: () => _selectSlotTime(isStart),
-          child: Container(
-            height: 45.h,
-            padding: EdgeInsets.symmetric(horizontal: 12.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            alignment: Alignment.centerLeft,
-            child: Text(
-              time != null ? _formatTime(time) : "Select Time",
-              style: AppTextStyle.c_regular_12().copyWith(
-                color: time == null ? Colors.grey.shade600 : Colors.black,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAddSlotButton() {
-    final enabled = startSlotTime != null && endSlotTime != null;
-    return SizedBox(
-      height: 45.h,
-      width: 100.w,
-      child: ElevatedButton(
-        onPressed: enabled ? _addSlot : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary_1,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Text("Add Slot",
-            style: AppTextStyle.c_regular_12()
-                .copyWith(color: Colors.white)),
-      ),
-    );
-  }
-
-  Widget _buildSlotChip(TimeSlotItem slot, int index) {
-    return Chip(
-      label: Text(slot.timeString,
-          style: AppTextStyle.c_regular_12()
-              .copyWith(color: AppColors.primary_1)),
-      backgroundColor: AppColors.primary_1.withOpacity(0.1),
-      deleteIcon:
-      const Icon(Icons.close, size: 16, color: AppColors.primary_1),
-      onDeleted: () => _removeSlot(index),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: AppColors.primary_1.withOpacity(0.5)),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 2.h),
-    );
-  }
-
-  Widget _buildSeatCard(SeatItem item, String seatType) {
-    return Card(
-      color: Colors.white,
-      elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(12.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final missingType = seatTypes.where((t) => !_seats.any((s) => s.draft.type.toLowerCase() == t.toLowerCase())).toList();
+    return observe((c) => EditorScaffold(
+          title: isEdit ? 'Edit restaurant' : 'New restaurant',
+          isLoading: c.isLoading,
+          loadError: c.loadError,
+          onRetry: reload,
+          isEdit: isEdit,
+          saving: c.isSaving,
+          onSave: save,
           children: [
-            // Header row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            EditorSection(
+              title: 'Cover photo',
+              subtitle: 'The first thing guests see',
               children: [
-                Text("$seatType Seat",
-                    style: AppTextStyle.p_medium_12()
-                        .copyWith(fontWeight: FontWeight.bold)),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: (seatType == "VIP"
-                        ? Colors.amber
-                        : Colors.blue)
-                        .withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(seatType,
-                      style: AppTextStyle.p_medium_12().copyWith(
-                        color: seatType == "VIP"
-                            ? Colors.amber
-                            : Colors.blue,
-                      )),
+                CoverPhotoPicker(
+                  file: _thumbnail,
+                  url: _thumbnailUrl,
+                  onTap: () async {
+                    final f = await pickPhoto(context);
+                    if (f != null) setState(() => _thumbnail = f);
+                  },
                 ),
               ],
             ),
-            SizedBox(height: 12.h),
+            EditorSection(
+              title: 'Details',
+              children: [
+                const FieldLabel('Category'),
+                CategoryPicker(
+                  options: c.categories,
+                  selectedId: _categoryId,
+                  fallbackName: _categoryName,
+                  loading: c.categoriesLoading,
+                  error: c.categoriesError,
+                  onRetry: c.loadCategories,
+                  onSelected: (id) => setState(() => _categoryId = id),
+                ),
+                const SizedBox(height: 16),
+                AppFormField(label: 'Restaurant name', controller: _title, hint: 'e.g. Le Chalet', icon: Icons.title_rounded),
+                const SizedBox(height: 16),
+                AppFormField(label: 'Service area', controller: _area, hint: 'e.g. Courchevel', icon: Icons.location_on_outlined),
+                const SizedBox(height: 16),
+                AppFormField(label: 'Food type (optional)', controller: _foodType, hint: 'e.g. Savoyard'),
+                const SizedBox(height: 16),
+                AppFormField(label: 'Description (optional)', controller: _description, maxLines: 3, hint: 'Fondue and views…'),
+              ],
+            ),
+            EditorSection(
+              title: 'Opening hours',
+              subtitle: 'Resort time. Closing after midnight is fine.',
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: ClockField(label: 'Opens', value: _openTime, onChanged: (v) => setState(() => _openTime = v))),
+                    const SizedBox(width: 12),
+                    Expanded(child: ClockField(label: 'Closes', value: _closeTime, onChanged: (v) => setState(() => _closeTime = v))),
+                  ],
+                ),
+              ],
+            ),
+            EditorSection(
+              title: 'Seats',
+              subtitle: 'One or two seat types, each with a price per seat',
+              trailing: CountBadge(_seats.length),
+              children: [
+                for (var i = 0; i < _seats.length; i++) _seatCard(i),
+                if (missingType.isNotEmpty && _seats.length < 2)
+                  AddRowButton(
+                    label: 'Add ${missingType.first} seats',
+                    onPressed: () => setState(() => _seats.add(_SeatRow(SeatDraft(type: missingType.first)))),
+                  ),
+                if (isEdit)
+                  const EditorNote('Changing the seat count keeps seats that are already booked.'),
+              ],
+            ),
+            EditorSection(
+              title: 'Time slots',
+              subtitle: 'Up to 6 hours each, inside the opening hours',
+              trailing: CountBadge(_slots.length),
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final s in _slots)
+                      InputChip(
+                        label: Text(s.label),
+                        onDeleted: () => setState(() => _slots.remove(s)),
+                        deleteIconColor: AppColors.error,
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: AppColors.border),
+                        labelStyle: AppTextStyle.p_medium_12(color: AppColors.textPrimary),
+                      ),
+                  ],
+                ),
+                if (_slots.isNotEmpty) const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: ClockField(label: 'Starts', value: _newStart, onChanged: (v) => setState(() => _newStart = v))),
+                    const SizedBox(width: 12),
+                    Expanded(child: ClockField(label: 'Ends', value: _newEnd, onChanged: (v) => setState(() => _newEnd = v))),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                AddRowButton(
+                  label: 'Add slot',
+                  onPressed: _newStart != null && _newEnd != null ? _addSlot : null,
+                ),
+              ],
+            ),
+          ],
+        ));
+  }
 
-            _buildTextField("Total Seats",    item.totalSeatController,
-                keyboardType: TextInputType.number),
-            SizedBox(height: 8.h),
-            _buildTextField("Price per Seat", item.pricePerSeatController,
-                keyboardType: TextInputType.number),
-            SizedBox(height: 8.h),
-            _buildTextField("Description",   item.descriptionController,
-                maxLines: 2),
-            SizedBox(height: 8.h),
-
-            _buildImagePicker(
-              image:    item.selectedSeatImage,
-              imageUrl: item.seatImageUrl,
-              onTap:    () => _pickImage(isSeat: true, seatItem: item),
-              label:    "Seat Photo",
+  Widget _seatCard(int i) {
+    final r = _seats[i];
+    return RowCard(
+      label: '${r.draft.type == 'VIP' ? 'VIP' : r.draft.type} seats',
+      onRemove: _seats.length > 1 ? () => setState(() => _seats.removeAt(i).dispose()) : null,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            SmallPhotoPicker(
+              file: r.draft.photo,
+              url: r.draft.photoUrl,
+              onTap: () async {
+                final f = await pickPhoto(context);
+                if (f != null) setState(() => r.draft.photo = f);
+              },
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: AppFormField(label: 'Description (optional)', controller: r.description, hint: 'e.g. Window tables'),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton({
-    required String label,
-    required bool isEnabled,
-    required bool isLoading,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50.h,
-      child: ElevatedButton(
-        onPressed: isEnabled ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isEnabled
-              ? AppColors.primary_1
-              : AppColors.primary_1.withOpacity(0.5),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppFormField(
+                label: 'Price per seat',
+                controller: r.price,
+                hint: '0',
+                prefixText: '€ ',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: decimalInput,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: AppFormField(
+                label: 'Number of seats',
+                controller: r.quantity,
+                hint: '20',
+                keyboardType: TextInputType.number,
+                inputFormatters: digitsInput,
+              ),
+            ),
+          ],
         ),
-        child: isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(label,
-            style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white)),
-      ),
+      ],
     );
   }
 }

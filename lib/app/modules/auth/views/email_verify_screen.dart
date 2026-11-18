@@ -7,10 +7,11 @@ import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
 import 'package:harry_service_app/app/modules/auth/controllers/email_verify_controller.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
+import 'package:harry_service_app/app/core/widgets/custome_button.dart';
 
 import '../../../../gen/assets.gen.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class EmailVerifyScreen extends StatefulWidget {
   const EmailVerifyScreen({super.key});
@@ -80,6 +81,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
                         child: CustomButton(
                           onTap: _verifyEmailHandler,
                           text: "Send OTP",
+                          width: double.infinity,
                           backgroundColor: AppColors.primary_1,
                         ),
                       );
@@ -94,29 +96,18 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
   /// send otp handler event
 
   void _verifyEmailHandler() async {
+    if (emailController.emailVerifyProgress) return; // a request is already running
 
 
     final email = emailTEController.text.trim();
 
     if (email.isEmpty) {
-      Get.snackbar(
-        "Error",
-        "Email field can't be empty",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.black,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: "Please enter your email address.");
       return;
     }
 
     if (!EmailValidator.validate(email)) {
-      Get.snackbar(
-        "Error",
-        "Not a valid email",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.black,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: "Please enter a valid email address.");
       return;
     }
 
@@ -126,12 +117,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
 
     if (response) {
       /// if successful
-      Get.snackbar(
-        "Otp",
-        "A Otp send to your email",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: AppColors.primary_1,
-      );
+      showAppToast(type: ToastType.success, title: "Code sent", message: "We sent a code to your email.");
 
       Get.toNamed(
         Routes.otpVerify,
@@ -142,12 +128,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
     } else {
       /// if Umsuccessful
 
-      Get.snackbar(
-        "Error",
-        "${emailController.errorMessage},",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-      );
+      showAppToast(type: ToastType.error, title: "Error", message: emailController.errorMessage ?? "Something went wrong.");
     }
   }
 }

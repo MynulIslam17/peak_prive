@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../constants/app_colors.dart';
+
 class CustomCachedImage extends StatelessWidget {
   final String? imageUrl;
   final File? imageFile;
@@ -74,8 +76,8 @@ class CustomCachedImage extends StatelessWidget {
   // Helper for Shimmer placeholder
   Widget _buildPlaceholder() {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: AppColors.shimmerBase,
+      highlightColor: AppColors.shimmerHighlight,
       direction: ShimmerDirection.ltr,
       child: Container(
         height: height,
@@ -90,8 +92,8 @@ class CustomCachedImage extends StatelessWidget {
     return Container(
       height: height,
       width: width,
-      color: Colors.grey[200],
-      child: const Icon(Icons.broken_image, color: Colors.grey),
+      color: AppColors.shimmerBase,
+      child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textTertiary),
     );
   }
 }

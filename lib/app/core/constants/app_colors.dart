@@ -17,6 +17,52 @@ abstract class AppColors {
  static const Color green300 =Color(0xFF548A65);
  static const Color secendary =Color(0xff5186B1);
 
+ /// ===================================================================
+ /// Neutral + semantic tokens.
+ ///
+ /// These were missing, which is why screens reached for `Colors.white`,
+ /// `Colors.grey.shade300` and `Colors.red` directly — there was nowhere
+ /// else to get them from. Everything below is additive; existing tokens
+ /// keep their values.
+ /// ===================================================================
+
+ /// Surfaces
+ static const Color white = Color(0xFFFFFFFF);
+
+ /// The one page background for every screen: white. Cards on it keep their
+ /// border; inputs and chips use [surfaceAlt].
+ static const Color scaffold = Color(0xFFFFFFFF);
+
+ /// Picker accents (selected hour, AM/PM, today's date ring).
+ static const Color goldTint = Color(0xFFFBF3DC);
+ static const Color goldDeep = Color(0xFF9A7A12);
+ static const Color surface = Color(0xFFFFFFFF);
+ static const Color surfaceAlt = Color(0xFFFDFAF6);
+
+ /// Lines + dividers
+ static const Color border = Color(0xFFEEEEEE);
+ static const Color divider = Color(0xFFE6E6E6);
+
+ /// Text
+ static const Color textPrimary = black_1;
+ static const Color textSecondary = black_2;
+ static const Color textTertiary = black_3;
+ static const Color textOnPrimary = Color(0xFF1A1500);
+ static const Color textDisabled = Color(0xFF9E9E9E);
+
+ /// States
+ static const Color disabled = Color(0xFFE0E0E0);
+ static const Color error = Color(0xFFD14343);
+ static const Color success = Color(0xFF2E7D4F);
+ static const Color warning = Color(0xFFE8A33D);
+ static const Color info = secendary;
+
+ /// Shimmer. Previously every skeleton picked its own pair, and
+ /// home_shimmer used the same colour for base and highlight, which
+ /// rendered a static grey block with no animation at all.
+ static const Color shimmerBase = Color(0xFFE4E4E4);
+ static const Color shimmerHighlight = Color(0xFFF5F5F5);
+
 
 
 

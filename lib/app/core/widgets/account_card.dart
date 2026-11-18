@@ -7,26 +7,25 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../data/api/peak_api.dart';
 import '../constants/app_colors.dart';
 
 class CardTile extends StatelessWidget {
-  final Map<String, dynamic> card;
+  final PayoutAccount account;
   final bool isSelected;
   final VoidCallback onTap;
 
   const CardTile({
     super.key,
-    required this.card,
+    required this.account,
     required this.isSelected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Mask all but last 4 digits of the card/account number
-    final rawNumber = card['cardNumber'].toString();
-    final maskedNumber =
-        "•••• ${rawNumber.substring(rawNumber.length - 4)}";
+    // The server already masks it ("•••• 4242").
+    final maskedNumber = account.card;
 
     return GestureDetector(
       onTap: onTap,
@@ -84,7 +83,7 @@ class CardTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    card['accountType'],
+                    account.accountType,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -93,7 +92,9 @@ class CardTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    "${card['cardHolderName']}  $maskedNumber",
+                    [account.cardHolderName, maskedNumber]
+                        .where((e) => e.isNotEmpty)
+                        .join('  '),
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.black_3,

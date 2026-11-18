@@ -1,6 +1,8 @@
 // lib/service/socket_helper.dart
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+import 'live_events.dart';
+
 class SocketHelper {
   IO.Socket? _socket;
   final String _userId;
@@ -17,6 +19,36 @@ class SocketHelper {
   Function()? onConnected;
   Function()? onDisconnected;
   Function(dynamic)? onMessagesRead;
+
+  // ── Presence ───────────────────────────────────────────────────────────
+  // Several screens need `user-status` at once (chat list + open chat), so
+  // they register listeners instead of overwriting one callback. The last
+  // known status per user is kept so a screen opened later starts correct.
+  final List<void Function(String userId, bool isOnline)> _statusListeners = [];
+  final Map<String, bool> _presence = {};
+
+  /// Last status received for [userId], or null if none seen yet.
+  bool? knownOnlineStatus(String userId) => _presence[userId];
+
+  void addUserStatusListener(void Function(String userId, bool isOnline) l) {
+    if (!_statusListeners.contains(l)) _statusListeners.add(l);
+  }
+
+  void removeUserStatusListener(void Function(String userId, bool isOnline) l) {
+    _statusListeners.remove(l);
+  }
+
+  void _handleUserStatus(dynamic data) {
+    onUserStatusChanged?.call(data);
+    if (data is! Map) return;
+    final userId = data['userId']?.toString();
+    if (userId == null || userId.isEmpty) return;
+    final isOnline = data['isOnline'] == true;
+    _presence[userId] = isOnline;
+    for (final l in List.of(_statusListeners)) {
+      l(userId, isOnline);
+    }
+  }
 
   SocketHelper({
     required String userId,
@@ -42,8 +74,9 @@ class SocketHelper {
           .enableAutoConnect()
           .enableForceNew() // Prevents reusing a stale cached connection
           .enableReconnection()
-          .setReconnectionAttempts(5)
+          // Keep trying (Wi-Fi drops, server restarts); back off up to 30 s.
           .setReconnectionDelay(2000)
+          .setReconnectionDelayMax(30000)
           .build(),
     );
 
@@ -76,6 +109,7 @@ class SocketHelper {
     _socket!.onReconnect((_) {
       print('🔄 Socket reconnected — New ID: ${_socket!.id}');
       onConnected?.call();
+      LiveEvents.emitReconnected();
     });
 
     _socket!.onReconnectFailed((_) {
@@ -89,15 +123,29 @@ class SocketHelper {
     _socket!.on('message-new', (data) {
      // print('📨 Received [message-new]: $data');
       onMessageReceived?.call(data);
+      // The open conversation owns [onMessageReceived]; the chat list and
+      // its unread badge follow through the app-wide stream.
+      LiveEvents.emitChatMessage();
     });
     _socket!.on('chat-list', (data) {
     print('📋 Received [chat-list]: $data'); // debug
       onChatListUpdated?.call(data);
     });
-    _socket!.on('user-status', (data) => onUserStatusChanged?.call(data));
+    _socket!.on('user-status', _handleUserStatus);
     _socket!.on('user-typing', (data) => onUserTyping?.call(data));
     _socket!.on('user-stopped-typing', (data) => onUserStoppedTyping?.call(data));
     _socket!.on('messages-read', (data) => onMessagesRead?.call(data));
+
+    // Live booking and notification updates go to app-wide streams; screens
+    // subscribe through [LiveEvents] instead of the socket.
+    _socket!.on('booking:updated', (data) {
+      final u = LiveEvents.parseBookingUpdate(data);
+      if (u != null) LiveEvents.emitBookingUpdate(u);
+    });
+    _socket!.on('notification:new', (data) {
+      final n = LiveEvents.parseNotification(data);
+      if (n != null) LiveEvents.emitNotification(n);
+    });
   }
 
   /// Sends a message to the specified receiver.
@@ -171,5 +219,7 @@ class SocketHelper {
     onConnected = null;
     onDisconnected = null;
     onMessagesRead = null;
+    _statusListeners.clear();
+    _presence.clear();
   }
 }

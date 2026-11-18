@@ -4,10 +4,12 @@ class AppUrls{
   //https://wn85j8p6-5000.asse.devtunnels.ms/api/v1
 
 /// base url
-  static const baseUrl="https://api.peakprivee.com/api/v1";
+  static const baseUrl="https://sushil5000.ssh.bd/api/v1";
 
-  /// socket base url
-  static const socketBaseUrl = "https://api.peakprivee.com";
+  /// Socket.IO server: the same host as the API. (api.peakprivee.com still
+  /// runs the previous backend, which never sends `booking:updated` or
+  /// `notification:new` for bookings made on this API.)
+  static final socketBaseUrl = Uri.parse(baseUrl).origin;
 
   /// loginUrl
   static const loginUrl="$baseUrl/auth/login";
@@ -34,8 +36,6 @@ static const passAllServiceUrl="$baseUrl/ski-pass/all";
 /// single pass details method
 static String singlePassDetails(String id)=>"$baseUrl/ski-pass/$id";
 
-///  create booking booking
-static String userBookingUrl="${baseUrl}/booking/create";
 
 
 ///get my booking
@@ -51,7 +51,6 @@ static String updateProfileUrl="$baseUrl/users/update-profile";
 
   /// update profile url
 static String changePasswordUrl="$baseUrl/auth/change-password";
-
 
 
   /// ==========================hire=======================
@@ -81,8 +80,6 @@ static String hireDetailsUrl(String id)=>"$baseUrl/ski-hire/${id}";
 static String bookingReviewUrl({required String productId,required String serviceType})=>"$baseUrl/$serviceType/review/${productId}";
 
 
-
-
 ///===============================transport======================================
 
   /// show category wise data if category missing then show all data(also work for home url)
@@ -102,7 +99,6 @@ static String transportCategoryUrl="$baseUrl/common/category/transport";
 static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
 
-
 ///================================Message  ============================================
   ///
   /// show category wise data if category missing then show all data(also work for home url)
@@ -118,8 +114,6 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   /// show single massage  details
   static String massageDetailsUrl(String id)=>"$baseUrl/massage/$id";
-
-
 
 
   /// ===================restaurant =========================================
@@ -144,67 +138,13 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
   static String myItineraryUrl="$baseUrl/booking/itinerary";
 
 
-
-
-
-
-
-
 /// ===================provider===========================
 
 /// ======================= home ==================================
 
 
    static String providerHome="$baseUrl/dashboard/meta/provider"; /// home
-   static String providerServiceUrl="$baseUrl/ski-pass/my-all";
    static String providerBookingUrl="$baseUrl/booking/all";
-
-///    =======         ski all service url======
-  static String providerPassService="$baseUrl/ski-pass/my-all";
-  /// ski service update url
-  static String  providerPassServiceUpdate(String id)=>"$baseUrl/ski-pass/update/$id";
-  /// ski service delete url
-  static String  providerPassServiceDelete(String id)=>"$baseUrl/ski-pass/delete/$id";
-
-/// ==============pass create url=================
-  static String providerPassCreateUrl="$baseUrl/ski-pass/create";
-
-
-
-  ///=============restaurant provider=======================
-
-  ///      create restaurant
-  static String providerRestaurantService="$baseUrl/restaurant/my-all";
-  static String createRestaurantUrl="$baseUrl/restaurant/create";
-  ///      update restaurant
-  static String updateRestaurantUrl(String id)=>"$baseUrl/restaurant/update/${id}";
-  ///      delete restaurant
-  static String deleteRestaurantUrl(String id)=>"$baseUrl/restaurant/delete/${id}";
-
-
-  ///================== massage provider========================
-
-  static String providerMassageService="$baseUrl/massage/my-all";
-  static String  deleteMassageServiceUrl(String id)=>"$baseUrl/massage/delete/$id";
-  static String  createMassageServiceUrl="$baseUrl/massage/create";
- static String   updateMassageServiceUrl(String id)=>"$baseUrl/massage/update/$id";
-
-
- ///============================transport provider==========================
-
-  static String providerTransportService="$baseUrl/transport/my-all";
-  static String createTransportService="$baseUrl/transport/create";
-  static String deleteTransportUrl(String id)=>"$baseUrl/transport/delete/$id";
-  static String updateTransportUrl(String id)=>"$baseUrl/transport/update/$id";
-
-
-  ///======================hire Provider=======================
-
-  static String providerHireUrl="$baseUrl/ski-hire/my-all";
-  static String createHireUrl="$baseUrl/ski-hire/create";
-  static String deleteHireServiceUrl(String id)=>"$baseUrl/ski-hire/delete/$id";
-  static String updateHireServiceUrl(String id)=>"$baseUrl/ski-hire/update/$id";
-
 
 
   /// booking single
@@ -215,28 +155,23 @@ static String transportDetailsUrl(String id)=>"$baseUrl/transport/$id";
 
   static String changeBookingStatus(String id)=>"$baseUrl/booking/update-status/$id";
 
+  /// Provider declines a booking: full refund, stock returned, guest notified.
+  static String rejectBooking(String id) => "$baseUrl/booking/reject/$id";
+
+  /// Hire / transport: equipment or vehicle given to the guest.
+  static String handOverBooking(String id) => "$baseUrl/booking/hand-over/$id";
+
+  /// Hire / transport: returned. The server works out the late fee.
+  static String completeBooking(String id) => "$baseUrl/booking/complete/$id";
 
 
-
-  /// get balance
-  static String getBalanceUrl = '$baseUrl/wallet/get-balance';
-  static String addCard = '$baseUrl/wallet/add';
-  static String myCards = '$baseUrl/wallet/get-my-account';
-  static String withdrawRequest = '$baseUrl/withdraw/send-request';
-
-  static String notificationUrl = '$baseUrl/notifications/all';
+  // Wallet, withdrawals and notifications: see PeakApi (lib/app/data/api).
 
 
 /// chats
 
   static String allChatList = '$baseUrl/chat/chat-users';
   static String messageHistory(String otherUserId) =>'$baseUrl/chat/user-messages/${otherUserId}';
-
-
-
-
-
-
 
 
 }

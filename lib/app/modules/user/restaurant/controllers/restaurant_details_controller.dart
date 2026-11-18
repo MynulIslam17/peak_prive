@@ -1,46 +1,51 @@
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/models/restaurant_details_model.dart';
-import '../../../../core/constants/api_urls.dart';
-import '../../../../data/services/network/network_caller.dart';
 
-class RestaurantDetailsController extends GetxController {
-  RestaurantDetailsModel? restaurantDetails;
+import '../../../../data/api/peak_api.dart';
+import '../../shared/controllers/listing_detail_controller.dart';
 
-  bool _fetchProgress = false;
-  String? _errorMessage;
+/// Restaurant listing (`GET /restaurant/:id`) + reviews + the seat type picked
+/// on the details screen (passed to checkout as `'seatId'`).
+class RestaurantDetailsController extends ListingDetailController<RestaurantDetail> {
+  RestaurantDetailsController() : super(ServiceKind.restaurant);
 
-  bool get fetchProgress => _fetchProgress;
-  String? get errorMessage => _errorMessage;
+  /// Seat type id picked on the details screen.
+  String? selectedItemId;
 
-  /// Fetch restaurant details by ID
-  Future<bool> fetchRestaurantDetails(String id) async {
-    _fetchProgress = true;
-    update();
+  SeatType? get selectedItem => selectedItemId == null
+      ? null
+      : listing?.seats.firstWhereOrNull((s) => s.id == selectedItemId);
 
-    try {
-      final response = await Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.restaurantDetailsUrl(id),
-      );
+  /// A seat type can be picked when it has seats and a price. Free seats for a
+  /// date and slot come from `/booking/availability` at checkout.
+  static bool isSelectable(SeatType s) => s.quantity > 0 && s.price > 0;
 
-      if (response.isSuccess && response.body != null) {
-        /// Extract "data" from the response
-        final data = response.body!['data'];
-
-        /// Parse into model
-        restaurantDetails = RestaurantDetailsModel.fromJson({'data': data});
-
-        _errorMessage = null;
-        return true;
-      } else {
-        _errorMessage = response.errorMessage ?? "Can't fetch restaurant details";
-        return false;
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
-      return false;
-    } finally {
-      _fetchProgress = false;
-      update();
-    }
+  /// Bookable: active, with a selectable seat type and at least one slot.
+  bool get isBookable {
+    final r = listing;
+    return canBook && r != null && r.slots.isNotEmpty && r.seats.any(isSelectable);
   }
+
+  /// Cheapest seat price.
+  num? get fromPrice {
+    final prices = (listing?.seats ?? const <SeatType>[]).map((s) => s.price).where((p) => p > 0);
+    return prices.isEmpty ? null : prices.reduce((a, b) => a < b ? a : b);
+  }
+
+  void selectItem(String? itemId) {
+    selectedItemId = itemId;
+    update();
+  }
+
+  @override
+  void onListingChanged() => selectedItemId = null;
+
+  @override
+  void onListingLoaded(RestaurantDetail listing) {
+    final s = selectedItem;
+    if (s == null || !isSelectable(s) || !listing.isActive) selectedItemId = null;
+  }
+
+  /// Back-compat names.
+  RestaurantDetail? get restaurantDetails => listing;
+  Future<bool> fetchRestaurantDetails(String id) => fetch(id);
 }

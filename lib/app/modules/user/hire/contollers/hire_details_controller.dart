@@ -1,81 +1,87 @@
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/data/models/network_response.dart';
-import 'package:harry_service_app/app/data/services/network/network_caller.dart';
-import '../models/hire_details_model.dart';
 
-class HireDetailsController extends GetxController {
-  HireDetailsModel? hireDetails;
-  bool isLoading = false;
-  String? errorMessage;
+import '../../../../data/api/peak_api.dart';
+import '../../shared/controllers/listing_detail_controller.dart';
+import '../models/hire_price_unit.dart';
 
-  /// NEW: Store selected item quantities
-  Map<String, int> selectedItems = {};
+/// Ski hire listing + the equipment the user is choosing.
+///
+/// The selection is also passed to checkout as `'selection'` (itemId → qty).
+class HireDetailsController extends ListingDetailController<SkiHireDetail> {
+  HireDetailsController() : super(ServiceKind.skiHire);
 
-  /// Add quantity for item
+  /// itemId → quantity (only items with quantity > 0).
+  final Map<String, int> selectedItems = {};
+
+  List<HireItem> get items => listing?.items ?? const [];
+
+  HireItem? itemById(String id) => items.firstWhereOrNull((i) => i.id == id);
+
+  int getQuantity(String itemId) => selectedItems[itemId] ?? 0;
+
+  /// Total stock. Free units for the chosen dates are checked at checkout
+  /// (`/booking/availability`).
+  int maxQuantity(HireItem item) => item.quantity < 0 ? 0 : item.quantity;
+
+  bool canAdd(HireItem item) => canBook && getQuantity(item.id) < maxQuantity(item);
+
   void addItem(String itemId) {
-    selectedItems[itemId] = (selectedItems[itemId] ?? 0) + 1;
+    final item = itemById(itemId);
+    if (item == null || !canAdd(item)) return;
+    selectedItems[itemId] = getQuantity(itemId) + 1;
     update();
   }
 
-  /// Remove quantity for item
   void removeItem(String itemId) {
-    if (!selectedItems.containsKey(itemId)) return;
-
-    if (selectedItems[itemId]! > 1) {
-      selectedItems[itemId] = selectedItems[itemId]! - 1;
-    } else {
+    final qty = getQuantity(itemId);
+    if (qty <= 1) {
       selectedItems.remove(itemId);
+    } else {
+      selectedItems[itemId] = qty - 1;
     }
     update();
   }
 
-  /// Get quantity instantly
-  int getQuantity(String itemId) {
-
-    return selectedItems[itemId] ?? 0;
-
+  void clearSelection() {
+    if (selectedItems.isEmpty) return;
+    selectedItems.clear();
+    update();
   }
 
-  /// Calculate total price based on quantity × item price
+  /// Selected items with their quantity, in listing order.
+  List<(HireItem, int)> get selectedLines => [
+        for (final item in items)
+          if (getQuantity(item.id) > 0) (item, getQuantity(item.id)),
+      ];
+
+  int get selectedCount => selectedItems.values.fold(0, (sum, q) => sum + q);
+
+  HirePriceUnit get priceUnit => HirePriceUnit.parse(listing?.priceUnit);
+
+  /// Sum of price × quantity for one price unit, rounded to cents.
   double get totalSelectedPrice {
-    if (hireDetails == null) return 0;
-
-    double total = 0;
-
-    for (var item in hireDetails!.items) {
-      if (selectedItems.containsKey(item.id)) {
-        total += item.price * selectedItems[item.id]!;
-      }
-    }
-
-    return total;
+    final total = selectedLines.fold<double>(0, (s, l) => s + l.$1.price * l.$2);
+    return double.parse(total.toStringAsFixed(2));
   }
 
-  /// Fetch details for a specific hire item by ID
-  Future<bool> fetchHireDetails(String id) async {
-    isLoading = true;
-    update();
+  /// Estimate for [start]–[end] (same formula as `/booking/intent`; the
+  /// server's amount is what gets charged).
+  double totalFor(DateTime start, DateTime end) =>
+      double.parse((totalSelectedPrice * priceUnit.unitsFor(start, end)).toStringAsFixed(2));
 
-    try {
-      NetworkResponse response = await Get.find<NetworkCaller>().getRequest(
-        url: AppUrls.hireDetailsUrl(id),
-      );
+  @override
+  void onListingChanged() => selectedItems.clear();
 
-      if (response.isSuccess && response.body != null) {
-        hireDetails = HireDetailsModel.fromJson(response.body!['data']);
-        errorMessage = null;
-        return true;
-      } else {
-        errorMessage = response.errorMessage ?? "Failed to fetch data";
-        return false;
-      }
-    } catch (e) {
-      errorMessage = e.toString();
-      return false;
-    } finally {
-      isLoading = false;
-      update();
-    }
+  @override
+  void onListingLoaded(SkiHireDetail listing) {
+    // Drop selections no longer valid (item removed / stock went down).
+    selectedItems.removeWhere((id, qty) {
+      final item = itemById(id);
+      return item == null || qty > maxQuantity(item);
+    });
+    if (!listing.isActive) selectedItems.clear();
   }
+
+  /// Back-compat name used by older call sites.
+  Future<bool> fetchHireDetails(String id) => fetch(id);
 }

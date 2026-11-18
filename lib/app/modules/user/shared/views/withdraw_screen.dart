@@ -1,13 +1,12 @@
+import 'package:harry_service_app/app/core/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/widgets/custom_appbar.dart';
-import 'package:harry_service_app/app/modules/user/shared/controllers/my_cards_controller.dart';
 import '../../../../core/widgets/account_card.dart';
-import '../controllers/add_account_controller.dart';
-import '../controllers/get_balance_controller.dart';
-import '../controllers/withdraw_controller.dart';
-import '../models/get_balance_model.dart';
+import '../controllers/wallet_controller.dart';
+import '../../../../core/utils/price_label.dart';
+import '../../../../core/widgets/shimmer/skeleton.dart';
 
 // =============================================================================
 // WithdrawScreen
@@ -21,112 +20,78 @@ class WithdrawScreen extends StatefulWidget {
 }
 
 class _WithdrawScreenState extends State<WithdrawScreen> {
-  // ── Controllers ─────────────────────────────────────────────────────────────
-  final addAccountController = Get.find<AddAccountController>();
-  final myCardsController = Get.find<MyCardsController>();
-  final withdrawController = Get.find<WithdrawRequestController>();
-  final balanceController = Get.find<BalanceController>();
+  late final WalletController wallet = Get.isRegistered<WalletController>()
+      ? Get.find<WalletController>()
+      : Get.put(WalletController());
 
   // ── State ────────────────────────────────────────────────────────────────────
-  String? selectedCardId;
-  String? selectedCardNumber;
+  String? selectedAccountId;
   final TextEditingController amountController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    myCardsController.fetchMyCards();
-    balanceController.fetchBalance();
+    wallet.loadAccount();
+  }
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    super.dispose();
   }
 
   // ── Withdraw Logic ───────────────────────────────────────────────────────────
-  void processWithdraw() async {
-    if (selectedCardNumber == null) {
-      Get.snackbar("Error", "Please select a card first");
-      return;
-    }
-
-    double amount = double.tryParse(amountController.text) ?? 0.0;
-    if (amount <= 0) {
-      Get.snackbar("Error", "Enter a valid amount");
-      return;
-    }
-
-    // ── Balance Check ────────────────────────────────────────────────────────
-    final int currentBalance = balanceController.getBalance?.data.balance ?? 0;
-    if (amount > currentBalance) {
-      Get.snackbar(
-        "Insufficient Balance",
-        "Your balance (\$$currentBalance) is less than the requested amount (\$${amount.toStringAsFixed(2)}",
-      );
-      return;
-    }
-
-    bool success = await withdrawController.withdrawAmount(
-      cardId: selectedCardNumber!,
-      amount: amount,
+  Future<void> processWithdraw() async {
+    FocusScope.of(context).unfocus();
+    final amountText = amountController.text;
+    final error = await wallet.withdraw(
+      accountId: selectedAccountId,
+      amountText: amountText,
     );
-
-    if (success) {
-      Get.dialog(
-        AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Text("Request Sent"),
-          content: const Text(
-            "Your withdrawal request has been sent successfully. "
-            "You will receive the money within 24 hours.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: Get.back,
-              child: Text("OK", style: TextStyle(color: AppColors.primary_1)),
-            ),
-          ],
-        ),
-        barrierDismissible: false,
-      );
-      amountController.clear();
+    if (!mounted) return;
+    if (error != null) {
+      AppToast.error(error, title: "Withdrawal not sent");
+      return;
     }
+    amountController.clear();
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text("Request sent"),
+        content: Text(
+          "We've reserved ${euroLabel(WalletController.parseAmount(amountText) ?? 0)} "
+          "from your balance. You'll see the status under Withdrawals.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: Text("OK", style: TextStyle(color: AppColors.primary_1)),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
   }
 
   // ── Add Card Logic ───────────────────────────────────────────────────────────
-  void addCard(
+  Future<void> addCard(
     String accountType,
     String cardHolderName,
     String cardNumber,
   ) async {
-    // Validations
-    if (cardHolderName.trim().isEmpty || cardNumber.trim().isEmpty) {
-      Get.snackbar("Required", "Please fill all fields");
-      return;
-    }
-    if (cardNumber.trim().length < 8) {
-      Get.snackbar("Invalid", "Account number must be at least 8 digits long");
-      return;
-    }
-    final cardNumberNum = int.tryParse(cardNumber.trim());
-    if (cardNumberNum == null) {
-      Get.snackbar("Invalid", "Account number must be numeric");
-      return;
-    }
-
-    // API Call
-    bool success = await addAccountController.addAccount(
-      accountType,
-      cardHolderName.trim(),
-      cardNumberNum,
+    final error = await wallet.addAccount(
+      accountType: accountType,
+      cardHolderName: cardHolderName,
+      cardNumber: cardNumber,
     );
-
-    // Response Handling
-    if (success) {
-      Get.back();
-      myCardsController.fetchMyCards();
-      Get.snackbar("Success", "Account Added");
-    } else {
-      Get.snackbar("Error", addAccountController.errorMessage ?? "Failed");
+    if (error != null) {
+      AppToast.error(error, title: "Couldn't add account");
+      return;
     }
+    Get.back();
+    AppToast.success("You can now withdraw to this account.", title: "Account added");
   }
 
   // ── Add Card Bottom Sheet ────────────────────────────────────────────────────
@@ -234,9 +199,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: GetBuilder<AddAccountController>(
+                  child: GetBuilder<WalletController>(
                     builder: (controller) => ElevatedButton(
-                      onPressed: controller.isLoading
+                      onPressed: controller.isAddingAccount
                           ? null
                           : () => addCard(
                               selectedType,
@@ -252,7 +217,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      child: controller.isLoading
+                      child: controller.isAddingAccount
                           ? const SizedBox(
                               width: 22,
                               height: 22,
@@ -311,9 +276,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
   // ── Balance Banner Widget ────────────────────────────────────────────────────
   Widget _buildBalanceBanner() {
-    return GetBuilder<BalanceController>(
+    return GetBuilder<WalletController>(
       builder: (controller) {
-        final int balance = controller.getBalance?.data.balance ?? 0;
+        final num balance = controller.balance ?? 0;
         final bool loading = controller.isLoading;
 
         return Container(
@@ -321,18 +286,15 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
           margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.primary_1,
-                AppColors.primary_3.withOpacity(0.85),
-              ],
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
+              colors: [Color(0xFFE2C25A), AppColors.primary_1, Color(0xFFB8952B)],
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary_1.withOpacity(0.35),
+                color: AppColors.primary_1.withValues(alpha: 0.3),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -344,12 +306,12 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.35),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.account_balance_wallet_rounded,
-                  color: Colors.white,
+                  color: Color(0xFF1F1A10),
                   size: 28,
                 ),
               ),
@@ -361,9 +323,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      "Available Balance",
+                      "Available balance",
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: Color(0xCC1F1A10),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 0.3,
@@ -375,17 +337,18 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             width: 100,
                             height: 22,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
+                              color: Colors.white.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(6),
                             ),
                           )
                         : Text(
-                            "\$${balance.toStringAsFixed(2)}",
+                            euroLabel(balance),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF1F1A10),
                               fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                   ],
@@ -394,11 +357,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
               // ── Refresh Button ───────────────────────────────────────────
               GestureDetector(
-                onTap: controller.refreshBalance,
+                onTap: controller.loadAccount,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: loading
@@ -406,13 +369,13 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: Color(0xFF1F1A10),
                             strokeWidth: 2,
                           ),
                         )
                       : const Icon(
                           Icons.refresh_rounded,
-                          color: Colors.white,
+                          color: Color(0xFF1F1A10),
                           size: 18,
                         ),
                 ),
@@ -428,22 +391,41 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffold,
 
       // ── AppBar ───────────────────────────────────────────────────────────────
       appBar: CustomAppBar(title: "Withdraw"),
 
-      body: GetBuilder<MyCardsController>(
+      body: GetBuilder<WalletController>(
         builder: (controller) {
           // ── Loading State ──────────────────────────────────────────────────
-          if (controller.isLoading) {
+          if (controller.isLoading && controller.balance == null) {
+            return const WalletSkeleton(rows: 2);
+          }
+
+          // ── Error State ────────────────────────────────────────────────────
+          if (controller.balance == null) {
             return Center(
-              child: CircularProgressIndicator(color: AppColors.primary_1),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(controller.errorMessage ?? "Couldn't load your wallet",
+                        textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: controller.loadAccount,
+                      child: const Text("Try again"),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 
           // ── Empty State ────────────────────────────────────────────────────
-          if (controller.cards.isEmpty) {
+          if (controller.accounts.isEmpty) {
             return _EmptyMethodsView(
               onAddTap: () => _showAddCardBottomSheet(context),
             );
@@ -465,7 +447,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
                       // Section Label
                       const Text(
-                        "Select Withdrawal Method",
+                        "Withdraw to",
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -478,20 +460,14 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       // Card List
                       Expanded(
                         child: ListView.builder(
-                          itemCount: controller.cards.length,
+                          itemCount: controller.accounts.length,
                           itemBuilder: (context, index) {
-                            final card = controller.cards[index];
+                            final account = controller.accounts[index];
                             return CardTile(
-                              card: {
-                                "cardId": card.id,
-                                "accountType": card.accountType,
-                                "cardNumber": card.cardNumber,
-                                "cardHolderName": card.cardHolderName,
-                              },
-                              isSelected: selectedCardId == card.id,
+                              account: account,
+                              isSelected: selectedAccountId == account.id,
                               onTap: () => setState(() {
-                                selectedCardId = card.id;
-                                selectedCardNumber = card.cardNumber;
+                                selectedAccountId = account.id;
                               }),
                             );
                           },
@@ -501,9 +477,9 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       // Amount Field
                       TextField(
                         controller: amountController,
-                        keyboardType: TextInputType.number,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: _inputDecoration(
-                          label: "Enter Amount",
+                          label: "Amount (€)",
                           icon: Icons.payments_outlined,
                         ),
                       ),
@@ -541,11 +517,11 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
 
                           // Withdraw
                           // Withdraw
-                          GetBuilder<WithdrawRequestController>(
+                          GetBuilder<WalletController>(
                             builder: (wController) {
                               return Expanded(
                                 child: ElevatedButton(
-                                  onPressed: wController.isLoading ? null : processWithdraw,
+                                  onPressed: wController.isWithdrawing ? null : processWithdraw,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary_1,
                                     disabledBackgroundColor: AppColors.primary_3,
@@ -560,7 +536,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                                       fontSize: 14,
                                     ),
                                   ),
-                                  child: wController.isLoading
+                                  child: wController.isWithdrawing
                                       ? const SizedBox(
                                     width: 20,
                                     height: 20,

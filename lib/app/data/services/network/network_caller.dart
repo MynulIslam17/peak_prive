@@ -2,42 +2,108 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:mime/mime.dart';
 import 'package:logger/logger.dart';
+import 'package:mime/mime.dart';
 
 import '../../models/network_response.dart';
-
-
 
 class NetworkCaller {
   final String _defaultErrorMessage = 'Something went wrong. Please try again.';
   final Logger _logger = Logger();
 
+  static const Duration _requestTimeout = Duration(seconds: 30);
+  static const Duration _uploadTimeout = Duration(seconds: 120);
+
   final VoidCallback onUnAuthorize;
   final String Function() accessToken;
+
+  /// Injected in tests (`MockClient`); a real client otherwise.
+  final http.Client _http;
 
   NetworkCaller({
     required this.onUnAuthorize,
     required this.accessToken,
-  });
+    http.Client? client,
+  }) : _http = client ?? http.Client();
+
+  // ===========================================================
+  // DECODING
+  // Never throws. A proxy or gateway can return HTML or an empty
+  // body, and a thrown FormatException there used to surface as a
+  // generic failure that hid the real status code.
+  // ===========================================================
+  Map<String, dynamic>? _safeDecode(String responseBody) {
+    if (responseBody.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(responseBody);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return decoded.cast<String, dynamic>();
+      // Some endpoints return a bare list; normalise it into the envelope
+      // shape so callers can always read `body['data']`.
+      if (decoded is List) return {'data': decoded};
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ===========================================================
+  // EFFECTIVE STATUS CODE
+  // This API reports auth failures as HTTP 500 with the real code
+  // nested under `error.code`, e.g.
+  //   {"success":false,"message":"Please provide your token.",
+  //    "error":{"code":401,"name":"AppError"}}
+  // Without unwrapping it, an expired session is never detected and
+  // every screen sits on a permanent error instead of returning to login.
+  // ===========================================================
+  int _effectiveStatusCode(int statusCode, Map<String, dynamic>? decoded) {
+    if (decoded == null) return statusCode;
+
+    final nested = decoded['error'];
+    if (nested is Map) {
+      final nestedCode = _asStatusCode(nested['code'] ?? nested['statusCode']);
+      if (nestedCode != null) return nestedCode;
+    }
+
+    final topLevel = _asStatusCode(decoded['code'] ?? decoded['statusCode']);
+    // Only trust a top-level code when the transport itself failed, otherwise a
+    // successful payload that happens to carry `code: 0` would be misread.
+    if (topLevel != null && statusCode >= 400) return topLevel;
+
+    return statusCode;
+  }
+
+  int? _asStatusCode(dynamic value) {
+    final parsed = value is int ? value : int.tryParse(value?.toString() ?? '');
+    if (parsed == null) return null;
+    // Guard against payloads that use `code` for something unrelated.
+    return parsed >= 100 && parsed <= 599 ? parsed : null;
+  }
 
   // ===========================================================
   // CENTRAL STATUS CODE → ERROR MESSAGE RESOLVER
   // Controllers never need to touch a status code directly.
   // Always tries the server's own "message" field first.
   // ===========================================================
-  String _resolveErrorMessage(int statusCode, Map<String, dynamic>? decoded) {
-    final serverMsg = decoded?['message'] as String?;
+  String _resolveErrorMessage(int statusCode, Map<String, dynamic>? decoded, {bool checksCredentials = false}) {
+    final rawMessage = decoded?['message'];
+    final serverMsg = rawMessage is String && rawMessage.trim().isNotEmpty
+        ? rawMessage.trim()
+        : null;
 
     switch (statusCode) {
       case 400:
         return serverMsg ?? 'Bad request. Please check your input.';
       case 401:
-        return serverMsg ?? 'Session expired. Please log in again.';
+        // On login / change password a 401 means "wrong password", not an
+        // expired session: show the server's reason.
+        if (checksCredentials) return serverMsg ?? 'Incorrect password.';
+        return 'Session expired. Please log in again.';
       case 403:
         return serverMsg ?? 'You don\'t have permission to perform this action.';
       case 404:
@@ -49,7 +115,8 @@ class NetworkCaller {
       case 422:
         return serverMsg ?? 'Invalid data submitted. Please review your input.';
       case 429:
-        return serverMsg ?? 'Too many requests. Please wait a moment and try again.';
+        return serverMsg ??
+            'Too many requests. Please wait a moment and try again.';
       case 500:
         return serverMsg ?? 'Server error. Please try again later.';
       case 502:
@@ -57,15 +124,60 @@ class NetworkCaller {
       case 503:
         return serverMsg ?? 'Service unavailable. Please try again later.';
       case 504:
-        return serverMsg ?? 'Gateway timeout. Please check your connection and try again.';
+        return serverMsg ??
+            'Gateway timeout. Please check your connection and try again.';
       default:
         return serverMsg ?? _defaultErrorMessage;
     }
   }
 
   // ===========================================================
-  // CENTRAL UNAUTHORIZED + FORBIDDEN HANDLER
-  // Call this after every non-success response.
+  // CENTRAL RESPONSE HANDLER
+  // Single place where success, auth and error messages are decided,
+  // so no verb can drift from the others.
+  // ===========================================================
+  NetworkResponse _buildResponse({
+    required int statusCode,
+    required String responseBody,
+    required bool isFromLogin,
+  }) {
+    final decoded = _safeDecode(responseBody);
+    final effective = _effectiveStatusCode(statusCode, decoded);
+
+    final transportOk = statusCode >= 200 && statusCode < 300;
+    final serverOk = decoded?['success'] != false;
+
+    if (transportOk && serverOk && effective < 400) {
+      return NetworkResponse(
+        isSuccess: true,
+        statusCode: statusCode,
+        effectiveStatusCode: effective,
+        body: decoded,
+      );
+    }
+
+    if (!isFromLogin) _handleAuthErrors(effective);
+
+    return NetworkResponse(
+      isSuccess: false,
+      statusCode: statusCode,
+      effectiveStatusCode: effective,
+      body: decoded,
+      errorMessage: _resolveErrorMessage(effective, decoded, checksCredentials: isFromLogin),
+    );
+  }
+
+  NetworkResponse _buildExceptionResponse(Object error) {
+    return NetworkResponse(
+      isSuccess: false,
+      statusCode: -1,
+      effectiveStatusCode: -1,
+      errorMessage: _networkExceptionMessage(error),
+    );
+  }
+
+  // ===========================================================
+  // CENTRAL UNAUTHORIZED HANDLER
   // ===========================================================
   void _handleAuthErrors(int statusCode) {
     if (statusCode == 401) {
@@ -75,48 +187,35 @@ class NetworkCaller {
     // the user simply lacks permission. Handle UI feedback via errorMessage.
   }
 
+  Map<String, String> _headers({bool json = true, String? overrideToken}) {
+    final token = overrideToken ?? accessToken();
+    return {
+      if (json) 'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   // ===========================================================
   // GET REQUEST
   // ===========================================================
   Future<NetworkResponse> getRequest({required String url}) async {
     try {
-      final uri = Uri.parse(url);
-      final headers = {
-        'Authorization': 'Bearer ${accessToken()}',
-        'Content-Type': 'application/json',
-      };
+      final headers = _headers();
+      _logRequest('GET', url, null, headers);
 
-      _logRequest(url, null, headers);
-
-      final response = await get(uri, headers: headers)
-          .timeout(const Duration(seconds: 30));
+      final response =
+          await _http.get(Uri.parse(url), headers: headers).timeout(_requestTimeout);
 
       _logResponse(url, response);
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: response.statusCode,
-          body: decoded,
-        );
-      }
-
-      _handleAuthErrors(response.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: response.statusCode,
-        errorMessage: _resolveErrorMessage(response.statusCode, decoded),
+        responseBody: response.body,
+        isFromLogin: false,
       );
     } catch (e) {
       _logger.e('GET request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
@@ -130,44 +229,24 @@ class NetworkCaller {
     String? overrideToken,
   }) async {
     try {
-      final uri = Uri.parse(url);
-      final token = overrideToken ?? accessToken();
-      final headers = {
-        'Content-Type': 'application/json',
-        if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-      };
+      final headers = _headers(overrideToken: overrideToken);
+      _logRequest('POST', url, body, headers);
 
-      _logRequest(url, body, headers);
-      final response = await post(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 30));
+      final response = await _http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body ?? const <String, dynamic>{}),
+      ).timeout(_requestTimeout);
 
       _logResponse(url, response);
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: response.statusCode,
-          body: decoded,
-        );
-      }
-
-      if (!isFromLogin) _handleAuthErrors(response.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: response.statusCode,
-        errorMessage: _resolveErrorMessage(response.statusCode, decoded),
-        body: decoded,
+        responseBody: response.body,
+        isFromLogin: isFromLogin,
       );
     } catch (e) {
       _logger.e('POST request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
@@ -180,42 +259,24 @@ class NetworkCaller {
     bool isFromLogin = false,
   }) async {
     try {
-      final uri = Uri.parse(url);
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${accessToken()}',
-      };
+      final headers = _headers();
+      _logRequest('PATCH', url, body, headers);
 
-      _logRequest(url, body, headers);
-      final response = await patch(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 30));
+      final response = await _http.patch(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body ?? const <String, dynamic>{}),
+      ).timeout(_requestTimeout);
 
       _logResponse(url, response);
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: response.statusCode,
-          body: decoded,
-        );
-      }
-
-      if (!isFromLogin) _handleAuthErrors(response.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: response.statusCode,
-        errorMessage: _resolveErrorMessage(response.statusCode, decoded),
+        responseBody: response.body,
+        isFromLogin: isFromLogin,
       );
     } catch (e) {
       _logger.e('PATCH request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
@@ -228,42 +289,24 @@ class NetworkCaller {
     bool isFromLogin = false,
   }) async {
     try {
-      final uri = Uri.parse(url);
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${accessToken()}',
-      };
+      final headers = _headers();
+      _logRequest('PUT', url, body, headers);
 
-      _logRequest(url, body, headers);
-      final response = await put(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 30));
+      final response = await _http.put(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(body ?? const <String, dynamic>{}),
+      ).timeout(_requestTimeout);
 
       _logResponse(url, response);
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: response.statusCode,
-          body: decoded,
-        );
-      }
-
-      if (!isFromLogin) _handleAuthErrors(response.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: response.statusCode,
-        errorMessage: _resolveErrorMessage(response.statusCode, decoded),
+        responseBody: response.body,
+        isFromLogin: isFromLogin,
       );
     } catch (e) {
       _logger.e('PUT request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
@@ -276,46 +319,24 @@ class NetworkCaller {
     bool isFromLogin = false,
   }) async {
     try {
-      final uri = Uri.parse(url);
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${accessToken()}',
-      };
+      final headers = _headers();
+      _logRequest('DELETE', url, body, headers);
 
-      _logRequest(url, body, headers);
-      final response = await delete(
-        uri,
+      final response = await _http.delete(
+        Uri.parse(url),
         headers: headers,
         body: body != null ? jsonEncode(body) : null,
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(_requestTimeout);
 
       _logResponse(url, response);
-
-      final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: response.statusCode,
-          body: decoded,
-        );
-      }
-
-      if (!isFromLogin) _handleAuthErrors(response.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: response.statusCode,
-        errorMessage: _resolveErrorMessage(response.statusCode, decoded),
-        body: decoded,
+        responseBody: response.body,
+        isFromLogin: isFromLogin,
       );
     } catch (e) {
       _logger.e('DELETE request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
@@ -330,25 +351,27 @@ class NetworkCaller {
     bool isFromLogin = false,
   }) async {
     try {
-      final uri = Uri.parse(url);
-      final request = http.MultipartRequest(method.toUpperCase(), uri);
-
-      request.headers['Authorization'] = 'Bearer ${accessToken()}';
+      final request =
+          http.MultipartRequest(method.toUpperCase(), Uri.parse(url));
+      request.headers.addAll(_headers(json: false));
 
       if (fields != null) request.fields.addAll(fields);
 
       if (files != null) {
         for (final entry in files.entries) {
           final file = entry.value;
-          final fileName = file.path.split('/').last;
+          // A picked file can disappear before upload (cache eviction on
+          // Android). Skipping beats throwing mid-request.
+          if (!file.existsSync()) {
+            _logger.w('Skipping missing upload file: ${file.path}');
+            continue;
+          }
           final mimeType = lookupMimeType(file.path);
-
           request.files.add(
-            http.MultipartFile(
+            await http.MultipartFile.fromPath(
               entry.key,
-              file.readAsBytes().asStream(),
-              file.lengthSync(),
-              filename: fileName,
+              file.path,
+              filename: file.uri.pathSegments.last,
               contentType: mimeType != null ? MediaType.parse(mimeType) : null,
             ),
           );
@@ -357,54 +380,38 @@ class NetworkCaller {
 
       _logMultipartRequest(url, fields, files, request.headers);
 
-      final streamed = await request.send()
-          .timeout(const Duration(seconds: 120));
-
+      final streamed = await _http.send(request).timeout(_uploadTimeout);
       final responseBody = await streamed.stream.bytesToString();
-      final decoded = jsonDecode(responseBody) as Map<String, dynamic>?;
 
-      // Wrap for logging
-      final logResponse = Response(responseBody, streamed.statusCode,
-          reasonPhrase: streamed.reasonPhrase ?? '');
-      _logResponse(url, logResponse);
+      _logResponse(
+        url,
+        Response(responseBody, streamed.statusCode,
+            reasonPhrase: streamed.reasonPhrase ?? ''),
+      );
 
-      if (streamed.statusCode == 200 || streamed.statusCode == 201) {
-        return NetworkResponse(
-          isSuccess: true,
-          statusCode: streamed.statusCode,
-          body: decoded,
-        );
-      }
-
-      if (!isFromLogin) _handleAuthErrors(streamed.statusCode);
-
-      return NetworkResponse(
-        isSuccess: false,
+      return _buildResponse(
         statusCode: streamed.statusCode,
-        errorMessage: _resolveErrorMessage(streamed.statusCode, decoded),
-        body: decoded,
+        responseBody: responseBody,
+        isFromLogin: isFromLogin,
       );
     } catch (e) {
       _logger.e('MULTIPART request failed: $e');
-      return NetworkResponse(
-        isSuccess: false,
-        statusCode: -1,
-        errorMessage: _networkExceptionMessage(e),
-      );
+      return _buildExceptionResponse(e);
     }
   }
 
   // ===========================================================
   // EXCEPTION → USER-FRIENDLY MESSAGE
-  // Converts dart:io and other common exceptions to readable strings.
   // ===========================================================
   String _networkExceptionMessage(Object e) {
-
     if (e is TimeoutException) {
       return 'Request timed out. Please check your connection.';
     }
     if (e is SocketException) {
       return 'No internet connection. Please check your network.';
+    }
+    if (e is HandshakeException) {
+      return 'Secure connection failed. Please try again.';
     }
     if (e is HttpException) {
       return 'Network error. Please try again.';
@@ -417,37 +424,94 @@ class NetworkCaller {
 
   // ===========================================================
   // LOGGING
+  // Debug builds only. These payloads contain bearer tokens and
+  // personal data, which must never reach a release logcat.
   // ===========================================================
-  void _logRequest(String url, dynamic body, Map<String, String>? headers) {
+  Map<String, String> _redact(Map<String, String>? headers) {
+    if (headers == null) return const {};
+    return {
+      for (final entry in headers.entries)
+        entry.key: entry.key.toLowerCase() == 'authorization'
+            ? 'Bearer ***'
+            : entry.value,
+    };
+  }
+
+  void _logRequest(
+    String method,
+    String url,
+    dynamic body,
+    Map<String, String>? headers,
+  ) {
+    if (!kDebugMode) return;
     _logger.i('''
-================== REQUEST ========================
+================== $method REQUEST ==================
 URL     : $url
-HEADERS : $headers
-BODY    : $body
+HEADERS : ${_redact(headers)}
+BODY    : ${_redactBody(body)}
 ====================================================''');
   }
 
   void _logMultipartRequest(
-      String url,
-      Map<String, String>? fields,
-      Map<String, File>? files,
-      Map<String, String>? headers,
-      ) {
+    String url,
+    Map<String, String>? fields,
+    Map<String, File>? files,
+    Map<String, String>? headers,
+  ) {
+    if (!kDebugMode) return;
     _logger.i('''
 ================== MULTIPART REQUEST ==============
 URL     : $url
-HEADERS : $headers
-FIELDS  : $fields
+HEADERS : ${_redact(headers)}
+FIELDS  : ${_redactBody(fields)}
 FILES   : ${files?.keys.toList()}
 ====================================================''');
   }
 
   void _logResponse(String url, Response response) {
+    if (!kDebugMode) return;
     _logger.i('''
 ================== RESPONSE =======================
 URL         : $url
 STATUS CODE : ${response.statusCode}
-BODY        : ${response.body}
+BODY        : ${_redactSecrets(response.body)}
 ====================================================''');
+  }
+
+  /// Hides Stripe secrets (`sk_…`, `rk_…`, `whsec_…`, `…_secret_…`) so they
+  /// never end up in logs or screenshots of logs.
+  static final _secretPattern = RegExp(
+    r'\b(sk|rk)_(test|live)_[A-Za-z0-9]+|\bwhsec_[A-Za-z0-9]+|_secret_[A-Za-z0-9]+',
+  );
+
+  String _redactSecrets(String body) => body
+      .replaceAllMapped(_secretPattern, (m) {
+        final v = m[0]!;
+        return '${v.substring(0, v.indexOf('_', v.indexOf('_') + 1) + 1)}***';
+      })
+      .replaceAllMapped(_sensitiveJsonPattern, (m) => '${m[1]}"***"');
+
+  /// Keys whose values must never be logged (passwords, OTPs, tokens).
+  static final _sensitiveKey = RegExp(
+    r'password|otp|token|secret',
+    caseSensitive: false,
+  );
+
+  /// `"accessToken":"…"`, `"password":"…"` and similar in JSON text.
+  static final _sensitiveJsonPattern = RegExp(
+    r'("[A-Za-z_]*(?:password|Password|otp|Otp|token|Token|secret|Secret)[A-Za-z_]*"\s*:\s*)"[^"]*"',
+  );
+
+  dynamic _redactBody(dynamic body) {
+    if (body is Map) {
+      return {
+        for (final e in body.entries)
+          e.key: _sensitiveKey.hasMatch(e.key.toString())
+              ? '***'
+              : _redactBody(e.value),
+      };
+    }
+    if (body is String) return _redactSecrets(body);
+    return body;
   }
 }

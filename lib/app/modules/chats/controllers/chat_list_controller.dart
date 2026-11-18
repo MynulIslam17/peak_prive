@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/data/models/network_response.dart';
 import 'package:harry_service_app/app/modules/chats/models/chat_list_model.dart';
 import '../../../core/constants/api_urls.dart';
 import '../../../data/services/network/network_caller.dart';
+import '../../../data/services/socket/live_events.dart';
 import '../../../data/services/socket/socket_service.dart';
 
 /// ------------------------------------------------------------
@@ -45,6 +48,12 @@ class ChatListController extends GetxController {
   /// Public getter for chat list
   List<ChatListModel> get chatList => _chatList;
 
+  /// Unread messages across all chats (Chats tab badge).
+  int get totalUnread => _chatList.fold(0, (sum, c) => sum + c.unreadCount);
+
+  StreamSubscription<void>? _messageSub;
+  Timer? _refreshDebounce;
+
   // -------------------- Lifecycle --------------------
 
   @override
@@ -53,6 +62,19 @@ class ChatListController extends GetxController {
 
     /// Fetch initial chat list when controller is initialized
    // fetchChatList();
+
+    // Keep the online dots live (this was never wired up).
+    listenToUserStatus();
+
+    // New messages arrive in any conversation: refresh the list (last
+    // message, unread counts) without a loading state.
+    _messageSub = LiveEvents.chatMessages.listen((_) => refreshSoon());
+  }
+
+  /// Quiet refresh, batched when several messages arrive at once.
+  void refreshSoon() {
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 400), () => fetchChatList(quiet: true));
   }
 
   // -------------------- API Call --------------------
@@ -63,10 +85,10 @@ class ChatListController extends GetxController {
   /// - Called on controller initialization
   /// - Updates chat list and UI state
   /// - Handles loading and error states
-  Future<void> fetchChatList() async {
+  Future<void> fetchChatList({bool quiet = false}) async {
     try {
-      _isLoading = true;
-      _errorMessage = null;
+      _isLoading = !quiet;
+      if (!quiet) _errorMessage = null;
       update();
 
       NetworkResponse response = await Get.find<NetworkCaller>()
@@ -74,7 +96,8 @@ class ChatListController extends GetxController {
 
       if (response.isSuccess) {
         _chatList = ChatListModel.fromRestJson(response.body!);
-      } else {
+        _errorMessage = null;
+      } else if (!quiet) {
         _errorMessage = response.errorMessage ?? 'Failed to load chats';
       }
     } finally {
@@ -112,38 +135,49 @@ class ChatListController extends GetxController {
   /// - Keeps other chat data intact
   void listenToUserStatus() {
     if (!Get.isRegistered<SocketService>()) return;
+    try {
+      // The helper is recreated on login, so (re)attach to the current one.
+      final helper = Get.find<SocketService>().helper;
+      helper.removeUserStatusListener(_onUserStatus);
+      helper.addUserStatusListener(_onUserStatus);
+    } catch (_) {
+      // Socket not initialised yet (e.g. before login) — the chat list
+      // screen calls this again when it opens.
+    }
+  }
 
-    Get.find<SocketService>().helper.onUserStatusChanged = (data) {
-      final userId = data['userId'];
-      final isOnline = data['isOnline'] ?? false;
+  void _onUserStatus(String userId, bool isOnline) {
+    final index = _chatList.indexWhere((c) => c.otherUser.id == userId);
+    if (index == -1 || _chatList[index].otherUser.isOnline == isOnline) return;
 
-      // Find the chat item that matches this user
-      final index = _chatList.indexWhere(
-            (c) => c.otherUser.id == userId,
-      );
+    // Re-create the item (models are immutable); keep everything else.
+    final old = _chatList[index];
+    _chatList[index] = ChatListModel(
+      chatId: old.chatId,
+      otherUser: ChatOtherUser(
+        id: old.otherUser.id,
+        fullName: old.otherUser.fullName,
+        email: old.otherUser.email,
+        profileUrl: old.otherUser.profileUrl,
+        isOnline: isOnline,
+      ),
+      lastMessage: old.lastMessage,
+      unreadCount: old.unreadCount,
+      lastMessageAt: old.lastMessageAt,
+      lastMessageTime: old.lastMessageTime,
+    );
+    update();
+  }
 
-      if (index != -1) {
-
-        /// Update only the user's online status
-        /// (Re-create object to keep immutability)
-        _chatList[index] = ChatListModel(
-          chatId: _chatList[index].chatId,
-          otherUser: ChatOtherUser(
-            id: _chatList[index].otherUser.id,
-            fullName: _chatList[index].otherUser.fullName,
-            email: _chatList[index].otherUser.email,
-            profileUrl: _chatList[index].otherUser.profileUrl,
-            isOnline: isOnline,
-          ),
-          lastMessage: _chatList[index].lastMessage,
-          unreadCount: _chatList[index].unreadCount,
-          lastMessageAt: _chatList[index].lastMessageAt,
-          lastMessageTime: _chatList[index].lastMessageTime,
-        );
-
-        /// Trigger UI update
-        update();
+  @override
+  void onClose() {
+    _messageSub?.cancel();
+    _refreshDebounce?.cancel();
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        Get.find<SocketService>().helper.removeUserStatusListener(_onUserStatus);
       }
-    };
+    } catch (_) {}
+    super.onClose();
   }
 }

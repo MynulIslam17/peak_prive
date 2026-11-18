@@ -3,14 +3,13 @@ import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/app_colors.dart';
 import 'package:harry_service_app/app/core/constants/text-style.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/cusom_text_fiield.dart';
+import 'package:harry_service_app/app/core/widgets/app_form_field.dart';
+import 'package:harry_service_app/app/core/widgets/app_toast.dart';
 import 'package:harry_service_app/app/modules/provider/shared/controllers/change_pass_controller.dart';
 import 'package:harry_service_app/app/modules/provider/shared/models/change_pass_request_model.dart';
 import 'package:harry_service_app/app/routes/app_routes.dart';
 import '../../../../../gen/assets.gen.dart';
-import '../../../../core/widgets/appbar_with_title.dart';
 import '../../../../core/widgets/custom_appbar.dart';
-import '../../../../core/widgets/custome_button.dart';
 
 class ProviderPassScreen extends StatefulWidget {
   const ProviderPassScreen({super.key});
@@ -32,54 +31,29 @@ class _ProviderPassScreenState extends State<ProviderPassScreen> {
 
   final icons = Assets.icons;
 
-  // --------------------------
-  /// Change Password Function
-  // --------------------------
   Future<void> _changePassword() async {
-    if (_formKey.currentState!.validate()) {
-      String oldPass = oldPassController.text;
-      String newPass = newPassController.text;
-      String confirmPass = confirmPassController.text;
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
 
+    final model = ChangePassRequestModel(
+      newPassword: newPassController.text,
+      currentPassword: oldPassController.text,
+    );
+    final success = await passController.changePassword(model);
+    if (!mounted) return;
 
-      ChangePassRequestModel model=ChangePassRequestModel(newPassword: confirmPass, currentPassword: oldPass);
-
-
-      bool success=await passController.changePassword(model);
-
-
-      if(success){
-
-        /// show success message
-        Get.snackbar(
-          "Success",
-          "Password changed successfully",
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP
-        );
-
-
-        // Clear fields after successful update
-        oldPassController.clear();
-        newPassController.clear();
-        confirmPassController.clear();
-
-      }else{
-        Get.snackbar(
-            "Failed",
-            passController.errorMessage!,
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM
-        );
-
-
-      }
-
-
-
-
+    if (success) {
+      AppToast.success('Your password has been updated.',
+          title: 'Password changed');
+      oldPassController.clear();
+      newPassController.clear();
+      confirmPassController.clear();
+      _formKey.currentState?.reset();
+    } else {
+      AppToast.error(
+        passController.errorMessage ?? 'Please try again.',
+        title: "Couldn't change password",
+      );
     }
   }
 
@@ -94,102 +68,111 @@ class _ProviderPassScreenState extends State<ProviderPassScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: CustomAppBar(title: "Change Password",onBackPressed: (){
-        Get.back();
-      },),
+      backgroundColor: AppColors.scaffold,
+      appBar: const CustomAppBar(title: "Change password"),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomTextField(
-                          controller: oldPassController,
-                          hintText: "Old Password",
-                          isPassword: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter old password";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        CustomTextField(
-                          controller: newPassController,
-                          hintText: "New Password",
-                          isPassword: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter new password";
-                            }
-                            if (value.length < 6) {
-                              return "Password must be at least 6 characters";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        CustomTextField(
-                          controller: confirmPassController,
-                          hintText: "Confirm New Password",
-                          isPassword: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Confirm new password";
-                            }
-                            if (value != newPassController.text) {
-                              return "Passwords do not match";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 10),
-                        Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: InkWell(
-                            onTap: (){
-                              Get.toNamed(Routes.emailVerify);
-                            },
+        child: Column(
+          children: [
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFBF3DC),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.lock_outline_rounded,
+                              color: Color(0xFF9A7A12)),
+                          const SizedBox(width: 12),
+                          Expanded(
                             child: Text(
-                              "Forgot password?",
-                              style: AppTextStyle.p_regular_12(),
+                              'Use at least 6 characters, different from your current password.',
+                              style: AppTextStyle.p_regular_12(
+                                  color: AppColors.textSecondary),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 20),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    AppFormField(
+                      label: 'Current password',
+                      controller: oldPassController,
+                      icon: Icons.lock_outline_rounded,
+                      isPassword: true,
+                      textInputAction: TextInputAction.next,
+                      validator: (v) => (v == null || v.isEmpty)
+                          ? 'Enter your current password'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+                    AppFormField(
+                      label: 'New password',
+                      controller: newPassController,
+                      icon: Icons.key_rounded,
+                      isPassword: true,
+                      textInputAction: TextInputAction.next,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Enter a new password';
+                        if (v.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        if (v == oldPassController.text) {
+                          return 'Choose a password different from the current one';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    AppFormField(
+                      label: 'Confirm new password',
+                      controller: confirmPassController,
+                      icon: Icons.key_rounded,
+                      isPassword: true,
+                      textInputAction: TextInputAction.done,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Confirm your new password';
+                        }
+                        if (v != newPassController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => Get.toNamed(Routes.emailVerify),
+                        child: Text(
+                          'Forgot password?',
+                          style: AppTextStyle.p_medium_12(
+                              color: const Color(0xFF9A7A12)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-
-              GetBuilder<ChangePasswordController>(builder: (controller){
-                return controller.isLoading
-                    ?CircularProgressIndicator(
-                  color: AppColors.primary_1,
-                )
-                    :  SizedBox(
-                  height: 55,
-                  width: double.infinity,
-                  child: CustomButton(
-                    onTap: _changePassword,
-                    text: "Update Password",
-                    backgroundColor: AppColors.primary_1,
-                  ),
-                );
-              })
-
-
-            ],
-          ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: GetBuilder<ChangePasswordController>(
+                builder: (controller) => AppPrimaryButton(
+                  label: 'Update password',
+                  loading: controller.isLoading,
+                  onPressed: _changePassword,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

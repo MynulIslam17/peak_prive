@@ -62,13 +62,25 @@ class CustomSearchBar extends StatelessWidget {
           prefixIconConstraints: const BoxConstraints(minWidth: 35),
 
           // Suffix clear button
-          suffixIcon: controller.text.isNotEmpty
-              ? IconButton(
-            icon: Icon(Icons.clear_rounded,
-                color: Colors.grey.shade500, size: 20),
-            onPressed: onClear,
-          )
-              : null,
+          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: controller,
+            builder: (context, value, _) {
+              if (value.text.isEmpty) return const SizedBox.shrink();
+              return IconButton(
+                tooltip: 'Clear',
+                icon: Icon(Icons.cancel_rounded,
+                    color: Colors.grey.shade500, size: 20),
+                onPressed: () {
+                  if (onClear != null) {
+                    onClear!();
+                  } else {
+                    controller.clear();
+                    onChanged?.call('');
+                  }
+                },
+              );
+            },
+          ),
 
           contentPadding:
           const EdgeInsets.symmetric(vertical: 14, horizontal: 12),

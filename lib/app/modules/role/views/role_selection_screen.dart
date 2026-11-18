@@ -5,6 +5,7 @@ import 'package:harry_service_app/gen/assets.gen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/controllers/role_controller.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -15,13 +16,7 @@ class RoleSelectionScreen extends StatelessWidget {
 
   void onContinue() {
     if (roleController.getRole.isEmpty) {
-      Get.snackbar(
-        "Select a Role",
-        "Please choose one option to continue.",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.85),
-        colorText: Colors.white,
-      );
+      showAppToast(type: ToastType.warning, title: "Select a Role", message: "Please choose one option to continue.");
       return;
     }
 

@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:harry_service_app/app/core/constants/api_urls.dart';
 import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/appbar_with_title.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/get_profile_controller.dart';
 import 'package:harry_service_app/app/modules/user/shared/controllers/update_profile_controller.dart';
 import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
 import '../../../../core/widgets/custom_appbar.dart';
-import '../../../../core/widgets/custome_button.dart';
+import '../../../../core/widgets/custom_image_container.dart';
 import '../../../../data/models/user_model.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class ProviderAccountInformationScreen extends StatefulWidget {
   const ProviderAccountInformationScreen({super.key});
@@ -36,9 +36,11 @@ class _ProviderAccountInformationScreenState
   late final TextEditingController addressTEController;
 
   /// Helper to handle null or empty values
+  /// Empty for missing values and the backend's "N/A" placeholder, so the
+  /// placeholder is never saved back as a real phone number or address.
   String safeText(String? value) {
-    if (value == null || value.trim().isEmpty) return "N/A";
-    return value;
+    final v = value?.trim() ?? '';
+    return v.toUpperCase() == 'N/A' ? '' : v;
   }
 
   @override
@@ -115,14 +117,8 @@ class _ProviderAccountInformationScreenState
 
   /// Helper method to show snackbar safely
   void _showSnackBar(String message, Color bgColor) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: bgColor,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    final ok = bgColor == Colors.green;
+    showAppToast(type: ok ? ToastType.success : ToastType.error, title: ok ? "Saved" : "Couldn't save", message: message);
   }
 
   @override
@@ -134,193 +130,180 @@ class _ProviderAccountInformationScreenState
     super.dispose();
   }
 
+  Widget _field({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    String? hint,
+    bool readOnly = false,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: AppTextStyle.p_medium_12(color: AppColors.textSecondary)),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            readOnly: readOnly,
+            keyboardType: keyboardType,
+            style: AppTextStyle.sub_h3_regular_14(
+              color: readOnly ? AppColors.textTertiary : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle:
+                  AppTextStyle.sub_h3_regular_14(color: AppColors.textDisabled),
+              prefixIcon: Icon(icon, size: 20, color: AppColors.textTertiary),
+              suffixIcon: readOnly
+                  ? const Icon(Icons.lock_outline_rounded,
+                      size: 18, color: AppColors.textDisabled)
+                  : null,
+              filled: true,
+              fillColor: readOnly ? AppColors.surfaceAlt : Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    const BorderSide(color: AppColors.primary_1, width: 1.4),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: CustomAppBar(title: "Account Information",onBackPressed: (){
-        Get.back();
-      },),
+      backgroundColor: AppColors.scaffold,
+      appBar: const CustomAppBar(title: "Account information"),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 25),
-
-                      /// Profile Header
-                      GetBuilder<AuthController>(
-                        builder: (authCtrl) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            height: 160,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(14),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                children: [
+                  GetBuilder<AuthController>(
+                    builder: (authCtrl) {
+                      final user = authCtrl.userModel;
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            CustomCachedImage(
+                              width: 56,
+                              height: 56,
+                              imageUrl: user?.profilePic ?? '',
+                              isCircle: true,
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: authCtrl.userModel?.profilePic.isNotEmpty == true
-                                      ? NetworkImage(authCtrl.userModel!.profilePic) as ImageProvider
-                                      : const AssetImage("assets/images/profile_img.jpg") as ImageProvider,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    safeText(authCtrl.userModel?.fullName),
-                                    style: AppTextStyle.h3_medium_20(),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    safeText(user?.fullName).isEmpty
+                                        ? 'Your name'
+                                        : safeText(user?.fullName),
+                                    style: AppTextStyle.sub_h2_medium_16(),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Change your photo from the Profile tab.',
+                                    style: AppTextStyle.p_regular_12(
+                                        color: AppColors.textTertiary),
+                                  ),
+                                ],
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 30),
-
-                      /// Name Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Name",
-                          style: AppTextStyle.c_regular_12(),
+                          ],
                         ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _field(
+                    label: 'Full name',
+                    controller: nameTEController,
+                    icon: Icons.person_outline_rounded,
+                    hint: 'Your name',
+                  ),
+                  _field(
+                    label: 'Email',
+                    controller: emailTEController,
+                    icon: Icons.mail_outline_rounded,
+                    readOnly: true,
+                  ),
+                  _field(
+                    label: 'Phone',
+                    controller: phoneTEController,
+                    icon: Icons.phone_outlined,
+                    hint: '+33 6 12 34 56 78',
+                    keyboardType: TextInputType.phone,
+                  ),
+                  _field(
+                    label: 'Address',
+                    controller: addressTEController,
+                    icon: Icons.home_outlined,
+                    hint: 'Street, city',
+                    keyboardType: TextInputType.streetAddress,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: GetBuilder<UpdateProfileController>(
+                builder: (controller) => SizedBox(
+                  height: 52,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: controller.isLoading ? null : _updateButton,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary_1,
+                      disabledBackgroundColor:
+                          AppColors.primary_1.withValues(alpha: 0.6),
+                      foregroundColor: AppColors.textOnPrimary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: nameTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.person,
-                            color: Colors.grey,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      /// Email Field (Read-only)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Email",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: emailTEController,
-                        readOnly: true,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.mail,
-                            color: Colors.grey,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.black12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.black12),
-                          ),
-                          disabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Colors.black12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      /// Phone Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Phone",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: phoneTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.phone,
-                            color: Colors.grey,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 20),
-
-                      /// Address Field
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "Address",
-                          style: AppTextStyle.c_regular_12(),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: addressTEController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(
-                            Icons.location_city,
-                            color: Colors.grey,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey.withOpacity(0.12),
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
+                    ),
+                    child: controller.isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text('Save changes',
+                            style: AppTextStyle.sub_h2_medium_16(
+                                color: AppColors.textOnPrimary)),
                   ),
                 ),
               ),
-
-              /// Save Button
-              GetBuilder<UpdateProfileController>(
-                builder: (controller) {
-                  return controller.isLoading
-                      ? CircularProgressIndicator(color: AppColors.primary_1)
-                      : SizedBox(
-                    height: 55,
-                    width: double.infinity,
-                    child: CustomButton(
-                      text: "Save Changes",
-                      backgroundColor: AppColors.primary_1,
-                      onTap: _updateButton,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

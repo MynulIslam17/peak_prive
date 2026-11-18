@@ -1,266 +1,305 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/constants/api_urls.dart';
-import 'package:harry_service_app/app/core/constants/app_colors.dart';
-import 'package:harry_service_app/app/core/constants/text-style.dart';
-import 'package:harry_service_app/app/core/widgets/provider_profile.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/provider/provider_booking_shimmer.dart';
-import 'package:harry_service_app/app/modules/provider/shared/controllers/all_booking_controller.dart';
-import 'package:shimmer/shimmer.dart';
-import '../../../../core/controllers/auth_controller.dart';
-import '../../../../core/widgets/dynamic_booking_card.dart';
-import '../../../../routes/app_routes.dart';
+import '../../../../core/widgets/collapsing_header.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/booking_Item_shimmer.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../core/utils/price_label.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../../data/api/peak_api.dart';
+import '../../../../core/controllers/nav_controller.dart';
+import '../../../../core/widgets/provider_profile.dart';
+import '../../../../routes/app_routes.dart';
+import '../controllers/all_booking_controller.dart';
+import '../controllers/provider_home_controller.dart';
+import '../widgets/provider_ui.dart';
+
+/// Provider → Bookings tab: every booking on the provider's listings, with
+/// filters by status. Works for all provider types.
 class ProviderBookingRequestScreen extends StatefulWidget {
   const ProviderBookingRequestScreen({super.key});
 
   @override
-  State<ProviderBookingRequestScreen> createState() =>
-      _ProviderBookingRequestScreenState();
+  State<ProviderBookingRequestScreen> createState() => _ProviderBookingRequestScreenState();
 }
 
-class _ProviderBookingRequestScreenState
-    extends State<ProviderBookingRequestScreen> {
-  final authController = Get.find<AuthController>();
-  final allBookingController = Get.put(BookingController());
+class _ProviderBookingRequestScreenState extends State<ProviderBookingRequestScreen> {
+  final controller = Get.put(ProviderBookingsController());
+  final _scroll = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    allBookingController.fetchBookings();
+    // After the first frame: update() must not run mid-build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) controller.fetchBookings();
+    });
+    _scroll.addListener(() {
+      if (_scroll.position.extentAfter < 400) controller.loadMore();
+    });
   }
 
-  String formatDateTime(String? dateTime) {
-    if (dateTime == null) return 'N/A';
-    try {
-      final dt = DateTime.parse(dateTime);
-      return "${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} "
-          "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-    } catch (_) {
-      return 'Invalid';
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Requests waiting for approval, from the dashboard (badge on the chip).
+  int? _requestCount() => Get.isRegistered<ProviderHomeController>()
+      ? Get.find<ProviderHomeController>().dashboard?.bookings.requests
+      : null;
+
+  void _refreshHome() {
+    if (Get.isRegistered<ProviderHomeController>()) {
+      Get.find<ProviderHomeController>().refreshData();
+    }
+  }
+
+  /// [build] again whenever the dashboard changes (when it's registered).
+  Widget _withHome(Widget Function() build) => Get.isRegistered<ProviderHomeController>()
+      ? GetBuilder<ProviderHomeController>(builder: (_) => build())
+      : build();
+
+  Future<void> _quick(Booking b, BookingAction action) async {
+    String? reason;
+    if (action == BookingAction.reject) {
+      final res = await _confirmReject(context, b);
+      if (res == null) return; // kept
+      reason = res;
+    }
+    final r = await controller.quickAction(b, action, reason: reason);
+    if (r.message.isEmpty) return;
+    if (r.ok) {
+      AppToast.success(r.message);
+      _refreshHome();
+    } else if (r.conflict) {
+      AppToast.info(r.message, title: 'Booking changed');
+      _refreshHome();
+    } else {
+      AppToast.error(r.message);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: GetBuilder<BookingController>(builder: (controller) {
-
+      backgroundColor: AppColors.scaffold,
+      body: CollapsingHeaderLayout(
+        expandedHeight: ProviderProfile.expandedHeight,
+        collapsedHeight: ProviderProfile.collapsedHeight,
+        header: (_, t) => ProviderProfile(
+          t: t,
+          onProfileTap: () => Get.find<NavController>().changeIndex(4),
+          onNotificationTap: () => Get.toNamed(Routes.notification),
+        ),
+        body: (_, insets) => GetBuilder<ProviderBookingsController>(
+          builder: (c) {
+            final shown = c.bookings;
             return RefreshIndicator(
-              onRefresh: () async {
-                await controller.refreshBookings(showLoader: false);
-              },
               color: AppColors.primary_1,
-              child: SingleChildScrollView(
+              edgeOffset: CollapsingHeaderLayout.refreshEdge(context),
+              onRefresh: () async {
+                _refreshHome();
+                await c.refreshBookings();
+              },
+              child: CustomScrollView(
+                controller: _scroll,
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// --- HEADER SECTION (Always Visible) ---
-                    ProviderProfile(
-                      onProfileTap: () {
-                        // Navigate to profile screen
-                        Get.toNamed(Routes.profile);
-                      },
-                      onNotificationTap: () {
-                        // Navigate to notifications screen
-                        Get.toNamed(Routes.notification);
-                      },
+                slivers: [
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16, 8 + insets.top, 16, 12),
+                    sliver: SliverToBoxAdapter(
+                      child: ProviderSectionHeader(title: 'Bookings', count: c.isLoading ? null : c.total),
                     ),
-                    const SizedBox(height: 18),
-
-                    Text(
-                        "All Bookings (${controller.bookings.length})",
-                        style: AppTextStyle.sub_h2_medium_16()),
-                    const SizedBox(height: 15),
-
-                    /// --- DATA/SHIMMER SECTION ---
-                    Builder(builder: (_) {
-                      // Check loading state here so header stays visible
-                      if (controller.isLoading) {
-                        return _shimmerBox();
-                      }
-
-                      if (controller.bookings.isEmpty) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.5,
-                          child: Center(
-                            child: Text(
-                                controller.errorMessage ?? "No bookings found.",
-                                style: AppTextStyle.sub_h3_medium_14()),
-                          ),
-                        );
-                      }
-
-                      final providerType = authController.userModel!.providerType ?? "";
-
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: controller.bookings.length,
-                        itemBuilder: (context, index) {
-                          final result = controller.bookings[index];
-                          final product = result.product;
-
-                          if (product == null) return const SizedBox.shrink();
-
-                          switch (providerType) {
-                            case "Ski_Pass":
-                              return ServiceInfoCard(
-                                onTap: () => Get.toNamed(Routes.passDetailsService, arguments: {"bookingId": result.sId}),
-                                imageUrl: product.thumbnail ?? "",
-                                title1: "Title",
-                                value1: product.title ?? 'N/A',
-                                icon1Path: "assets/icons/info.svg",
-                                title2: "SkiPass Type",
-                                value2: product.skiPassType ?? 'N/A',
-                                icon2Path: "assets/icons/badge.svg",
-                                title3: "Total Amount",
-                                value3: "€${(result.totalPrice ?? 0)}",
-                                icon3Path: "assets/icons/amount.svg",
-                                title4: "Location",
-                                value4: product.serviceArea ?? 'N/A',
-                                icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                              );
-
-                            case "Restaurant":
-                              if (result.bookingItems.isEmpty || result.slots.isEmpty) return const SizedBox.shrink();
-                              final bookingItem = result.bookingItems[0];
-                              final slot = result.slots[0];
-                              return ServiceInfoCard(
-                                onTap: () => Get.toNamed(Routes.restaurantDetailsService, arguments: {"bookingId": result.sId}),
-                                imageUrl: product.thumbnail ?? 'assets/images/default_restaurant.png',
-                                title1: "Seat Type",
-                                value1: bookingItem.itemDetails?.seat ?? 'N/A',
-                                icon1Path: "assets/icons/badge.svg",
-                                title2: "Seat Count",
-                                value2: bookingItem.quantity?.toString() ?? '0',
-                                icon2Path: "assets/icons/user3.svg",
-                                title3: "Slot",
-                                value3: "${slot.startTime ?? 'N/A'} - ${slot.endTime ?? 'N/A'}",
-                                icon3Path: "assets/icons/time.svg",
-                                title4: "Total Price",
-                                value4: "€${(result.totalPrice ?? 0)}",
-                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
-                              );
-
-                            case "Massage":
-                              return ServiceInfoCard(
-                                onTap: () => Get.toNamed(Routes.massageDetailsService, arguments: {"bookingId": result.sId}),
-                                imageUrl: product.thumbnail ?? 'assets/images/default_massage.png',
-                                title1: "Title",
-                                value1: product.title ?? 'N/A',
-                                icon1Path: "assets/icons/User.svg",
-                                title2: "Duration",
-                                value2: result.duration ?? 'N/A',
-                                icon2Path: "assets/icons/time.svg",
-                                title3: "Date Time",
-                                value3: formatDateTime(result.date),
-                                icon3Path: "assets/icons/CalendarDots.svg",
-                                title4: "Total Price",
-                                value4: "€${(result.totalPrice ?? 0)}",
-                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
-                              );
-
-                            case "Transport":
-                              String formatSmart(String? dateTime) {
-                                if (dateTime == null) return 'N/A';
-                                try {
-                                  final dt = DateTime.parse(dateTime);
-                                  final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                  final month = months[dt.month - 1];
-                                  final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-                                  final period = dt.hour >= 12 ? "PM" : "AM";
-                                  return "${dt.day.toString().padLeft(2, '0')} $month, ${dt.year} – ${hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} $period";
-                                } catch (_) { return 'Invalid'; }
-                              }
-                              return ServiceInfoCard(
-                                onTap: () => Get.toNamed(Routes.transportDetailsService, arguments: {"bookingId": result.sId}),
-                                imageUrl: product.thumbnail ?? 'assets/images/default_transport.png',
-                                title1: "Title",
-                                value1: product.title ?? 'N/A',
-                                icon1Path: "assets/icons/badge.svg",
-                                title2: "Product Model",
-                                value2: result.productModel ?? 'N/A',
-                                icon2Path: "assets/icons/user3.svg",
-                                title3: "Time",
-                                value3: "${formatSmart(result.startDateAndTime)} → ${formatSmart(result.endDateAndTime)}",
-                                icon3Path: "assets/icons/time.svg",
-                                title4: "Total Price",
-                                value4: "€${(result.totalPrice ?? 0)}",
-                                icon4Path: "assets/icons/CurrencyCircleDollar.svg",
-                              );
-
-                            case "Ski_Hire":
-                              String formatDuration(String start, String end) {
-                                try {
-                                  final startDt = DateTime.parse(start);
-                                  final endDt = DateTime.parse(end);
-                                  final diff = endDt.difference(startDt);
-                                  if (diff.inMinutes <= 0) return "0 hour";
-                                  final days = diff.inHours ~/ 24;
-                                  final hours = diff.inHours % 24;
-                                  return days >= 1 ? "$days day $hours hour" : "${diff.inHours} hour(s)";
-                                } catch (_) { return "N/A"; }
-                              }
-                              return ServiceInfoCard(
-                                onTap: () => Get.toNamed(Routes.hireDetailsService, arguments: {"bookingId": result.sId}),
-                                imageUrl: product.thumbnail ?? '',
-                                title1: "Ski Title",
-                                value1: product.title ?? 'N/A',
-                                icon1Path: "assets/icons/badge.svg",
-                                title2: "Duration",
-                                value2: formatDuration(result.startDateAndTime.toString(), result.endDateAndTime.toString()),
-                                icon2Path: "assets/icons/user3.svg",
-                                title3: "Total Amount",
-                                value3: "€${result.totalPrice}",
-                                icon3Path: "assets/icons/CurrencyCircleDollar.svg",
-                                title4: "Location",
-                                value4: product.serviceArea ?? "N/A",
-                                icon4Path: "assets/icons/MapPinSimpleArea.svg",
-                              );
-
-                            default:
-                              return const SizedBox.shrink();
-                          }
+                  ),
+                  SliverToBoxAdapter(
+                    // Rebuilds with the dashboard too, so the request
+                    // count follows accepts/rejects and live updates.
+                    child: _withHome(
+                      () => SizedBox(
+                        height: 38,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          children: [
+                            for (final f in ProviderBookingFilter.values) ...[
+                              _FilterChip(
+                                label: f.label,
+                                count: f == ProviderBookingFilter.requests && (_requestCount() ?? 0) > 0
+                                    ? _requestCount()
+                                    : null,
+                                selected: c.filter == f,
+                                onTap: () => c.setFilter(f),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  if (c.isLoading)
+                    const SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverToBoxAdapter(child: _ListShimmer()),
+                    )
+                  else if (shown.isEmpty)
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverToBoxAdapter(
+                        child: c.errorMessage != null
+                            ? ProviderEmptyState(
+                                icon: Icons.cloud_off_rounded,
+                                title: "Couldn't load bookings",
+                                message: c.errorMessage,
+                                actionLabel: 'Try again',
+                                onAction: c.fetchBookings,
+                              )
+                            : c.filter == ProviderBookingFilter.all
+                            ? const ProviderEmptyState(
+                                icon: Icons.event_available_outlined,
+                                title: 'No bookings yet',
+                                message:
+                                    'When guests book your services, '
+                                    'they will show up here.',
+                              )
+                            : ProviderEmptyState(
+                                icon: Icons.filter_list_rounded,
+                                title: 'Nothing here',
+                                message: 'No ${c.filter.label.toLowerCase()} bookings.',
+                                actionLabel: 'Show all',
+                                onAction: () => c.setFilter(ProviderBookingFilter.all),
+                              ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList.separated(
+                        itemCount: shown.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (_, i) {
+                          final b = shown[i];
+                          return ProviderBookingTile(
+                            booking: b,
+                            busy: c.busyIds.contains(b.id),
+                            onAccept: () => _quick(b, BookingAction.approve),
+                            onReject: () => _quick(b, BookingAction.reject),
+                            onTap: () async {
+                              await openProviderBooking(b);
+                              c.refreshBookings();
+                              _refreshHome();
+                            },
+                          );
                         },
-                      );
-                    })
-                  ],
-                ),
+                      ),
+                    ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 20 + insets.bottom),
+                      child: c.isLoadingMore ? const Padding(padding: EdgeInsets.only(top: 12), child: BookingCardSkeleton(provider: true)) : const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
               ),
             );
-          }),
-        ));
-  }
-
-
-
-  Widget _shimmerBox() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Column(
-        children: List.generate(8, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Container(
-              width: double.infinity,
-              height: 100.h,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }),
+          },
+        ),
       ),
     );
   }
+}
 
+/// Asks before rejecting (the guest is refunded in full). Returns the
+/// optional reason ('' for none), or null when the provider keeps it.
+Future<String?> _confirmReject(BuildContext context, Booking b) {
+  // Not disposed here: the dialog still builds while it animates out.
+  final reason = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Reject this booking?', style: AppTextStyle.sub_h2_medium_16()),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${ProviderBookingText.customerName(b)} gets a full refund '
+            '(${euroLabel(b.total)}) to their card.',
+            style: AppTextStyle.p_regular_12(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: reason,
+            maxLines: 2,
+            maxLength: 200,
+            decoration: InputDecoration(
+              hintText: 'Reason (optional)',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Keep it')),
+        TextButton(
+          style: TextButton.styleFrom(foregroundColor: AppColors.error),
+          onPressed: () => Navigator.of(ctx).pop(reason.text.trim()),
+          child: const Text('Reject'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({required this.label, required this.selected, required this.onTap, this.count});
+
+  final String label;
+  final int? count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? AppColors.textOnPrimary : AppColors.textSecondary;
+    return Material(
+      color: selected ? AppColors.primary_1 : Colors.white,
+      shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.primary_1 : AppColors.border)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Center(
+            child: Text(
+              count == null ? label : '$label  $count',
+              style: AppTextStyle.p_medium_12(color: fg).copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListShimmer extends StatelessWidget {
+  const _ListShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < 4; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          const BookingCardSkeleton(provider: true),
+        ],
+      ],
+    );
+  }
 }

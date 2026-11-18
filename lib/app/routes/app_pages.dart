@@ -13,13 +13,9 @@ import 'package:harry_service_app/app/modules/chats/bingings/chat_binding.dart';
 import 'package:harry_service_app/app/modules/notification/bindings/notification_bindings.dart';
 import 'package:harry_service_app/app/modules/notification/views/notification_screen.dart';
 import 'package:harry_service_app/app/modules/provider/massage/views/add_massage_screen.dart';
-import 'package:harry_service_app/app/modules/provider/massage/views/massage_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/pass/views/add_pass_screen.dart';
-import 'package:harry_service_app/app/modules/provider/pass/views/pass_booking_details.dart';
-import 'package:harry_service_app/app/modules/provider/pass/views/provider_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/register/views/provider_info_form.dart';
 import 'package:harry_service_app/app/modules/provider/restaurant/views/add_restaurant_screen.dart';
-import 'package:harry_service_app/app/modules/provider/restaurant/views/restaurant_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/change_pass_binding.dart';
 import 'package:harry_service_app/app/modules/provider/shared/bindings/provider_nav_bindings.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/change_password_screen.dart';
@@ -30,39 +26,31 @@ import 'package:harry_service_app/app/modules/provider/shared/views/provider_nav
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_profile_secreen.dart';
 import 'package:harry_service_app/app/modules/provider/shared/views/provider_settings_screen.dart';
 import 'package:harry_service_app/app/modules/provider/ski_hire/views/add_hire_screen.dart';
-import 'package:harry_service_app/app/modules/provider/ski_hire/views/hire_booking_details.dart';
 import 'package:harry_service_app/app/modules/provider/transport/views/add_transport_service.dart';
-import 'package:harry_service_app/app/modules/provider/transport/views/trasnsport_booking_details.dart';
 import 'package:harry_service_app/app/modules/role/views/role_selection_screen.dart';
 import 'package:harry_service_app/app/modules/splash/splash_screen.dart';
 
 import 'package:harry_service_app/app/modules/user/hire/views/hire_details_screen.dart';
-import 'package:harry_service_app/app/modules/user/hire/views/user_hire_booking_info.dart';
-import 'package:harry_service_app/app/modules/user/itinerary/views/itinerary_details.dart';
+import 'package:harry_service_app/app/modules/user/hire/views/hire_checkout_screen.dart';
 import 'package:harry_service_app/app/modules/user/itinerary/views/itinerary_screen.dart';
 import 'package:harry_service_app/app/modules/user/massage/bindings/message_details_binding.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/booking_request.dart';
 import 'package:harry_service_app/app/modules/user/massage/views/massage_details_screen.dart';
-import 'package:harry_service_app/app/modules/user/massage/views/user_massage_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/pass/views/pass_details_screen.dart';
 import 'package:harry_service_app/app/modules/user/pass/views/ticket_screen.dart';
-import 'package:harry_service_app/app/modules/user/pass/views/user_pass_booking_info.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/bindings/restaurant_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/restaurant/views/restaurantDetails.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/views/restaurant_booking_info.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/views/resturant_info_screen.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/views/user_restaurant_booking_info.dart';
 
 import 'package:harry_service_app/app/modules/user/shared/bindings/get_profile_binding.dart';
 import 'package:harry_service_app/app/modules/user/shared/bindings/wallet_binder.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/all_transaction.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/booking_screen.dart';
-import 'package:harry_service_app/app/modules/user/shared/views/extra_booking_screen.dart';
 import 'package:harry_service_app/app/modules/user/shared/views/user_wallet.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/bindings/trasnport_details_bindings.dart';
 import 'package:harry_service_app/app/modules/user/trasnport/views/transport_details_screen.dart';
-import 'package:harry_service_app/app/modules/user/trasnport/views/user_transport_booking_info.dart';
+import 'package:harry_service_app/app/modules/user/trasnport/views/transport_checkout_screen.dart';
+import 'package:harry_service_app/app/modules/user/restaurant/views/restaurant_checkout_screen.dart';
 
 import '../core/bindings/app_bindings.dart';
 import '../modules/all_service/views/AllServiceScreen.dart';
@@ -74,13 +62,13 @@ import '../modules/onboard/views/on_boarding_screen.dart';
 
 import '../modules/user/hire/bindings/hire_details_bindings.dart';
 import '../modules/user/itinerary/bindings/itinerary_bindings.dart';
-import '../modules/user/pass/bindings/booking_details_binding.dart';
 import '../modules/user/pass/bindings/pass_details_bindings.dart';
 import '../modules/user/shared/bindings/bottom_nav_bindings.dart';
 import '../modules/user/shared/views/bottom_nav_screen.dart';
 
 import '../modules/user/pass/views/set_information.dart';
 import '../modules/user/shared/views/withdraw_screen.dart';
+import '../modules/booking/views/booking_details_screen.dart';
 import 'app_routes.dart';
 
 abstract class AppPages {
@@ -136,6 +124,9 @@ abstract class AppPages {
       /// all service
       name: Routes.service,
       page: () => AllServiceScreen(),
+      // Cross-fade from the splash/login: no dark frame between them.
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 350),
     ),
 
     /// pass
@@ -149,20 +140,19 @@ abstract class AppPages {
     GetPage(
       /// show booking details to user
       name: Routes.userPassBookingDetails,
-      page: () => UsePassBookingInfo(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     GetPage(
       /// pass booking details
       name: Routes.passInformation,
-      page: () => SetInformation(),
-      binding: BookingDetailsBindings(),
+      page: () => const SetInformation(),
     ),
 
     GetPage(
       /// pass booking details
       name: Routes.ticket,
-      page: () => TicketScreen(),
+      page: () => const TicketScreen(),
 
     ),
 
@@ -175,9 +165,9 @@ abstract class AppPages {
 
     ///boooking extra payment
     GetPage(
+      // Late fees are paid from the booking screen now.
       name: Routes.bookingExtraPayment,
-      page: () => ExtraBookingScreen(),
-      binding: BottomNavBinding(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// transport==============
@@ -188,9 +178,15 @@ abstract class AppPages {
     ),
 
     GetPage(
+      /// trip checkout (args: {'id', 'listing': TransportDetail?})
+      name: Routes.transportCheckout,
+      page: () => const TransportCheckoutScreen(),
+    ),
+
+    GetPage(
       /// show booking details to user
       name: Routes.userTransportBookingDetails,
-      page: () => UserTransportBookingInfo(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// message
@@ -202,14 +198,13 @@ abstract class AppPages {
 
     GetPage(
       name: Routes.bookingRequest,
-      page: () => BookingRequest(),
-      binding: BookingDetailsBindings(),
+      page: () => const MassageCheckoutScreen(),
     ),
 
     GetPage(
       /// show booking details to user
       name: Routes.userMassageBookingDetails,
-      page: () => UserMassageBookingInfo(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// hire
@@ -220,10 +215,16 @@ abstract class AppPages {
     ),
 
     GetPage(
+      /// equipment checkout (args: {'id', 'listing': SkiHireDetail?, 'quantities'?})
+      name: Routes.hireCheckout,
+      page: () => const HireCheckoutScreen(),
+    ),
+
+    GetPage(
       name: Routes.userHireBookingDetails,
 
       /// show booking details to user
-      page: () => UserHireBookingInfo(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// restaurant
@@ -234,21 +235,15 @@ abstract class AppPages {
     ),
 
     GetPage(
+      /// table checkout (args: {'id', 'listing': RestaurantDetail?, 'seats'?})
+      name: Routes.restaurantCheckout,
+      page: () => const RestaurantCheckoutScreen(),
+    ),
+
+    GetPage(
       /// show booking details to user
       name: Routes.userRestaurantBookingDetails,
-      page: () => UserRestaurantBookingInfo(),
-    ),
-
-    GetPage(
-      name: Routes.restaurantInfo,
-      page: () => RestaurantInfoScreen(),
-      binding: RestaurantDetailsBindings(),
-    ),
-
-    GetPage(
-      name: Routes.restaurantBookingInfo,
-      page: () => RestaurantBookingInfo(),
-      binding: RestaurantDetailsBindings(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// onboarding screen
@@ -314,19 +309,19 @@ abstract class AppPages {
 
     GetPage(
       name: Routes.providerBookingDetails,
-      page: () => ProviderBookingDetails(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// add pass service
     GetPage(name: Routes.addPassService, page: () => AddPassScreen()),
 
-    GetPage(name: Routes.passDetailsService, page: () => PassBookingDetails()),
+    GetPage(name: Routes.passDetailsService, page: () => const BookingDetailsScreen()),
 
     /// add message service
     GetPage(name: Routes.addMessageService, page: () => AddMassageScreen()),
     GetPage(
       name: Routes.massageDetailsService,
-      page: () => MassageBookingDetails(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// add transport service
@@ -334,7 +329,7 @@ abstract class AppPages {
 
     GetPage(
       name: Routes.transportDetailsService,
-      page: () => TransportBookingDetails(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// add  restaurant service
@@ -347,7 +342,7 @@ abstract class AppPages {
       name: Routes.restaurantDetailsService,
 
       /// show booking user data to provider
-      page: () => RestaurantBookingDetails(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     /// add  hire service
@@ -358,7 +353,7 @@ abstract class AppPages {
       name: Routes.hireDetailsService,
 
       /// show booking user data to provider
-      page: () => HireBookingDetails(),
+      page: () => const BookingDetailsScreen(),
     ),
 
     GetPage(
@@ -367,7 +362,10 @@ abstract class AppPages {
       binding: ItineraryBindings(),
     ),
 
-    GetPage(name: Routes.itineraryDetails, page: () => ItineraryDetails()),
+    GetPage(name: Routes.itineraryDetails, page: () => const BookingDetailsScreen()),
+
+    /// One booking screen for every service and both roles.
+    GetPage(name: Routes.bookingDetails, page: () => const BookingDetailsScreen()),
 
     GetPage(
       name: Routes.notification,

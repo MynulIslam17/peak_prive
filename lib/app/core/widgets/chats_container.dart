@@ -33,7 +33,7 @@ class ChatsContainer extends StatelessWidget {
     // Parse time for display
     final DateTime? dateTime = DateParserHelper.parseDate(lastMessageTime);
     final String displayTime = dateTime != null
-        ? DateParserHelper.toDisplayDate(dateTime)
+        ? DateParserHelper.chatListTime(dateTime)
         : "";
 
     // Check if the current user is the sender
@@ -116,7 +116,7 @@ class ChatsContainer extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            userName ?? "Unknown User",
+            (userName == null || userName!.trim().isEmpty) ? "Guest" : userName!,
             style: AppTextStyle.sub_h2_medium_16().copyWith(
               fontWeight: FontWeight.w700,
               color: Colors.black87,

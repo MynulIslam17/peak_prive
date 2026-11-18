@@ -5,27 +5,42 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:open_file/open_file.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class PdfHelper {
-  static Future<void> generateTicket({
+  static Future<pw.ThemeData?> _theme() async {
+    try {
+      final regular = await rootBundle.load('assets/fonts/pdf/Roboto-Regular.ttf');
+      final bold = await rootBundle.load('assets/fonts/pdf/Roboto-Bold.ttf');
+      return pw.ThemeData.withFont(base: pw.Font.ttf(regular), bold: pw.Font.ttf(bold));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Builds the ticket PDF, saves it in the app's documents folder and opens
+  /// it in the system viewer (from where the user can save/share it).
+  ///
+  /// Returns the saved file path. Throws if the file could not be written.
+  static Future<String> generateTicket({
     required String title,
     required String date,
     required String time,
     required String person,
     required String ticketId,
     required String? imageUrl,
+    String? total,
   }) async {
-    final pdf = pw.Document();
+    // Built-in Helvetica has no € sign; Roboto (bundled for PDFs) does.
+    final theme = await _theme();
+    final pdf = pw.Document(theme: theme);
+    if (theme == null && total != null) total = total.replaceAll('€', 'EUR ');
     Uint8List? imageBytes;
 
-    // ১. পারমিশন চেক (Android 10+)
-    if (Platform.isAndroid) {
-      await Permission.storage.request();
-      await Permission.manageExternalStorage.request();
-    }
+    // No storage permission needed: writing to the public Download folder
+    // fails silently on Android 11+ (scoped storage), so the ticket is saved
+    // in app storage and opened in the system viewer instead.
 
-    // ২. নেটওয়ার্ক ইমেজ লোড করা (যদি থাকে)
+    // Optional cover image.
     if (imageUrl != null && imageUrl.isNotEmpty) {
       try {
         final response = await http.get(Uri.parse(imageUrl));
@@ -33,11 +48,10 @@ class PdfHelper {
           imageBytes = response.bodyBytes;
         }
       } catch (e) {
-        print("Image load error: $e");
+        // Image is optional; build the ticket without it.
       }
     }
 
-    // ৩. PDF ডিজাইন
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -56,7 +70,6 @@ class PdfHelper {
                 ),
                 child: pw.Column(
                   children: [
-                    // ইমেজ সেকশন
                     if (imageBytes != null)
                       pw.Container(
                         height: 150,
@@ -75,7 +88,11 @@ class PdfHelper {
                           pw.SizedBox(height: 10),
                           _pdfInfoRow("Ticket ID", ticketId),
                           _pdfInfoRow("Date", date),
+                          if (time.isNotEmpty && time != "__")
+                            _pdfInfoRow("Time", time),
                           _pdfInfoRow("Person", person),
+                          if (total != null && total.isNotEmpty)
+                            _pdfInfoRow("Total paid", total),
                         ],
                       ),
                     ),
@@ -88,21 +105,13 @@ class PdfHelper {
       ),
     );
 
-    // ৪. ফাইল সেভ এবং ওপেন করা
-    try {
-      final Directory? downloadsDir = Platform.isAndroid
-          ? Directory('/storage/emulated/0/Download')
-          : await getApplicationDocumentsDirectory();
-
-      final String path = "${downloadsDir!.path}/Ticket_$ticketId.pdf";
-      final file = File(path);
-      await file.writeAsBytes(await pdf.save());
-
-      // ওপেন করা
-      await OpenFile.open(path);
-    } catch (e) {
-      print("Save Error: $e");
-    }
+    // Save & open
+    final dir = await getApplicationDocumentsDirectory();
+    final safeId = ticketId.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    final path = "${dir.path}/Ticket_$safeId.pdf";
+    await File(path).writeAsBytes(await pdf.save());
+    await OpenFile.open(path);
+    return path;
   }
 
   static pw.Widget _pdfInfoRow(String label, String value) {

@@ -1,12 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:harry_service_app/app/core/widgets/custom_image_container.dart';
 
-import '../../../gen/assets.gen.dart';
 import '../constants/app_colors.dart';
 import '../constants/text-style.dart';
+import 'custom_image_container.dart';
 
+/// A provider's own listing: photo, price, rating, area, and edit / delete
+/// actions. Used on the provider home carousel and the services tab.
 class MyServiceCard extends StatelessWidget {
   const MyServiceCard({
     super.key,
@@ -19,196 +18,274 @@ class MyServiceCard extends StatelessWidget {
     required this.onDelete,
     required this.onEdit,
     this.packageType,
+    this.isActive = true,
+    this.onActiveChanged,
+    this.busy = false,
   });
 
   final String image;
   final String title;
+
+  /// Price label ("from €20 / day") or, for restaurants, the open status.
   final String status;
   final double rating;
   final int reviews;
   final String location;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+
+  /// Small badge over the photo (e.g. the ski pass type).
   final String? packageType;
+
+  /// Hidden from guests when false (shows an "Inactive" badge).
+  final bool isActive;
+
+  /// Shows a "Visible to guests" switch when set.
+  final ValueChanged<bool>? onActiveChanged;
+
+  /// A status change or delete is in flight.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity, // Fixed width, fills parent
-      height: 255,            // Fixed height
-      child: Stack(
-        children: [
-          /// Main card
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
-              width: double.infinity,
-              height: 255,
-              decoration: BoxDecoration(
-                gradient: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  children: [
-                    /// Image
+    final badge = (packageType ?? '').trim();
 
-                    CustomCachedImage(
-                      width: double.infinity,
-                      height: 160,
-                      borderRadius: 8,
-                      imageUrl: image,
-                      fit: BoxFit.cover,
-                    ),
-
-
-
-                    SizedBox(height: 8.h),
-
-                    /// Title + Price
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: AppTextStyle.sub_h3_medium_14(),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-
-                        SizedBox(width: 15,),
-                        Text(
-                          status,
-                          style: AppTextStyle.sub_h3_medium_14(
-                            color: AppColors.primary_1,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 4.h),
-
-                    /// Rating + Location
-                    Row(
-                      children: [
-
-                        Expanded(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Assets.icons.star.svg(height: 12.h, width: 12.h),
-                              SizedBox(width: 4.w),
-                              Text(
-                                rating.toStringAsFixed(1),
-                                style: AppTextStyle.c_regular_12(),
-                              ),
-                              SizedBox(width: 4.w),
-                              Flexible( // Use Flexible/Expanded for the review count text
-                                child: Text(
-                                  "($reviews+)",
-                                  style: AppTextStyle.c_light_12(),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end, // Align location to the right
-                            mainAxisSize: MainAxisSize.min, // Keep the location section compact
-                            children: [
-                              Assets.icons.mapPinSimpleArea
-                                  .svg(height: 14.h, width: 14.w),
-                              SizedBox(width: 5.w),
-                              Flexible(
-                                child: Text(
-
-                                  location,
-                                  softWrap: true,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyle.c_regular_12(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return Container(
+      height: onActiveChanged != null ? 290 : 255,
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-
-          /// Overlay — Package Label + Buttons
-          Positioned(
-            top: 40,
-            left: 30,
-            right: 30,
-            child: Row(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                if (packageType != null)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.primary_1,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 5,
-                      ),
-                      child: Text(
-                        packageType!,
-                        style: AppTextStyle.sub_h3_medium_14(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                const Spacer(),
-
-                /// Delete Button
-                CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    onPressed: onDelete,
-                    icon: const Icon(
-                      Icons.delete,
-                      size: 20,
-                      color: Colors.red,
-                    ),
+                CustomCachedImage(
+                  imageUrl: image,
+                  fit: BoxFit.cover,
+                  customBorderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(15),
                   ),
                 ),
-
-                const SizedBox(width: 15),
-
-                /// Edit Button
-                CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: IconButton(
-                    onPressed: onEdit,
-                    icon: const Icon(
-                      Icons.edit,
-                      size: 20,
-                    ),
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  right: 10,
+                  child: Row(
+                    children: [
+                      if (badge.isNotEmpty)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary_1,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              badge,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyle.p_medium_12(
+                                color: AppColors.textOnPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (!isActive) ...[
+                        if (badge.isNotEmpty) const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text('Inactive',
+                              style: AppTextStyle.p_medium_12(color: Colors.white)),
+                        ),
+                      ],
+                      const Spacer(),
+                      _CircleAction(
+                        icon: Icons.edit_outlined,
+                        color: AppColors.textPrimary,
+                        tooltip: 'Edit',
+                        onTap: onEdit,
+                      ),
+                      const SizedBox(width: 8),
+                      _CircleAction(
+                        icon: Icons.delete_outline_rounded,
+                        color: AppColors.error,
+                        tooltip: 'Delete',
+                        onTap: onDelete,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title.trim().isEmpty ? 'Untitled' : title.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyle.sub_h3_semibold_14(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 150),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          status,
+                          maxLines: 1,
+                          style: AppTextStyle.sub_h3_semibold_14(
+                            color: status.trim().toLowerCase() == 'closed'
+                                ? AppColors.textTertiary
+                                : const Color(0xFF9A7A12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.star_rounded,
+                      size: 16,
+                      color: AppColors.primary_1,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      reviews == 0 ? 'New' : rating.toStringAsFixed(1),
+                      style: AppTextStyle.p_medium_12(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (reviews > 0) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '($reviews)',
+                        style: AppTextStyle.p_regular_12(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(width: 12),
+                    if (location.trim().isNotEmpty) ...[
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 15,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          location.trim(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyle.p_regular_12(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (onActiveChanged != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        isActive ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        size: 16,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          isActive ? 'Visible to guests' : 'Hidden from guests',
+                          style: AppTextStyle.p_regular_12(color: AppColors.textSecondary),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 28,
+                        child: FittedBox(
+                          child: Switch.adaptive(
+                            value: isActive,
+                            activeTrackColor: AppColors.primary_1,
+                            onChanged: busy ? null : onActiveChanged,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _CircleAction extends StatelessWidget {
+  const _CircleAction({
+    required this.icon,
+    required this.color,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(),
+      elevation: 1,
+      shadowColor: Colors.black26,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Tooltip(
+          message: tooltip,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 18, color: color),
+          ),
+        ),
       ),
     );
   }

@@ -1,21 +1,18 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/provider_info.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/restaurant_details_shimmer.dart';
-import 'package:harry_service_app/app/core/widgets/shimmer/transport_details_shimmer.dart';
-import 'package:harry_service_app/app/modules/user/massage/views/review_screen.dart';
-import 'package:harry_service_app/app/modules/user/restaurant/controllers/restaurant_details_controller.dart';
-import 'package:sliding_up_panel/sliding_up_panel.dart';
 
-import '../../../../../gen/assets.gen.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/text-style.dart';
-import '../../../../core/utils/phone_utils.dart';
-import '../../../../core/widgets/custome_back_button.dart';
+import '../../../../core/widgets/checkout_parts.dart';
+import '../../../../core/widgets/collapsible_details_layout.dart';
+import '../../../../core/widgets/listing_details_parts.dart';
 import '../../../../routes/app_routes.dart';
+import '../controllers/restaurant_details_controller.dart';
+import '../../../../data/api/peak_api.dart';
+import 'package:harry_service_app/app/core/widgets/shimmer/skeleton.dart';
 
+/// User → Restaurant listing: pick a seating, then continue to checkout.
 class RestaurantDetails extends StatefulWidget {
   const RestaurantDetails({super.key});
 
@@ -24,433 +21,320 @@ class RestaurantDetails extends StatefulWidget {
 }
 
 class _RestaurantDetailsState extends State<RestaurantDetails> {
-  final authController = Get.find<AuthController>();
-  final PanelController panelController = PanelController();
-  final image = Assets.images;
-  final icon = Assets.icons;
-  int currentTabIndex = 0; // For About/Review navigation
-  int currentMealTabIndex = 0; // For Breakfast/Lunch/Dinner navigation
-
-  late final String productId;
-
-  /// find controlller
-  final restaurantDetailsController = Get.find<RestaurantDetailsController>();
+  final controller = Get.find<RestaurantDetailsController>();
+  late final String restaurantId;
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
-    /// get data from perevious class
-    var argument = Get.arguments;
-    productId = argument["id"];
-
-    if (productId.isNotEmpty) {
-      _fetchDetails();
+    final args = Get.arguments;
+    restaurantId = args is Map ? (args['id']?.toString() ?? '') : '';
+    if (restaurantId.isNotEmpty) {
+      controller.fetch(restaurantId);
     }
   }
 
-  /// fetch details method
-
-  Future<void> _fetchDetails() async {
-    await restaurantDetailsController.fetchRestaurantDetails(productId);
+  void _continue() {
+    final r = controller.listing;
+    final seat = controller.selectedItem;
+    if (seat == null || r == null || !controller.isBookable) return;
+    Get.toNamed(Routes.restaurantCheckout, arguments: {
+      'id': r.id,
+      'listing': r,
+      // Seat type picked here: start checkout with one seat of it.
+      'seats': {seat.id: 1},
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.sizeOf(context);
+    if (restaurantId.isEmpty) {
+      return ListingErrorView(
+        message: 'This listing link is invalid.',
+        onRetry: Get.back,
+      );
+    }
 
-    return Scaffold(
-      body: GetBuilder<RestaurantDetailsController>(
-        builder: (controller) {
-          if (controller.fetchProgress) {
-            return RestaurantDetailsShimmer();
-          }
-          if (controller.restaurantDetails == null) {
-            return Center(child: Text("No Details available"));
-          } else {
-            final restaurantModel = controller.restaurantDetails;
-            final owner = controller.restaurantDetails!.owner;
+    return GetBuilder<RestaurantDetailsController>(
+      builder: (_) {
+        final r = controller.listing;
+        if (r == null && controller.isLoading) {
+          return const DetailsPageSkeleton(sections: [SkeletonSection.lines, SkeletonSection.tiles, SkeletonSection.list]);
+        }
+        if (r == null) {
+          return ListingErrorView(
+            message: controller.errorMessage ?? 'No details available',
+            onRetry: () => controller.fetch(restaurantId),
+          );
+        }
 
-            return SlidingUpPanel(
-              controller: panelController,
-              minHeight: size.height * 0.48,
-              maxHeight: size.height * 0.66,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              parallaxEnabled: true,
-              parallaxOffset: 0.2,
-              body: Stack(
+        final selected = controller.selectedItem;
+        final bookable = controller.isBookable;
+        final rating = controller.rating;
+        final from = controller.fromPrice;
+        final hours = (r.openTime ?? '').isNotEmpty
+            ? '${r.openTime} – ${r.closeTime ?? ''}'
+            : null;
+
+        return CollapsibleDetailsLayout(
+          imageUrl: r.thumbnail ?? '',
+          title: r.title,
+          onBack: Get.back,
+          bottomBar: DetailsBottomBar(
+            priceLabel: !bookable
+                ? 'Not available'
+                : selected != null
+                    ? '${selected.type} · per seat'
+                    : 'Choose a seating',
+            price: selected != null
+                ? checkoutEuro(selected.price)
+                : from != null
+                    ? 'from ${checkoutEuro(from)}'
+                    : '—',
+            buttonText: bookable ? 'Continue' : 'Unavailable',
+            onPressed: bookable && selected != null ? _continue : null,
+          ),
+          children: [
+            if (!r.isActive) const ListingUnavailableNotice(),
+            ListingHeader(
+              title: r.title,
+              rating: rating.average,
+              reviewCount: rating.count,
+              chips: [
+                if (r.isOpenNow != null) _StatusChip(isOpen: r.isOpenNow!),
+                if ((r.subCategory?.name ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.restaurant_rounded,
+                    label: r.subCategory!.name,
+                  ),
+                if ((r.foodType ?? '').isNotEmpty &&
+                    r.foodType != r.subCategory?.name)
+                  ListingInfoChip(
+                    icon: Icons.ramen_dining_outlined,
+                    label: r.foodType!,
+                  ),
+                if (hours != null)
+                  ListingInfoChip(icon: Icons.schedule_rounded, label: hours),
+                if ((r.serviceArea ?? '').isNotEmpty)
+                  ListingInfoChip(
+                    icon: Icons.location_on_outlined,
+                    label: r.serviceArea!,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (r.provider != null)
+              ListingProviderCard(
+                id: r.provider!.id,
+                name: r.provider!.name ?? '',
+                photoUrl: r.provider!.photo ?? '',
+              ),
+            if ((r.description ?? '').trim().isNotEmpty) ...[
+              const ListingSectionTitle('About'),
+              ListingExpandableText(r.description!.trim()),
+            ],
+            ListingSectionTitle(
+              'Choose your seating',
+              trailing: r.seats.isEmpty ? null : '${r.seats.length}',
+            ),
+            if (r.seats.isEmpty)
+              const _EmptySeating()
+            else
+              for (final item in r.seats) ...[
+                _SeatTile(
+                  item: item,
+                  selected: item.id == controller.selectedItemId,
+                  enabled: r.isActive,
+                  onTap: () => controller.selectItem(
+                    item.id == controller.selectedItemId ? null : item.id,
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+            if (r.serviceFee > 0)
+              ListingNote(
+                icon: Icons.receipt_long_outlined,
+                text: 'A service fee of ${checkoutEuro(r.serviceFee)} is '
+                    'added once per booking.',
+              ),
+            ListingSectionTitle(
+              'Time slots',
+              trailing: r.slots.isEmpty ? null : '${r.slots.length}',
+            ),
+            if (r.slots.isEmpty)
+              const ListingNote(
+                icon: Icons.event_busy_outlined,
+                text: 'No time slots listed yet.',
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Image.network(
-                    restaurantModel!.thumbnail ?? "",
-                    width: double.infinity,
-                    height: size.height * 0.6,
-                    fit: BoxFit.cover,
-                  ),
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: CustomBackButton(onTap: () => Get.back()),
-                  ),
+                  for (final slot in r.slots)
+                    ListingInfoChip(icon: Icons.schedule_rounded, label: slot.label),
                 ],
               ),
-              panelBuilder: (ScrollController controller) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(30),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: ListView(
-                    controller: controller,
-                    children: [
-                      // Drag Handle
-                      Center(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              if (panelController.isPanelOpen) {
-                                panelController.close();
-                              } else {
-                                panelController.open();
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              width: 60,
-                              height: 6,
-                              margin: const EdgeInsets.only(bottom: 20),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+            const SizedBox(height: 6),
+            Text(
+              'Free seats depend on the date and slot; you choose them at checkout.',
+              style: AppTextStyle.p_regular_12(color: AppColors.textTertiary),
+            ),
+            ListingReviewsSection(
+              reviews: controller.reviews,
+              count: rating.count,
+              isLoading: controller.reviewsLoading,
+              error: controller.reviewsError,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
-                      /// provider part
-                      ProviderInfo(
-                        image: owner!.profileUrl,
-                        providerName: owner.fullName ?? "",
-                        onTapCall: () {
-                          //TODO : call provider
-                          makePhoneCall(owner.phoneNumber);
-                        },
-                        onTapMessage: () {
-                          //TODO : message provider
+// ─────────────────────────────── Widgets ───────────────────────────────
 
-                          Get.toNamed(
-                            Routes.messagingScreen,
-                            arguments: {
-                              'otherUserId': owner.id,
-                              'chatId': '',
-                              'otherUserName': owner.fullName,
-                              'otherUserProfileUrl': owner.profileUrl,
-                              'isOnline': false,
-                            },
-                          );
-                        },
-                      ),
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.isOpen});
 
-                      SizedBox(height: 20),
+  final bool isOpen;
 
-                      // Custom Buttons for Navigation (About / Review)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CustomButton(
-                            onTap: () {
-                              setState(() {
-                                currentTabIndex = 0;
-                              });
-                            },
-                            text: "About",
-                            backgroundColor: currentTabIndex == 0
-                                ? AppColors.primary_1
-                                : Colors.grey,
-                          ),
-
-                          SizedBox(width: 7.w),
-
-                          CustomButton(
-                            onTap: () {
-                              setState(() {
-                                currentTabIndex = 1;
-                              });
-                            },
-                            text: "Review",
-                            backgroundColor: currentTabIndex == 1
-                                ? AppColors.primary_1
-                                : Colors.grey,
-                          ),
-                        ],
-                      ),
-
-                      if (currentTabIndex == 0) ...[
-                        SizedBox(height: 25),
-                        _buildAboutSection(),
-                      ] else ...[
-                        SizedBox(height: 25),
-                        _buildReviewSection(),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            );
-          }
-        },
+  @override
+  Widget build(BuildContext context) {
+    final color = isOpen ? AppColors.success : AppColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isOpen ? 'Open' : 'Closed',
+            style: AppTextStyle.p_medium_12(color: color),
+          ),
+        ],
       ),
     );
   }
+}
 
-  ///  About Section Content
-  Widget _buildAboutSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 10.h),
+class _SeatTile extends StatelessWidget {
+  const _SeatTile({
+    required this.item,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
 
-        Text(
-          restaurantDetailsController.restaurantDetails!.title,
-          style: AppTextStyle.sub_h2_medium_16(),
-        ),
+  final SeatType item;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
 
-        SizedBox(height: 6.h),
+  @override
+  Widget build(BuildContext context) {
+    final soldOut = !RestaurantDetailsController.isSelectable(item);
+    final canTap = enabled && !soldOut;
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            const CircleAvatar(backgroundColor: Colors.red, radius: 5),
-            SizedBox(width: 10.h),
-            Text(
-              "Close ${restaurantDetailsController.restaurantDetails!.closeTime.toString()}",
-              style: AppTextStyle.c_regular_10(),
+    final (stockText, stockColor) = soldOut
+        ? ('Not available', AppColors.error)
+        : ('${item.quantity} ${item.quantity == 1 ? 'seat' : 'seats'}', AppColors.textTertiary);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: canTap ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary_1.withValues(alpha: 0.06)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected ? AppColors.primary_1 : AppColors.border,
+              width: selected ? 1.4 : 1,
             ),
-            SizedBox(width: 10.h),
-            const CircleAvatar(backgroundColor: Colors.red, radius: 5),
-            SizedBox(width: 10.h),
-            Text(
-              "Open ${restaurantDetailsController.restaurantDetails!.openTime.toString()}",
-              style: AppTextStyle.c_regular_10(),
-            ),
-          ],
-        ),
-        SizedBox(height: 6.h),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            icon.loacation.svg(color: Colors.red),
-            SizedBox(width: 4.w),
-            Text(
-              restaurantDetailsController.restaurantDetails!.serviceArea ?? "",
-              style: AppTextStyle.c_regular_10(color: AppColors.primary_1),
-            ),
-          ],
-        ),
-
-        SizedBox(height: 20),
-
-        Text("Available Seat", style: AppTextStyle.sub_h2_medium_16()),
-
-        SizedBox(height: 10),
-
-        /// seating card list
-        ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount:
-              restaurantDetailsController.restaurantDetails!.items.length,
-          itemBuilder: (context, index) {
-            final item =
-                restaurantDetailsController.restaurantDetails!.items[index];
-
-            return buildSeatingCard(
-              onTap: () {
-                Get.toNamed(
-                  Routes.restaurantInfo,
-                  arguments: {
-                    "userId": authController.userModel!.id,
-                    "productId": productId,
-                    "quantity": item.totalQty,
-                    "itemId": item.id,
-                    "availableQty": item.availableQty,
-                    "thumbnail": item.photo,
-                    "seatType": item.seat,
-                    "totalSeat": item.totalQty,
-                    "seatPrice": item.price,
-                    "serviceFee": restaurantDetailsController
-                        .restaurantDetails!
-                        .serviceFee,
-                    "availableSeat": item.availableQty,
-                    "price": item.price,
-                    "description": item.description,
-                    "availableSlots": restaurantDetailsController
-                        .restaurantDetails!
-                        .availableSlots,
-                  },
-                );
-              },
-              imageUrl: item.photo ?? "",
-              seatingType: item.seat ?? "",
-              totalSeats: item.totalQty,
-              availableSeats: item.availableQty,
-              pricePerSeat: item.price,
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  /// Review Section Content (currently empty)
-  Widget _buildReviewSection() {
-    return ReviewScreen(
-      reviewList: restaurantDetailsController!.restaurantDetails!.reviews,
-    );
-  }
-
-  /// seating card
-
-  Widget buildSeatingCard({
-    required String imageUrl,
-    required String seatingType,
-    required int totalSeats,
-    required int availableSeats,
-    required double pricePerSeat,
-    required VoidCallback onTap,
-  }) {
-    const Color vipColor = Color(0xFFD4AF37);
-    const Color availableColor = Colors.red;
-    const Color textColor = Colors.black;
-
-    // Define the dimensions
-    const double imageSize = 80.0;
-    const double cardPadding = 12.0;
-
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        elevation: 4.0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-        child: Container(
-          padding: const EdgeInsets.all(cardPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// --- 1. Image ---
-              Container(
-                width: imageSize,
-                height: imageSize,
-
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4.0),
-
-                  child: Container(
-                    color: Colors.grey[300],
-                    child: Image.network(imageUrl, fit: BoxFit.cover),
+          ),
+          child: Opacity(
+            opacity: canTap || selected ? 1 : 0.55,
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: (item.photo ?? '').isEmpty
+                        ? const _SeatPlaceholder()
+                        : CachedNetworkImage(
+                            imageUrl: item.photo!,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) =>
+                                Container(color: AppColors.shimmerBase),
+                            errorWidget: (_, __, ___) =>
+                                const _SeatPlaceholder(),
+                          ),
                   ),
                 ),
-              ),
-
-              const SizedBox(width: 16.0), // Spacing
-
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    /// Row for Type and Total
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(
-                          seatingType,
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            fontWeight: FontWeight.bold,
-                            color: vipColor,
-                          ),
-                        ),
-
-                        /// Total Text
-                        Text(
-                          'Total: $totalSeats',
-                          style: const TextStyle(
-                            fontSize: 16.0,
-                            color: textColor,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4.0),
-
-                    // /Available Seats Text
-                    Text(
-                      'Available seat $availableSeats',
-                      style: const TextStyle(
-                        fontSize: 14.0,
-                        color: availableColor,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.type,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyle.sub_h3_medium_14(),
                       ),
-                    ),
-
-                    const SizedBox(height: 8.0),
-
-                    ///Row for Price label and Price value
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        // Price Label
-                        const Text(
-                          'Price',
-                          style: TextStyle(fontSize: 14.0, color: textColor),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${checkoutEuro(item.price)} / seat',
+                        style: AppTextStyle.sub_h3_semibold_14(
+                          color: AppColors.primary_1,
                         ),
-                        // Price Value
-                        RichText(
-                          text: TextSpan(
-                            style: const TextStyle(fontFamily: 'Roboto'),
-                            children: [
-                              TextSpan(
-                                text: '€${pricePerSeat.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 18.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: vipColor,
-                                ),
-                              ),
-                              const TextSpan(
-                                text: '/per seat',
-                                style: TextStyle(
-                                  fontSize: 12.0,
-                                  color: textColor,
-                                ),
-                              ),
-                            ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        stockText,
+                        style: AppTextStyle.p_regular_12(color: stockColor),
+                      ),
+                      if ((item.description ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          item.description!.trim(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyle.p_regular_12(
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Icon(
+                  selected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: selected ? AppColors.primary_1 : AppColors.border,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -458,36 +342,36 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
   }
 }
 
-class CustomButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final String text;
-  final Color backgroundColor;
-  final double? height;
-
-  const CustomButton({
-    super.key,
-    required this.onTap,
-    required this.text,
-    required this.backgroundColor,
-    this.height,
-  });
+class _SeatPlaceholder extends StatelessWidget {
+  const _SeatPlaceholder();
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.r),
-          ),
-          minimumSize: Size(double.infinity, height ?? 44.h),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(color: Colors.white, fontSize: 14.sp),
-        ),
+    return Container(
+      color: AppColors.surfaceAlt,
+      alignment: Alignment.center,
+      child: const Icon(Icons.chair_outlined, color: AppColors.textTertiary),
+    );
+  }
+}
+
+class _EmptySeating extends StatelessWidget {
+  const _EmptySeating();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAlt,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        'No seating listed yet',
+        textAlign: TextAlign.center,
+        style: AppTextStyle.sub_h3_regular_14(color: AppColors.textTertiary),
       ),
     );
   }

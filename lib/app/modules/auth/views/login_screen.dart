@@ -17,6 +17,7 @@ import '../../../../../gen/assets.gen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/controllers/nav_controller.dart';
 import '../../../routes/app_routes.dart';
+import 'package:harry_service_app/app/core/utils/app_toast.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({super.key});
@@ -54,6 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
   /// click event on login
 
   void _handleLogin() async {
+    if (loginController.loginProgress) return; // a request is already running
     FocusScope.of(context).unfocus();
 
     if (_formKey.currentState!.validate()) {
@@ -79,12 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Get.offAllNamed(Routes.providerNavScreen);
         }
       } else {
-        Get.snackbar(
-          "Failed",
-          loginController.errorMessage ?? "Login failed",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red,
-        );
+        showAppToast(type: ToastType.error, title: "Login failed", message: loginController.errorMessage ?? "Login failed");
       }
     }
   }

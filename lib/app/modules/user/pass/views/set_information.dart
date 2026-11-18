@@ -1,469 +1,201 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:harry_service_app/app/core/constants/text-style.dart';
-import 'package:harry_service_app/app/core/controllers/auth_controller.dart';
-import 'package:harry_service_app/app/core/widgets/custome_button.dart';
-import 'package:harry_service_app/app/data/services/stripe/payment_result.dart';
-import 'package:harry_service_app/app/data/services/stripe/stripe_config.dart';
-import 'package:harry_service_app/app/data/services/stripe/stripe_helper.dart';
-import 'package:harry_service_app/app/core/constants/env_config.dart';
-import 'package:harry_service_app/app/modules/user/pass/controllers/pass_booking_controller.dart';
-import 'package:harry_service_app/app/modules/user/pass/models/pass_booking_request_model.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/utils/date_parser.dart';
-import '../../../../core/widgets/appBarWithTab.dart';
+import '../../../../core/utils/resort_time.dart';
+import '../../../../core/constants/text-style.dart';
+import '../../../../core/widgets/checkout_flow_parts.dart';
+import '../../../../core/widgets/checkout_parts.dart';
+import '../../../../data/api/peak_api.dart';
+import '../../../../data/services/stripe/checkout_controller.dart';
 import '../../../../routes/app_routes.dart';
-import '../controllers/pass_details_controller.dart';
 
-class SetInformation extends StatefulWidget {
+/// Ski pass checkout: day + number of people → pay → ticket.
+///
+/// Arguments: `{'id': listingId, 'listing': SkiPassDetail?}`. Ski passes are
+/// confirmed at payment (no provider approval) and get a ticket number.
+class SetInformation extends StatelessWidget {
   const SetInformation({super.key});
-
-  @override
-  State<SetInformation> createState() => _SetInformationState();
-}
-
-class _SetInformationState extends State<SetInformation> {
-  late final prodoductId;
-
-  /// Find booking controllers
-  final bookingController = Get.find<CreateBookingController>();
-
-
-  /// Find current user from authcontroller
-  final authController = Get.find<AuthController>();
-
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-
-  int selectedPerson = 1;
-  final List<int> persons = [1, 2, 3, 4, 5];
-
-  // Stripe payment helper
-  late StripePaymentHelper _paymentHelper;
-  bool _isProcessingPayment = false;
-
-  /// Returns valid booking DateTime or null if invalid
-  DateTime? validateBookingDateTime() {
-    if (selectedDate == null || selectedTime == null) {
-      Get.snackbar(
-        "Notice",
-        "Please select Date and Time",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      return null;
-    }
-
-    final dateTime = DateTime(
-      selectedDate!.year,
-      selectedDate!.month,
-      selectedDate!.day,
-      selectedTime!.hour,
-      selectedTime!.minute,
-    );
-
-    if (dateTime.isBefore(DateTime.now())) {
-      Get.snackbar(
-        "Invalid Date",
-        "Please select a future date & time",
-        backgroundColor: AppColors.primary_1,
-        colorText: Colors.white,
-      );
-      return null;
-    }
-
-    return dateTime;
-  }
-
-  /// Button checkout
-  void _checkoutButton() async {
-
-    if (_isProcessingPayment) return;
-
-    final bookingDateTime = validateBookingDateTime();
-    if (bookingDateTime == null) return;
-
-    setState(() {
-      _isProcessingPayment = true;
-    });
-
-    try {
-      /// 1️⃣ Start Payment
-      final result = await _paymentHelper.processPayment(
-        context: context,
-        amount: 100.0,
-        currency: 'USD',
-        description: 'Pass Booking Payment',
-        metadata: {
-          'productId': prodoductId.toString(),
-          'personCount': selectedPerson.toString(),
-          'date': bookingDateTime.toIso8601String(),
-
-        },
-      );
-
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      /// 2️⃣ Payment Success Check
-      if (result.isSuccess) {
-
-        final transactionId = result.paymentData?['transactionId'];
-
-        /// ⚠️ Transaction null check
-        if (transactionId == null) {
-          Get.snackbar(
-            "Error",
-            "Invalid transaction ID",
-            backgroundColor: Colors.red,
-            colorText: Colors.white,
-          );
-          return;
-        }
-
-        /// 3️⃣ Call Booking API
-        Map<String, dynamic> body = {
-          "userId": authController.userModel!.id,
-          "productId": prodoductId,
-          "personCount": selectedPerson,
-          "date": bookingDateTime.toIso8601String(),
-          "transactionId": transactionId,
-        };
-
-        bool success = await bookingController.proceedBooking(body);
-
-        /// 4️⃣ Booking Success Check
-        if (success) {
-
-          /// ✅ Show Success Dialog
-          if (mounted) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => AlertDialog(
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 60.sp),
-                    SizedBox(height: 16.h),
-                    Text(
-                      "Booking Confirmed!",
-                      style: AppTextStyle.sub_h2_medium_16(color: Colors.green),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      "Your payment & booking completed successfully",
-                      textAlign: TextAlign.center,
-                      style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                    ),
-                  ],
-                ),
-              ),
-            );
-
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) {
-                 Navigator.of(context).pop();
-                // Get.back();
-                Get.toNamed(Routes.ticket);
-              }
-            });
-          }
-
-        } else {
-
-          /// ❌ Booking Failed (Important Case)
-          Get.snackbar(
-            "Booking Failed",
-            bookingController.errorMessage ?? "Payment done but booking failed",
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-          );
-        }
-
-      } else {
-
-        /// ❌ Payment Failed
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 60.sp),
-                  SizedBox(height: 16.h),
-                  Text(
-                    "Payment Failed",
-                    style: AppTextStyle.sub_h2_medium_16(color: Colors.red),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    result.message ?? "Payment could not be processed",
-                    textAlign: TextAlign.center,
-                    style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    "OK",
-                    style: AppTextStyle.sub_h3_medium_14(color: AppColors.primary_1),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-      }
-
-    } catch (e) {
-      Get.snackbar(
-        "Error",
-        "An error occurred: ${e.toString()}",
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
-    } finally {
-      /// 🔥 VERY IMPORTANT (reset state)
-      if (mounted) {
-        setState(() {
-          _isProcessingPayment = false;
-        });
-      }
-    }
-  }
-
-
-  /// Pick date
-  Future<void> _pickDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  /// Pick time
-  Future<void> _pickTime() async {
-    TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: selectedTime ?? TimeOfDay.now(),
-      builder: (context,child){
-       return MediaQuery(
-           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
-           child: child!
-       );
-      }
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedTime = picked;
-      });
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    var argument = Get.arguments;
-    prodoductId = argument["id"]; // Get product ID
-
-    // Initialize Stripe payment helper
-    _initializeStripeHelper();
-  }
-
-  void _initializeStripeHelper() {
-    final config = StripeConfig(
-      //secretKey: EnvConfig.stripeSk,
-      secretKey: "sk_test_REDACTED_ROTATE_ME",
-      merchantDisplayName: 'Harry Service',
-      paymentSheetTheme: ThemeMode.light,
-      allowsDelayedPaymentMethods: true,
-    );
-
-    _paymentHelper = StripePaymentHelper(
-      config: config,
-      onPaymentSuccess: _handlePaymentSuccess,
-      onPaymentFailure: _handlePaymentFailure,
-      onLog: (message) => debugPrint('StripeLog: $message'),
-    );
-  }
-
-  void _handlePaymentSuccess(PaymentResult result) {
-    ///  Don't show snackbar immediately - wait for sheet to close
-    setState(() {
-
-      _isProcessingPayment = false;
-    });
-  }
-
-  void _handlePaymentFailure(PaymentResult result) {
-    setState(() {
-      _isProcessingPayment = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: CustomAppBarWithTabBar(
-        title: "Set Information",
-        onTap: () {
-          Get.back();
-        },
+      backgroundColor: AppColors.scaffold,
+      appBar: checkoutAppBar(context, 'Checkout'),
+      body: CheckoutListingGate<SkiPassDetail>(
+        kind: ServiceKind.skiPass,
+        noun: 'ski pass',
+        builder: (_, pass) => PassCheckoutForm(pass: pass),
       ),
-      body: GetBuilder<CreateBookingController>(builder: (controller) {
-        return bookingController.isLoading
-            ? Center(child: CircularProgressIndicator(color: AppColors.primary_1,))
-            : Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+}
+
+class PassCheckoutForm extends StatefulWidget {
+  const PassCheckoutForm({super.key, required this.pass, this.checkout});
+
+  final SkiPassDetail pass;
+
+  /// Injected in tests.
+  final CheckoutController? checkout;
+
+  @override
+  State<PassCheckoutForm> createState() => _PassCheckoutFormState();
+}
+
+class _PassCheckoutFormState extends State<PassCheckoutForm> {
+  static const minGuests = 1;
+  static const _bookingWindowDays = 365;
+
+  late final CheckoutController _checkout = widget.checkout ?? CheckoutController();
+
+  int _guests = minGuests;
+  DateTime? _date;
+  bool _showErrors = false;
+
+  SkiPassDetail get _pass => widget.pass;
+  int get maxGuests => _pass.maxPeoplePerBooking;
+
+  String? get _dateError {
+    if (_date == null) return 'Please choose a date';
+    if (_date!.isBefore(resortToday())) return 'This day has already passed';
+    return null;
+  }
+
+  num get _estimate => _pass.price.amount * _guests;
+
+  BookingRequest _request() => BookingRequest.skiPass(productId: _pass.id, day: _date!, persons: _guests);
+
+  num _total() => _date == null ? _estimate : (_checkout.quotedAmountFor(_request()) ?? _estimate);
+
+  Future<void> _pickDate() async {
+    final today = resortToday();
+    FocusManager.instance.primaryFocus?.unfocus();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date != null && !_date!.isBefore(today) ? _date! : today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: _bookingWindowDays)),
+      helpText: 'Select visit date',
+      builder: checkoutPickerTheme,
+    );
+    if (picked != null && mounted) {
+      setState(() => _date = picked);
+      _checkout.clearProblem();
+    }
+  }
+
+  Future<void> _pay() async {
+    if (_checkout.isBusy) return;
+    FocusScope.of(context).unfocus();
+    if (!_checkout.needsConfirmRetry) {
+      setState(() => _showErrors = true);
+      if (_dateError != null) return;
+    }
+    // A retry after payment re-sends what was paid for; the request is ignored.
+    final outcome = await _checkout.pay(_request(), shownAmount: _total());
+    if (!mounted) return;
+    handleCheckoutOutcome(context, _checkout, outcome,
+        checkoutRoute: Routes.passInformation, detailsRoute: Routes.passCardDetails);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CheckoutPopGuard(
+      checkout: _checkout,
+      child: ListenableBuilder(
+        listenable: _checkout,
+        builder: (context, _) {
+          final locked = _checkout.isLocked;
+          final total = _total();
+          return Column(
             children: [
-              // Select Person
-              Text(
-                "Select Person",
-                style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 40.h,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: DropdownButton<int>(
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  value: selectedPerson,
-                  items: persons.map((person) {
-                    return DropdownMenuItem<int>(
-                      value: person,
-                      child: Text("$person"),
-                    );
-                  }).toList(),
-                  icon: const Icon(Icons.arrow_drop_down),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedPerson = value!;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              // Date Picker
-              Text(
-                "Select Date",
-                style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickDate,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Icon(Icons.calendar_month, color: AppColors.black_3),
-                      SizedBox(width: 20.w),
-                      Text(
-                        selectedDate != null
-                            ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
-                            : "Select Date",
-                        style: AppTextStyle.p_medium_12(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              // Time Picker
-              Text(
-                "Select Time",
-                style: AppTextStyle.c_regular_12(color: AppColors.black_3),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _pickTime,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Icon(Icons.access_time, color: AppColors.black_3),
-                      SizedBox(width: 20.w),
-                      Text(
-                        formatTime(context, selectedTime),
-                        style: AppTextStyle.p_medium_12(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Spacer(),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: _isProcessingPayment
-                    ? Container(
-                        width: double.infinity,
-                        height: 50.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary_1,
-                          borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 640),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      children: [
+                        CheckoutSummaryCard(
+                          imageUrl: _pass.thumbnail ?? '',
+                          title: _pass.title,
+                          location: _pass.serviceArea,
+                          price: checkoutEuro(_pass.price.amount),
+                          priceSuffix: ' / person',
                         ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
+                        const CheckoutSectionLabel('Guests'),
+                        CheckoutCard(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Number of people', style: AppTextStyle.sub_h3_medium_14()),
+                                    const SizedBox(height: 2),
+                                    Text('Up to $maxGuests per booking',
+                                        style: AppTextStyle.p_regular_12(color: AppColors.textTertiary)),
+                                  ],
+                                ),
+                              ),
+                              CheckoutQuantityStepper(
+                                value: _guests,
+                                min: minGuests,
+                                max: maxGuests,
+                                enabled: !locked,
+                                unit: 'people',
+                                onChanged: (v) {
+                                  setState(() => _guests = v);
+                                  _checkout.clearProblem();
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                    : CustomButton(
-                        onTap: _checkoutButton,
-                        width: double.infinity,
-                        text: "Proceed to Checkout",
-                      ),
+                        const CheckoutSectionLabel('When'),
+                        CheckoutCard(
+                          padding: EdgeInsets.zero,
+                          child: CheckoutPickerTile(
+                            icon: Icons.calendar_today_rounded,
+                            label: 'Date',
+                            value: _date == null ? null : DateFormat('EEE, d MMM yyyy').format(_date!),
+                            placeholder: 'Choose a date',
+                            error: _showErrors ? _dateError : null,
+                            enabled: !locked,
+                            onTap: _pickDate,
+                          ),
+                        ),
+                        const CheckoutSectionLabel('Price details'),
+                        CheckoutCard(
+                          child: CheckoutPriceBreakdown(
+                            lines: [
+                              (
+                                '${checkoutEuro(_pass.price.amount)} × $_guests ${_guests == 1 ? 'person' : 'people'}',
+                                checkoutEuro(_estimate),
+                              ),
+                            ],
+                            total: total.toDouble(),
+                            footnote: total != _estimate ? 'Price confirmed by the server.' : null,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const CheckoutSecureNote(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              CheckoutBar(
+                total: total.toDouble(),
+                stage: checkoutStageOf(_checkout),
+                needsBookingRetry: _checkout.needsConfirmRetry,
+                onPressed: _pay,
               ),
             ],
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 }

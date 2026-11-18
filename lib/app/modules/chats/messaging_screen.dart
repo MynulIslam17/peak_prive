@@ -8,6 +8,7 @@ import 'package:harry_service_app/app/modules/chats/controllers/chat_controller.
 import '../../../gen/assets.gen.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_parser.dart';
+import '../../core/widgets/shimmer/skeleton.dart';
 
 /// MessagingScreen: Chat UI between two users
 class MessagingScreen extends StatefulWidget {
@@ -77,14 +78,8 @@ class _MessagingScreenState extends State<MessagingScreen> {
             // Messages List
             GetBuilder<ChatController>(
               builder: (cController) {
-                if (cController.isLoading) {
-                  return const Expanded(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary_1,
-                      ),
-                    ),
-                  );
+                if (cController.isLoading && cController.messages.isEmpty) {
+                  return const Expanded(child: ChatSkeleton());
                 }
 
                 if(cController.messages.isEmpty){
@@ -312,7 +307,7 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final dateTime = DateParserHelper.parseDate(time ?? "");
     final displayTime = dateTime != null
-        ? DateParserHelper.toDisplayDate(dateTime)
+        ? DateParserHelper.chatBubbleTime(dateTime)
         : "--:--";
 
     return Padding(

@@ -57,6 +57,7 @@ flutter:
     - assets/animations/
     - assets/icons/
     - assets/images/
+    - assets/fonts/pdf/
 
 flutter_gen:
   output: lib/gen/

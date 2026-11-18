@@ -1,0 +1,1 @@
+{"success":true,"message":"Payment ready. Show the Stripe payment sheet.","data":{"paymentIntentId":"pi_fixture","clientSecret":"pi_test_secret_fixture","publishableKey":"pk_test_fixture","amount":100,"currency":"eur","category":"Ski_Hire","breakdown":{"items":[{"itemId":"6939508f6fd3cd7f26c29699","name":"aaa","quantity":2,"price":25}],"priceUnit":"per_day","units":2}}}

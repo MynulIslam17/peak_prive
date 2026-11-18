@@ -1,30 +1,48 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:harry_service_app/main.dart';
+import 'package:harry_service_app/app/routes/app_pages.dart';
+import 'package:harry_service_app/app/routes/app_routes.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const HarryServiceApp());
+  test('every route the app navigates to has a page', () {
+    final pages = AppPages.routes.map((p) => p.name).toSet();
+    // Collect `Routes.x` references used for navigation anywhere in lib/.
+    final used = <String>{};
+    final re = RegExp(r'Routes\.(\w+)');
+    for (final f in Directory('lib').listSync(recursive: true).whereType<File>()) {
+      if (!f.path.endsWith('.dart') || f.path.endsWith('app_routes.dart')) continue;
+      for (final m in re.allMatches(f.readAsStringSync())) {
+        used.add(m.group(1)!);
+      }
+    }
+    // Map names to values through a small mirror of app_routes.dart.
+    final src = File('lib/app/routes/app_routes.dart').readAsStringSync();
+    final values = {
+      for (final m in RegExp(r'static const\s+(\w+)\s*=\s*"([^"]*)"').allMatches(src)) m.group(1)!: m.group(2)!,
+    };
+    final missing = [
+      for (final name in used)
+        if (values[name] != null && !pages.contains(values[name])) '$name (${values[name]})',
+    ];
+    // Bottom-nav tabs are not routes.
+    missing.removeWhere((m) => m.startsWith('profile '));
+    expect(missing, isEmpty);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('booking detail routes all open the unified screen', () {
+    final byName = {for (final p in AppPages.routes) p.name: p};
+    final unified = byName[Routes.bookingDetails]!;
+    for (final r in [
+      Routes.userHireBookingDetails,
+      Routes.userTransportBookingDetails,
+      Routes.userPassBookingDetails,
+      Routes.userMassageBookingDetails,
+      Routes.userRestaurantBookingDetails,
+      Routes.providerBookingDetails,
+    ]) {
+      expect(byName[r], isNotNull, reason: r);
+      expect(byName[r]!.page().runtimeType, unified.page().runtimeType, reason: r);
+    }
   });
 }

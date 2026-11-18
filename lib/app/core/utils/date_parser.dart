@@ -1,6 +1,7 @@
 // lib/core/utils/date_parser_helper.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class DateParserHelper {
   /// ✅ Format DateTime to "YYYY-MM-DD" (ISO format for APIs)
@@ -126,6 +127,25 @@ class DateParserHelper {
   static String toDateTimeString(DateTime? dateTime) {
     if (dateTime == null) return 'N/A';
     return '${toFriendlyDate(dateTime)} at ${toTime(dateTime)}';
+  }
+
+  /// Chat list: "11:10 AM" today, "Yesterday", "17 Nov", or "17 Nov 2025".
+  static String chatListTime(DateTime dateTime, {DateTime? now}) {
+    final t = dateTime.toLocal();
+    final today = DateUtils.dateOnly(now ?? DateTime.now());
+    final day = DateUtils.dateOnly(t);
+    if (day == today) return DateFormat('h:mm a').format(t);
+    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    if (t.year == today.year) return DateFormat('d MMM').format(t);
+    return DateFormat('d MMM yyyy').format(t);
+  }
+
+  /// Chat bubble: "11:10 AM" today, otherwise "17 Nov, 11:10 AM".
+  static String chatBubbleTime(DateTime dateTime, {DateTime? now}) {
+    final t = dateTime.toLocal();
+    final today = DateUtils.dateOnly(now ?? DateTime.now());
+    if (DateUtils.dateOnly(t) == today) return DateFormat('h:mm a').format(t);
+    return DateFormat(t.year == today.year ? 'd MMM, h:mm a' : 'd MMM yyyy, h:mm a').format(t);
   }
 
   //✅ Helper method to format DateTime into "DD/MM HH:MM AM/PM"
