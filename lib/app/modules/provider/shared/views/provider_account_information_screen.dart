@@ -158,7 +158,11 @@ class _ProviderAccountInformationScreenState
             controller: controller,
             readOnly: readOnly || location,
             showCursor: !location,
+            // Grows with a long address (up to 3 lines) instead of always
+            // being 3 lines tall with the text stuck above the icons.
+            minLines: 1,
             maxLines: location ? 3 : 1,
+            textAlignVertical: TextAlignVertical.center,
             keyboardType: location ? null : keyboardType,
             onTap: !location
                 ? null

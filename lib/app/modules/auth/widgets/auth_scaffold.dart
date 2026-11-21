@@ -35,14 +35,14 @@ class AuthScaffold extends StatefulWidget {
 
 class _AuthScaffoldState extends State<AuthScaffold> with SingleTickerProviderStateMixin {
   static const _logo = 'assets/images/app_logo2.png';
+  static const _headerTop = Color(0xFF0A5C44);
 
-  /// Once the header title has scrolled under the top edge, a white app bar
-  /// (back button and title) is shown. It's either hidden or fully shown,
-  /// never half see-through over the header's own title.
+  /// As soon as the page scrolls, a pinned green app bar (back button and
+  /// logo) takes over from the header's own logo row. It sits exactly where
+  /// that row was, so the logo and back button look like they stay put while
+  /// the title and form scroll under them.
   final ScrollController _scroll = ScrollController();
-  final ValueNotifier<bool> _solid = ValueNotifier(false);
-  final GlobalKey _titleKey = GlobalKey();
-  bool _syncScheduled = false;
+  final ValueNotifier<bool> _pinned = ValueNotifier(false);
 
   late final AnimationController _intro = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
     ..forward();
@@ -50,41 +50,21 @@ class _AuthScaffoldState extends State<AuthScaffold> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _scroll.addListener(_scheduleBarSync);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncBar());
+    _scroll.addListener(_syncBar);
   }
 
   @override
   void dispose() {
-    _scroll.removeListener(_scheduleBarSync);
+    _scroll.removeListener(_syncBar);
     _scroll.dispose();
-    _solid.dispose();
+    _pinned.dispose();
     _intro.dispose();
     super.dispose();
   }
 
-  /// Wait until this frame's layout is done. Reading the title mid-scroll
-  /// still sees the previous position, which would show the bar too early.
-  void _scheduleBarSync() {
-    if (_syncScheduled) return;
-    _syncScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncScheduled = false;
-      _syncBar();
-    });
-  }
-
-  /// The white bar is shown only after the green title has gone fully behind
-  /// it. Until then the bar is not built, so its title and back icon cannot
-  /// sit on top of the header.
   void _syncBar() {
-    if (!mounted) return;
-    final box = _titleKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.attached || !box.hasSize) return;
-    final titleBottom = box.localToGlobal(Offset(0, box.size.height)).dy;
-    final cover = MediaQuery.paddingOf(context).top + _CollapsedBar.height;
-    final next = titleBottom <= cover;
-    if (next != _solid.value) _solid.value = next;
+    final next = _scroll.hasClients && _scroll.offset > 0;
+    if (next != _pinned.value) _pinned.value = next;
   }
 
   Animation<double> _at(double start, [double length = 0.45]) => CurvedAnimation(
@@ -136,44 +116,22 @@ class _AuthScaffoldState extends State<AuthScaffold> with SingleTickerProviderSt
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Color(0xFF0A5C44), SplashScreen.background],
+                          colors: [_headerTop, SplashScreen.background],
                         ),
                       ),
-                      padding: EdgeInsets.fromLTRB(24, top + 8, 24, 34),
+                      padding: EdgeInsets.fromLTRB(24, top + _LogoRow.topGap, 24, 34),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: 44,
-                            child: Row(
-                              children: [
-                                if (canPop)
-                                  _GlassBackButton(onTap: () => Navigator.of(context).maybePop())
-                                else
-                                  const SizedBox(width: 44),
-                                const Spacer(),
-                                _enter(
-                                  _at(0),
-                                  ClipRect(
-                                    child: Align(
-                                      alignment: Alignment.topCenter,
-                                      heightFactor: 0.76,
-                                      child: Image.asset(_logo, height: 58, semanticLabel: 'Peak Privee'),
-                                    ),
-                                  ),
-                                  dy: -0.3,
-                                ),
-                                const Spacer(),
-                                const SizedBox(width: 44),
-                              ],
-                            ),
+                          _LogoRow(
+                            onBack: canPop ? () => Navigator.of(context).maybePop() : null,
+                            logo: _enter(_at(0), const _Logo(), dy: -0.3),
                           ),
                           const SizedBox(height: 22),
                           _enter(
                             _at(0.08),
                             Text(
                               widget.title,
-                              key: _titleKey,
                               style: AppTextStyle.h3_semibold_20(
                                 color: Colors.white,
                               ).copyWith(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.3, height: 1.2),
@@ -215,20 +173,18 @@ class _AuthScaffoldState extends State<AuthScaffold> with SingleTickerProviderSt
                   ),
                 ],
               ),
-              // Solid bar only after the green title has scrolled behind it.
-              // While the header title is on screen this child is empty, so
-              // a second title and back icon cannot be painted over it.
+              // Pinned bar, shown once the page has scrolled at all. Its logo
+              // row lines up with the header's, so the swap is not visible.
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
                 child: ValueListenableBuilder<bool>(
-                  valueListenable: _solid,
+                  valueListenable: _pinned,
                   builder: (_, shown, __) {
                     if (!shown) return const SizedBox.shrink();
                     return _CollapsedBar(
                       top: top,
-                      title: widget.title,
                       onBack: canPop ? () => Navigator.of(context).maybePop() : null,
                     );
                   },
@@ -242,56 +198,72 @@ class _AuthScaffoldState extends State<AuthScaffold> with SingleTickerProviderSt
   }
 }
 
-/// Solid white bar (back button and screen title) shown over the top once
-/// the green header title has scrolled behind it.
-class _CollapsedBar extends StatelessWidget {
-  const _CollapsedBar({required this.top, required this.title, this.onBack});
+/// The header's top row: back button on the left, logo centred.
+class _LogoRow extends StatelessWidget {
+  const _LogoRow({required this.logo, this.onBack});
 
-  final double top;
-  final String title;
+  final Widget logo;
   final VoidCallback? onBack;
 
-  static const height = 56.0;
+  static const topGap = 8.0;
+  static const height = 44.0;
+  static const bottomGap = 10.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: Row(
+        children: [
+          if (onBack != null) _GlassBackButton(onTap: onBack!) else const SizedBox(width: 44),
+          const Spacer(),
+          logo,
+          const Spacer(),
+          const SizedBox(width: 44),
+        ],
+      ),
+    );
+  }
+}
+
+/// The copper "P" mark, cropped to drop the tagline.
+class _Logo extends StatelessWidget {
+  const _Logo();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: Align(
+        alignment: Alignment.topCenter,
+        heightFactor: 0.76,
+        child: Image.asset(_AuthScaffoldState._logo, height: 58, semanticLabel: 'Peak Privee'),
+      ),
+    );
+  }
+}
+
+/// Pinned green app bar (back button and logo) shown once the page scrolls.
+/// Same colour as the top of the header and the same row layout, so it
+/// reads as the header's logo row staying in place.
+class _CollapsedBar extends StatelessWidget {
+  const _CollapsedBar({required this.top, this.onBack});
+
+  final double top;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
-      child: ColoredBox(
-        color: Colors.white,
-        child: Container(
-          height: top + height,
-          padding: EdgeInsets.only(top: top),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 4),
-              if (onBack != null)
-                IconButton(
-                  tooltip: 'Back',
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.textPrimary),
-                )
-              else
-                const SizedBox(width: 48),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyle.sub_h1_medium_18(color: AppColors.textPrimary),
-                ),
-              ),
-              const SizedBox(width: 52), // balances the back button
-            ],
-          ),
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(24, top + _LogoRow.topGap, 24, _LogoRow.bottomGap),
+        decoration: BoxDecoration(
+          color: _AuthScaffoldState._headerTop,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 12, offset: const Offset(0, 3)),
+          ],
         ),
+        child: _LogoRow(onBack: onBack, logo: const _Logo()),
       ),
     );
   }

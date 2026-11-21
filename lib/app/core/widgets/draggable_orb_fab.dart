@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/gesture_exclusion.dart';
+
 /// Which screen edge the orb rests on.
 enum OrbSide { left, right }
 
@@ -184,6 +186,10 @@ class _DraggableOrbFabState extends State<DraggableOrbFab> with TickerProviderSt
     _snap.addStatusListener((s) {
       if (s == AnimationStatus.completed) _live.value = null;
     });
+    // Settled in a new place: move the back-swipe exclusion with it.
+    _live.addListener(() {
+      if (_live.value == null) _scheduleExclusionSync();
+    });
     if (_place.hidden) _dock.value = 1;
     if (key != null && !_memory.containsKey(key)) _restore(key);
     _maybeShowHint();
@@ -203,6 +209,7 @@ class _DraggableOrbFabState extends State<DraggableOrbFab> with TickerProviderSt
 
   @override
   void dispose() {
+    GestureExclusion.set(this, null, 1);
     _hintTimer?.cancel();
     _life.dispose();
     _snap.dispose();
@@ -267,6 +274,45 @@ class _DraggableOrbFabState extends State<DraggableOrbFab> with TickerProviderSt
     if (!_showHint) return;
     _hintTimer?.cancel();
     setState(() => _showHint = false);
+  }
+
+  // ─────────────────── Android edge back-swipe ───────────────────
+
+  /// The resting orb sits at the screen edge, inside the strip where
+  /// Android's gesture navigation treats a swipe as "back". Without this a
+  /// grab of the (hidden) orb often went back instead of dragging it. The
+  /// edge strip next to the orb is excluded, but only while the orb is
+  /// actually on screen (not on another tab or under a pushed page).
+  bool _exclusionScheduled = false;
+
+  void _scheduleExclusionSync() {
+    if (_exclusionScheduled) return;
+    _exclusionScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _exclusionScheduled = false;
+      _syncExclusion();
+    });
+  }
+
+  void _syncExclusion() {
+    if (!mounted) return;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final box = context.findRenderObject() as RenderBox?;
+    final visible = widget.enabled && TickerMode.valuesOf(context).enabled && box != null && box.attached && box.hasSize;
+    // Mid-drag or mid-snap: keep the old area until it settles.
+    if (visible && _live.value != null) return;
+    if (!visible) {
+      GestureExclusion.set(this, null, dpr);
+      return;
+    }
+    final pos = _restOffset;
+    final onRight = _place.side == OrbSide.right;
+    final slop = _place.hidden ? _hiddenTouchSlop : 0.0;
+    const pad = 12.0;
+    final local = onRight
+        ? Rect.fromLTRB(pos.dx - slop, pos.dy - pad, _area.width, pos.dy + _s + pad)
+        : Rect.fromLTRB(0, pos.dy - pad, pos.dx + _s + slop, pos.dy + _s + pad);
+    GestureExclusion.set(this, local.shift(box.localToGlobal(Offset.zero)), dpr);
   }
 
   // ───────────────────────── geometry ─────────────────────────
@@ -417,6 +463,9 @@ class _DraggableOrbFabState extends State<DraggableOrbFab> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // Also re-runs when the tab or route visibility (TickerMode) changes.
+    TickerMode.valuesOf(context).enabled;
+    _scheduleExclusionSync();
     if (!widget.enabled) return widget.child;
     final mq = MediaQuery.of(context);
 
